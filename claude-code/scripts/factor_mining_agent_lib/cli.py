@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Mapping, TextIO
 
 from .api import ApiClient, ApiError, validate_agent_status
+from .browser_setup import collect_agent_key_via_browser
 from .config import AgentConfig, DEFAULT_BASE_URL, HOME_ENV, load_config, save_config
 from .metadata import parse_plugin_metadata
 from .redaction import redact_secret, redact_text
@@ -36,6 +37,8 @@ def _configured_home(args: argparse.Namespace, env: Mapping[str, str]) -> str | 
 
 
 def _read_api_key(args: argparse.Namespace, env: Mapping[str, str], stdin: TextIO, stderr: TextIO) -> str:
+    if getattr(args, "browser", False):
+        return collect_agent_key_via_browser(stderr=stderr).strip()
     key = env.get("FACTOR_MINING_AGENT_API_KEY")
     if key:
         return key.strip()
@@ -307,6 +310,7 @@ def build_parser() -> argparse.ArgumentParser:
         help=f"Factor Mining API URL (default: production, {DEFAULT_BASE_URL})",
     )
     setup.add_argument("--api-key-stdin", action="store_true", help="Read the Agent API Key from stdin")
+    setup.add_argument("--browser", action="store_true", help="Open a local browser setup page for the Agent API Key")
 
     subcommands.add_parser("status", parents=[parent], help="Verify Factor Mining Agent API access")
 

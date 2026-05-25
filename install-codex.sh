@@ -5,9 +5,68 @@ MARKETPLACE_SOURCE="${FACTOR_MINING_PLUGIN_SOURCE:-varsity-tech-product/factor-m
 MARKETPLACE_REF="${FACTOR_MINING_PLUGIN_REF:-main}"
 MARKETPLACE_NAME="${FACTOR_MINING_PLUGIN_MARKETPLACE:-factor-mining-marketplace}"
 PLUGIN_NAME="${FACTOR_MINING_PLUGIN_NAME:-factor-mining}"
-START_CODEX="${FACTOR_MINING_START_CODEX:-1}"
+START_MODE="${FACTOR_MINING_START_MODE:-cli}"
 SKIP_SETUP="${FACTOR_MINING_SKIP_SETUP:-0}"
-CODEX_PROMPT="${FACTOR_MINING_CODEX_PROMPT:-Use the Factor Mining plugin. Verify Factor Mining status. If it is already configured, choose an open task, write a valid plugin.py, upload it, wait for the backtest, fetch the default factor card if available, and summarize the result. If setup is missing, run the secure setup helper and do not ask me to paste the key into chat.}"
+FORCE_SETUP="${FACTOR_MINING_FORCE_SETUP:-0}"
+WORKSPACE_PATH="${FACTOR_MINING_WORKSPACE:-.}"
+CODEX_PROMPT="${FACTOR_MINING_CODEX_PROMPT:-Use the Factor Mining plugin. Verify Factor Mining status. Ask me to choose either \"open task\" or \"my own idea\" before creating a session. If I choose open task, list open tasks and ask me to pick one. If I choose my own idea, ask for my factor idea and create a task-backed custom session. Then write a valid plugin.py locally, upload it, wait for the backtest, fetch the default factor card if available, and summarize the result. If I need to use a different Agent API Key, run python3 scripts/factor_setup.py --browser and do not ask me to paste the key into chat.}"
+
+if [[ "${FACTOR_MINING_START_CODEX:-1}" == "0" ]]; then
+  START_MODE="none"
+fi
+
+usage() {
+  cat <<'USAGE'
+Usage: install-codex.sh [options]
+
+Options:
+  --desktop       Install and configure, then open Codex Desktop for this workspace.
+  --no-start      Install and configure without starting Codex.
+  --install-only  Install the Codex plugin without configuring Factor Mining or starting Codex.
+  --setup-only    Install the Codex plugin and run Factor Mining setup without starting Codex.
+  --force-setup   Run setup even if Factor Mining is already configured.
+  --skip-setup    Install and start without configuring Factor Mining.
+  -h, --help      Show this help.
+
+Inside an existing Codex session, switch Agent API Keys with:
+  python3 scripts/factor_setup.py --browser
+USAGE
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --desktop)
+      START_MODE="desktop"
+      ;;
+    --no-start)
+      START_MODE="none"
+      ;;
+    --install-only)
+      START_MODE="none"
+      SKIP_SETUP="1"
+      ;;
+    --setup-only)
+      START_MODE="none"
+      FORCE_SETUP="1"
+      ;;
+    --force-setup)
+      FORCE_SETUP="1"
+      ;;
+    --skip-setup)
+      SKIP_SETUP="1"
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+  shift
+done
 
 if ! command -v codex >/dev/null 2>&1; then
   echo "Codex CLI is required. Install or update Codex, then run this script again." >&2
@@ -55,7 +114,7 @@ configure_factor_mining() {
     echo "Skipping Factor Mining setup because FACTOR_MINING_SKIP_SETUP=1."
     return
   fi
-  if python3 "${root}/scripts/factor_status.py" >/dev/null 2>&1; then
+  if [[ "${FORCE_SETUP}" != "1" ]] && python3 "${root}/scripts/factor_status.py" >/dev/null 2>&1; then
     echo "Factor Mining is already configured."
     return
   fi
@@ -95,11 +154,20 @@ fi
 
 configure_factor_mining "${PLUGIN_ROOT}"
 
-if [[ "${START_CODEX}" == "0" ]]; then
+if [[ "${START_MODE}" == "none" ]]; then
   echo "Codex plugin is installed. Start it with:"
   printf 'codex %q\n' "${CODEX_PROMPT}"
+  echo "For Codex Desktop, run:"
+  printf 'codex app %q\n' "${WORKSPACE_PATH}"
   exit 0
 fi
 
-echo "Starting Codex."
+if [[ "${START_MODE}" == "desktop" ]]; then
+  echo "Opening Codex Desktop."
+  echo "Start a new chat with this prompt:"
+  printf '%s\n' "${CODEX_PROMPT}"
+  exec codex app "${WORKSPACE_PATH}"
+fi
+
+echo "Starting Codex CLI."
 exec codex "${CODEX_PROMPT}"

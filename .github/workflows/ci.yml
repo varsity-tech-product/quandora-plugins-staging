@@ -37,7 +37,9 @@ jobs:
           python3 -m json.tool openclaw/openclaw.plugin.json >/dev/null
 
       - name: Validate Codex installer
-        run: bash -n install-codex.sh
+        run: |
+          bash -n install-codex.sh
+          bash -n install-codex-desktop.sh
 
       - name: Scan product text
         run: |
@@ -48,6 +50,9 @@ jobs:
               "local" + "host",
               "M" + "VP",
               "private" + " repo",
+              "repository is " + "private",
+              "adapter" + "-ready",
+              "this " + "branch",
               "Development" + " Validation",
               "super" + "powers",
               "agent-plugin-" + "mvp",

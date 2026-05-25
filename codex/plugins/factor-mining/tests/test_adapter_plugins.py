@@ -103,12 +103,18 @@ class AdapterPluginTests(unittest.TestCase):
 
     def test_codex_installer_documents_product_install_flow(self):
         installer = REPO_ROOT / "install-codex.sh"
+        desktop_installer = REPO_ROOT / "install-codex-desktop.sh"
         readme = REPO_ROOT / "README.md"
+        manifest = self._read_json(REPO_ROOT / "codex" / "plugins" / "factor-mining" / ".codex-plugin" / "plugin.json")
 
         self.assertTrue(installer.exists())
         self.assertTrue(os.access(installer, os.X_OK))
+        self.assertTrue(desktop_installer.exists())
+        self.assertTrue(os.access(desktop_installer, os.X_OK))
         installer_text = installer.read_text(encoding="utf-8")
+        desktop_installer_text = desktop_installer.read_text(encoding="utf-8")
         readme_text = readme.read_text(encoding="utf-8")
+        manifest_text = json.dumps(manifest)
 
         for expected in (
             "codex plugin marketplace add",
@@ -116,10 +122,14 @@ class AdapterPluginTests(unittest.TestCase):
             "factor-mining@factor-mining-marketplace",
             "factor_setup.py",
             "--api-key-stdin",
+            "--browser",
+            "--desktop",
             "/dev/tty",
             "input hidden",
+            "open task",
+            "my own idea",
         ):
-            self.assertIn(expected, installer_text + readme_text)
+            self.assertIn(expected, installer_text + desktop_installer_text + readme_text + manifest_text)
         self.assertNotIn("FACTOR_MINING_AGENT_API_KEY=", installer_text)
 
 

@@ -12,6 +12,9 @@ without executing generated code, upload the plugin to Factor Mining, submit a
 backtest, wait for terminal workflow and job state, retrieve the default factor
 card, and summarize the result.
 
+The normal entry point asks the user to choose `open task` or `my own idea`
+before a session is created.
+
 ## Setup
 
 Run setup from this plugin directory:
@@ -23,16 +26,19 @@ python3 scripts/factor_setup.py
 The setup command prompts for the Factor Mining Agent API Key without echoing
 the value. Do not paste the key into chat.
 
+Inside an active agent session, switch to a different Agent API Key with the
+local browser setup page:
+
+```bash
+python3 scripts/factor_setup.py --browser
+```
+
+Paste the key into the browser page, not into chat.
+
 Automation can provide the key without a prompt:
 
 ```bash
 python3 scripts/factor_setup.py --api-key-stdin
-```
-
-Environment variable input is supported for automation-only contexts:
-
-```bash
-FACTOR_MINING_AGENT_API_KEY=<agent-key> python3 scripts/factor_setup.py
 ```
 
 Setup calls `/health` and `/agent/status`. Setup succeeds only when the API is
@@ -55,6 +61,7 @@ python3 scripts/factor_upload_backtest.py --session-id <session_id> --plugin-pat
 python3 scripts/factor_api.py resume --client-run-id <client_run_id> --wait
 ```
 
+Ask the user to choose `open task` or `my own idea` before creating a session.
 Worker sessions use a published `task_id`. Custom or free-form sessions require
 a direct `task_payload` before upload. The payload must include `task_id`,
 `title`, `category`, `description`, non-empty `allowed_data`, and `fwd_period`.

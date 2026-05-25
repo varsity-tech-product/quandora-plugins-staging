@@ -7,6 +7,9 @@ executing generated code, upload the plugin to Factor Mining, submit a backtest,
 wait for terminal workflow and job state, retrieve the default factor card, and
 summarize the result.
 
+The default Factor Mining entry point asks the user to choose `open task` or
+`my own idea` before a session is created.
+
 ## Codex CLI Install
 
 Install from the repository root:
@@ -26,7 +29,13 @@ Manual install uses three Codex CLI commands:
 ```bash
 codex plugin marketplace add varsity-tech-product/factor-mining-agent-plugins --ref main
 codex plugin add factor-mining@factor-mining-marketplace
-PLUGIN_ROOT="$(codex plugin list --marketplace factor-mining-marketplace | awk '$1 == "factor-mining@factor-mining-marketplace" { print $NF; exit }')" && python3 "$PLUGIN_ROOT/scripts/factor_setup.py" && codex "Use the Factor Mining plugin. Verify Factor Mining status, then choose an open task, write a valid plugin.py, upload it, wait for the backtest, fetch the default factor card if available, and summarize the result."
+PLUGIN_ROOT="$(codex plugin list --marketplace factor-mining-marketplace | awk '$1 == "factor-mining@factor-mining-marketplace" { print $NF; exit }')" && python3 "$PLUGIN_ROOT/scripts/factor_setup.py" && codex "Use the Factor Mining plugin. Verify Factor Mining status. Ask me to choose either open task or my own idea before creating a session. Then write a valid plugin.py locally, upload it, wait for the backtest, fetch the default factor card if available, and summarize the result."
+```
+
+For Codex Desktop, run from the repository root:
+
+```bash
+./install-codex-desktop.sh
 ```
 
 ## Setup
@@ -40,16 +49,20 @@ python3 scripts/factor_setup.py
 The setup command prompts for the Factor Mining Agent API Key without echoing
 the value. Do not paste the key into chat.
 
+Inside an active Codex CLI or Codex Desktop session, switch to a different
+Agent API Key with the local browser setup page:
+
+```bash
+python3 scripts/factor_setup.py --browser
+```
+
+Paste the key into the browser page, not into chat. The next Factor Mining
+helper command reads the updated local config.
+
 Automation can provide the key without a prompt:
 
 ```bash
 python3 scripts/factor_setup.py --api-key-stdin
-```
-
-Environment variable input is supported for automation-only contexts:
-
-```bash
-FACTOR_MINING_AGENT_API_KEY=<agent-key> python3 scripts/factor_setup.py
 ```
 
 Setup uses this Factor Mining API URL by default:
@@ -121,7 +134,7 @@ availability, and summary fields suitable for Codex to report.
 - Artifact `404` and `410` responses are reported as unavailable. Authentication,
   authorization, network, malformed response, and server errors fail clearly.
 
-## Validation
+## Quality Checks
 
 Run from the repository root:
 
@@ -134,9 +147,9 @@ python3 -m json.tool codex/plugins/factor-mining/.codex-plugin/plugin.json >/dev
 python3 -m json.tool claude-code/.claude-plugin/plugin.json >/dev/null
 python3 -m json.tool openclaw/openclaw.plugin.json >/dev/null
 bash -n install-codex.sh
+bash -n install-codex-desktop.sh
 python3 codex/plugins/factor-mining/tests/acceptance/run_mock_acceptance.py
 ```
 
-For official plugin validation, use a temporary virtual environment with
-`requirements-dev.txt` and run your Codex plugin validator against
+When a Codex plugin validator is available in the environment, run it against
 `codex/plugins/factor-mining`.

@@ -23,9 +23,12 @@ the Factor Mining Agent API Key into chat. In automation, use one of these
 secure inputs when appropriate:
 
 ```bash
+python3 scripts/factor_setup.py --browser
 python3 scripts/factor_setup.py --api-key-stdin
-FACTOR_MINING_AGENT_API_KEY=<agent-key> python3 scripts/factor_setup.py
 ```
+
+Use `python3 scripts/factor_setup.py --browser` when the agent session is
+already running and the user needs to add or switch Agent API Keys.
 
 Setup calls `/health` and `/agent/status`. Continue only when `/health` is
 healthy and `/agent/status` accepts the delegated Agent API Key. The current
@@ -41,7 +44,10 @@ not bypass this check.
 python3 scripts/factor_status.py
 ```
 
-2. List available tasks for worker-mode sessions:
+2. Ask the user to choose `open task` or `my own idea` before creating a
+   session. For `open task`, list available tasks and ask the user to choose.
+   For `my own idea`, ask for the custom factor idea and create a direct
+   `task_payload`.
 
 ```bash
 python3 scripts/factor_api.py tasks --limit 20 --status open

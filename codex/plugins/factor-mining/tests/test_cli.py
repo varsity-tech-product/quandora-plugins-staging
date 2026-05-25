@@ -5,6 +5,7 @@ import tempfile
 import unittest
 from contextlib import redirect_stderr
 from pathlib import Path
+from unittest.mock import patch
 from urllib.error import URLError
 
 
@@ -200,6 +201,36 @@ class CliTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(config.api_key, secret)
         self.assertNotIn(secret, stdout.getvalue())
+
+    def test_setup_browser_collects_key_without_chat_or_stdin(self):
+        secret = "vt_browser_secret_abcdef1234567890"
+        opener = FakeOpener(
+            [
+                FakeResponse(body={"db": "ok"}),
+                FakeResponse(body={"status": "ok", "agent_key": "valid"}),
+            ]
+        )
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch("factor_mining_agent_lib.cli.collect_agent_key_via_browser", return_value=secret) as collect:
+                code = cli.main(
+                    ["setup", "--browser", "--base-url", "https://factor.example", "--home", tmp],
+                    env={},
+                    stdin=io.StringIO(""),
+                    stdout=stdout,
+                    stderr=stderr,
+                    opener=opener,
+                )
+            config = load_config(home=Path(tmp))
+
+        self.assertEqual(code, 0)
+        collect.assert_called_once()
+        self.assertEqual(config.api_key, secret)
+        self.assertNotIn(secret, stdout.getvalue())
+        self.assertIn("vt_...7890", stdout.getvalue())
+        self.assertEqual(stderr.getvalue(), "")
 
     def test_status_reads_config_and_never_prints_secret_on_error(self):
         secret = "vt_test_secret_1234567890abcdef"

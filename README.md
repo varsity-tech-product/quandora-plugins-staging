@@ -1,21 +1,18 @@
 # Factor Mining Agent Plugins
 
-Product repository for local agent plugins that connect agent coding tools to
-Factor Mining.
+Local agent plugins that connect coding agents to Factor Mining.
 
 The included adapters let an agent create or locate `plugin.py`, validate
 metadata without executing generated code, upload the plugin to Factor Mining,
 submit a backtest, wait for results, retrieve the default factor card, and
 summarize the outcome for the user.
 
-## Adapter Status
+## Supported Adapters
 
 - Codex: supported with a native Codex plugin manifest and skill.
-- Claude Code: adapter-ready with a native Claude Code plugin manifest, skill,
-  and packaged helper scripts.
-- OpenClaw: adapter-ready with a native OpenClaw plugin manifest, skill, and
-  packaged helper scripts. Official OpenClaw tool validation is not included in
-  this repository.
+- Claude Code: packaged with a native Claude Code plugin manifest, skill, and
+  helper scripts.
+- OpenClaw: packaged with a native OpenClaw manifest, skill, and helper scripts.
 
 ## Repository Layout
 
@@ -32,10 +29,11 @@ summarize the outcome for the user.
 
 1. Install the Factor Mining adapter for the target agent.
 2. Provide a Factor Mining Agent API Key through secure setup.
-3. Let the agent create or reuse a task-backed session.
-4. Let the agent create or locate `plugin.py`.
-5. Let the agent run the waitable upload and backtest command.
-6. Review the summarized result, including job status, failures, metrics, and artifacts.
+3. Choose `open task` or `my own idea`.
+4. Let the agent create or reuse a task-backed session.
+5. Let the agent create or locate `plugin.py`.
+6. Let the agent run the waitable upload and backtest command.
+7. Review the summarized result, including job status, failures, metrics, and artifacts.
 
 Setup always verifies `/health` and `/agent/status`. Setup succeeds only when
 the API is healthy and `/agent/status` accepts the delegated Factor Mining Agent
@@ -57,8 +55,8 @@ From a clone of this repository:
 ./install-codex.sh
 ```
 
-While this repository is private, raw GitHub URLs return `404` unless the caller
-uses authenticated GitHub access. Use a local clone or a Git-authenticated clone:
+If distribution requires GitHub authentication, use a local clone or a
+Git-authenticated clone:
 
 ```bash
 tmpdir="$(mktemp -d)" && git clone --depth 1 git@github.com:varsity-tech-product/factor-mining-agent-plugins.git "$tmpdir/factor-mining-agent-plugins" && "$tmpdir/factor-mining-agent-plugins/install-codex.sh"
@@ -76,9 +74,35 @@ Set `FACTOR_MINING_PLUGIN_REF` to pin a release or branch:
 FACTOR_MINING_PLUGIN_REF=v0.1.0 ./install-codex.sh
 ```
 
-Set `FACTOR_MINING_START_CODEX=0` to install and configure without starting a
-Codex session. Set `FACTOR_MINING_SKIP_SETUP=1` to install only and configure the
-Agent API Key later.
+Set `FACTOR_MINING_START_CODEX=0` or pass `--no-start` to install and configure
+without starting a Codex session. Pass `--install-only` to install without
+configuration. Pass `--force-setup` to replace the saved Agent API Key.
+
+## Codex Desktop Install
+
+Install, configure Factor Mining, and open Codex Desktop for the current
+workspace:
+
+```bash
+./install-codex-desktop.sh
+```
+
+The Desktop launcher prints the Factor Mining start prompt before opening the
+app. Start a new Codex Desktop chat with that prompt.
+
+## Switching Agent API Keys In Codex
+
+After the plugin is installed, a running Codex CLI or Codex Desktop session can
+switch to a different Factor Mining Agent API Key without reinstalling or
+restarting Codex. Ask Codex to run:
+
+```bash
+python3 scripts/factor_setup.py --browser
+```
+
+The helper opens a local browser setup page on `127.0.0.1`. Paste the new
+Agent API Key into that page, not into chat. The next Factor Mining command will
+use the updated key.
 
 ### Manual Codex CLI Commands
 
@@ -87,7 +111,7 @@ These are the three commands run by the installer:
 ```bash
 codex plugin marketplace add varsity-tech-product/factor-mining-agent-plugins --ref main
 codex plugin add factor-mining@factor-mining-marketplace
-PLUGIN_ROOT="$(codex plugin list --marketplace factor-mining-marketplace | awk '$1 == "factor-mining@factor-mining-marketplace" { print $NF; exit }')" && python3 "$PLUGIN_ROOT/scripts/factor_setup.py" && codex "Use the Factor Mining plugin. Verify Factor Mining status, then choose an open task, write a valid plugin.py, upload it, wait for the backtest, fetch the default factor card if available, and summarize the result."
+PLUGIN_ROOT="$(codex plugin list --marketplace factor-mining-marketplace | awk '$1 == "factor-mining@factor-mining-marketplace" { print $NF; exit }')" && python3 "$PLUGIN_ROOT/scripts/factor_setup.py" && codex "Use the Factor Mining plugin. Verify Factor Mining status. Ask me to choose either open task or my own idea before creating a session. Then write a valid plugin.py locally, upload it, wait for the backtest, fetch the default factor card if available, and summarize the result."
 ```
 
 For local product validation, replace the first command with the repository path:
@@ -96,7 +120,7 @@ For local product validation, replace the first command with the repository path
 codex plugin marketplace add /path/to/factor-mining-agent-plugins
 ```
 
-## Validation
+## Quality Checks
 
 Run these checks from the repository root:
 
@@ -109,9 +133,9 @@ python3 -m json.tool codex/plugins/factor-mining/.codex-plugin/plugin.json >/dev
 python3 -m json.tool claude-code/.claude-plugin/plugin.json >/dev/null
 python3 -m json.tool openclaw/openclaw.plugin.json >/dev/null
 bash -n install-codex.sh
+bash -n install-codex-desktop.sh
 python3 codex/plugins/factor-mining/tests/acceptance/run_mock_acceptance.py
 ```
 
-For the official Codex plugin validator, create a temporary virtual environment,
-install `requirements-dev.txt`, and run the validator from your Codex
-installation against `codex/plugins/factor-mining`.
+When a Codex plugin validator is available in the environment, run it against
+`codex/plugins/factor-mining`.

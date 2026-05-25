@@ -30,6 +30,10 @@ class LocalStateTests(unittest.TestCase):
         skill = (PLUGIN_ROOT / "skills" / "factor-mining" / "SKILL.md").read_text(encoding="utf-8")
         combined = root_readme + "\n" + readme + "\n" + skill
 
+        self.assertIn("open task", combined)
+        self.assertIn("my own idea", combined)
+        self.assertIn("Ask the user to choose", skill)
+        self.assertIn("python3 scripts/factor_setup.py --browser", combined)
         self.assertIn("python3 scripts/factor_setup.py", readme)
         self.assertNotIn("factor_setup.py --base-url <factor-mining-api-url>", combined)
         self.assertIn("https://d25q1jf66e8y4g.cloudfront.net", readme)
@@ -43,6 +47,9 @@ class LocalStateTests(unittest.TestCase):
         banned_terms = (
             "M" + "VP",
             "private " + "repo",
+            "repository is " + "private",
+            "adapter" + "-ready",
+            "this " + "branch",
             "Development " + "Validation",
             "local" + "host",
             "/Users/" + "richsion",

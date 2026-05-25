@@ -28,9 +28,19 @@ paste the Factor Mining Agent API Key into chat.
 python3 scripts/factor_setup.py
 ```
 
-The setup script collects the Agent API Key through a hidden terminal prompt.
-For automation, it can read `FACTOR_MINING_AGENT_API_KEY` from the environment
-or non-echo stdin:
+When Codex is already running and the user wants to add or switch Agent API
+Keys, use the local browser setup page:
+
+```bash
+python3 scripts/factor_setup.py --browser
+```
+
+The browser setup page opens on `127.0.0.1`, accepts the Agent API Key in a
+password field, validates it with Factor Mining, saves the local config, and
+then exits. The key must never be pasted into chat.
+
+The plain setup script collects the Agent API Key through a hidden terminal
+prompt. For non-interactive automation, it can read the key from non-echo stdin:
 
 ```bash
 python3 scripts/factor_setup.py --api-key-stdin
@@ -85,13 +95,17 @@ Run state is stored at:
 
 1. Confirm setup.
    - If config is missing or invalid, run setup.
+   - If Codex is already running and the user needs to use a different key, run
+     `python3 scripts/factor_setup.py --browser`.
    - If setup rejects the key, tell the user to provide a Factor Mining Agent
      API Key, not a frontend user key.
 
-2. Understand the task or idea.
-   - Worker mode: read tasks, pick one, and tell the user the `task_id` and
-     title.
-   - Free mode: start from the user's custom factor idea.
+2. Ask the user to choose the research entry point before creating a session:
+   `open task` or `my own idea`.
+   - For `open task`, read open tasks, show concise choices, and ask the user
+     to pick one unless they explicitly ask Codex to choose.
+   - For `my own idea`, ask for the user's custom factor idea, then create a
+     direct `task_payload` before session creation.
 
 ```bash
 python3 scripts/factor_api.py tasks --limit 20 --status open
