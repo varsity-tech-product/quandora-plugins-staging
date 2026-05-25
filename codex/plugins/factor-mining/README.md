@@ -104,6 +104,7 @@ python3 -m unittest discover -s codex/plugins/factor-mining/tests -v
 python3 -m compileall -q codex/plugins/factor-mining/scripts codex/plugins/factor-mining/tests
 python3 -m json.tool .agents/plugins/marketplace.json >/dev/null
 python3 -m json.tool codex/plugins/factor-mining/.codex-plugin/plugin.json >/dev/null
+python3 codex/plugins/factor-mining/tests/acceptance/run_mock_acceptance.py
 ```
 
 For official plugin validation, use a temporary virtual environment with

@@ -14,6 +14,9 @@ summarize the outcome for the user.
 - `codex/plugins/factor-mining/scripts/` contains the setup and workflow helpers.
 - `codex/plugins/factor-mining/skills/factor-mining/SKILL.md` defines Codex behavior.
 - `codex/plugins/factor-mining/tests/` covers local state, security, and API request construction.
+- `codex/plugins/factor-mining/tests/acceptance/` runs the mock backend acceptance flow.
+- `claude-code/` contains Claude Code adapter instructions that reuse the shared helpers.
+- `opencode/` contains an OpenClaw/opencode adapter skeleton for future manifest integration.
 
 ## User Flow
 
@@ -38,6 +41,7 @@ python3 -m unittest discover -s codex/plugins/factor-mining/tests -v
 python3 -m compileall -q codex/plugins/factor-mining/scripts codex/plugins/factor-mining/tests
 python3 -m json.tool .agents/plugins/marketplace.json >/dev/null
 python3 -m json.tool codex/plugins/factor-mining/.codex-plugin/plugin.json >/dev/null
+python3 codex/plugins/factor-mining/tests/acceptance/run_mock_acceptance.py
 ```
 
 For the official Codex plugin validator, create a temporary virtual environment,
