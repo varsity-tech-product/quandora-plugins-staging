@@ -1,18 +1,18 @@
 ---
 name: factor-mining
-description: Use when Claude Code needs to create, validate, upload, backtest, poll, summarize, or resume a Factor Mining plugin.py run through the shared helper scripts.
+description: Use when OpenClaw needs to create, validate, upload, backtest, poll, summarize, or resume a Factor Mining plugin.py run through the packaged helper scripts.
 ---
 
-# Factor Mining Claude Code Skill
+# Factor Mining OpenClaw Skill
 
-Use this skill for Factor Mining external-agent work in Claude Code. Run the
-packaged Python helpers from the Claude Code plugin root. Do not duplicate the
-API client or call Factor Mining endpoints directly.
+Use this skill for Factor Mining external-agent work in OpenClaw. Run the
+packaged Python helpers from the OpenClaw plugin root. Do not duplicate the API
+client or call Factor Mining endpoints directly.
 
 ## Setup
 
-Run setup from the Claude Code plugin root when local configuration is missing
-or invalid:
+Run setup from the OpenClaw plugin root when local configuration is missing or
+invalid:
 
 ```bash
 python3 scripts/factor_setup.py
@@ -27,10 +27,10 @@ python3 scripts/factor_setup.py --api-key-stdin
 FACTOR_MINING_AGENT_API_KEY=<agent-key> python3 scripts/factor_setup.py
 ```
 
-Setup calls `/health` and `/agent/status`. Continue only when the response reports
-`key_purpose: external_agent`. Do not bypass this check. If the configured
-Factor Mining API does not expose `/agent/status`, tell the user the external
-agent status endpoint is required before setup can complete.
+Setup calls `/health` and `/agent/status`. Continue only when the response
+reports `key_purpose: external_agent`. Do not bypass this check. If the
+configured Factor Mining API does not expose `/agent/status`, tell the user the
+external agent status endpoint is required before setup can complete.
 
 ## Workflow
 

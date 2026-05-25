@@ -25,12 +25,16 @@ jobs:
         run: python3 -m unittest discover -s codex/plugins/factor-mining/tests -v
 
       - name: Compile Python sources
-        run: python3 -m compileall -q codex/plugins/factor-mining/scripts codex/plugins/factor-mining/tests
+        run: |
+          python3 -m compileall -q codex/plugins/factor-mining/scripts codex/plugins/factor-mining/tests
+          python3 -m compileall -q claude-code/scripts openclaw/scripts
 
       - name: Validate JSON files
         run: |
           python3 -m json.tool .agents/plugins/marketplace.json >/dev/null
           python3 -m json.tool codex/plugins/factor-mining/.codex-plugin/plugin.json >/dev/null
+          python3 -m json.tool claude-code/.claude-plugin/plugin.json >/dev/null
+          python3 -m json.tool openclaw/openclaw.plugin.json >/dev/null
 
       - name: Scan product text
         run: |
@@ -46,6 +50,8 @@ jobs:
               "agent-plugin-" + "mvp",
               "TO" + "DO",
               "FIX" + "ME",
+              "open" + "code",
+              "Open" + "Code",
           ]
           for term in terms:
               print(term)

@@ -1,16 +1,15 @@
-# Factor Mining Claude Code Plugin
+# Factor Mining OpenClaw Plugin
 
-Claude Code plugin for the Factor Mining external-agent workflow.
+OpenClaw plugin for the Factor Mining external-agent workflow.
 
-This plugin is self-contained. It includes the Factor Mining Python helper
-scripts under `scripts/`, the Claude Code plugin manifest under
-`.claude-plugin/plugin.json`, and the agent skill under
-`skills/factor-mining/SKILL.md`.
+This adapter includes a native `openclaw.plugin.json` manifest, a Factor Mining
+skill under `skills/factor-mining/SKILL.md`, and packaged Python helper scripts
+under `scripts/`.
 
-Claude Code uses this plugin to create or locate `plugin.py`, inspect metadata
-without executing generated code, upload the plugin to Factor Mining, submit a
-backtest, wait for terminal workflow and job state, retrieve the default factor
-card, and summarize the result.
+OpenClaw uses this plugin to configure Factor Mining access, create or reuse a
+task-backed session, write or receive `plugin.py`, inspect metadata without
+executing generated code, upload the plugin, submit a backtest, wait for
+terminal results, retrieve the default factor card, and summarize the outcome.
 
 ## Setup
 
@@ -41,10 +40,9 @@ before storing configuration.
 
 ## Agent Workflow
 
-Claude Code normally runs these helpers for the user:
+OpenClaw normally runs these helpers for the user:
 
 ```bash
-python3 scripts/factor_setup.py
 python3 scripts/factor_status.py
 python3 scripts/factor_api.py tasks --limit 20 --status open
 python3 scripts/factor_api.py create-session --task-id <task_id> --client-run-id <client_run_id>
@@ -58,17 +56,9 @@ Worker sessions use a published `task_id`. Custom or free-form sessions require
 a direct `task_payload` before upload. The payload must include `task_id`,
 `title`, `category`, `description`, non-empty `allowed_data`, and `fwd_period`.
 
-The upload command returns compact JSON with `ok`, `status`,
-`terminal_status`, workflow state, jobs, artifact availability, and summary
-fields. Report failed or cancelled terminal jobs clearly.
+## Validation Status
 
-## Security
-
-- Use only a delegated Factor Mining Agent API Key.
-- Do not use frontend user keys, OpenAI API keys, Claude credentials, or BYOK
-  credentials with this plugin.
-- Setup always calls `/health` and `/agent/status`.
-- Setup fails unless `/agent/status` returns `key_purpose: external_agent`.
-- API keys are redacted from output and errors.
-- `plugin.py` metadata is parsed statically; generated code is not imported or
-  executed by the helper scripts.
+The manifest follows the native OpenClaw plugin shape provided for this adapter
+work. Official OpenClaw tooling was not available in this repository, so this
+branch validates the manifest as JSON and validates the packaged Python helpers
+with the repository test and compile checks.
