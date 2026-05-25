@@ -7,6 +7,27 @@ executing generated code, upload the plugin to Factor Mining, submit a backtest,
 wait for terminal workflow and job state, retrieve the default factor card, and
 summarize the result.
 
+## Codex CLI Install
+
+Install from the repository root:
+
+```bash
+./install-codex.sh
+```
+
+The installer configures the Factor Mining marketplace, installs the Codex
+plugin, and starts a Codex session with the Factor Mining workflow prompt. It
+does not read or store the Factor Mining Agent API Key; setup asks for the key
+through the plugin helper's secure prompt.
+
+Manual install uses three Codex CLI commands:
+
+```bash
+codex plugin marketplace add varsity-tech-product/factor-mining-agent-plugins --ref main
+codex plugin add factor-mining@factor-mining-marketplace
+codex "Use the Factor Mining plugin. Set up Factor Mining with my Agent API Key through the secure setup prompt. Do not ask me to paste the key into chat. Then choose an open task, write a valid plugin.py, upload it, wait for the backtest, fetch the default factor card if available, and summarize the result."
+```
+
 ## Setup
 
 Run setup from the plugin directory:
@@ -111,6 +132,7 @@ python3 -m json.tool .agents/plugins/marketplace.json >/dev/null
 python3 -m json.tool codex/plugins/factor-mining/.codex-plugin/plugin.json >/dev/null
 python3 -m json.tool claude-code/.claude-plugin/plugin.json >/dev/null
 python3 -m json.tool openclaw/openclaw.plugin.json >/dev/null
+bash -n install-codex.sh
 python3 codex/plugins/factor-mining/tests/acceptance/run_mock_acceptance.py
 ```
 

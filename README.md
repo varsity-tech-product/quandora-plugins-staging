@@ -42,6 +42,50 @@ the API is healthy and `/agent/status` accepts the delegated Factor Mining Agent
 API Key. The current success response is `status: ok` and `agent_key: valid`;
 a `403` response means the key is not an external-agent credential.
 
+## Codex CLI Install
+
+For Codex, the shortest product flow is to install the marketplace, install the
+plugin, and start a Codex session with the Factor Mining workflow prompt. The
+Agent API Key is not passed to the installer. Codex runs the plugin setup helper,
+which asks for the key through a secure prompt.
+
+From a clone of this repository:
+
+```bash
+./install-codex.sh
+```
+
+For direct distribution from GitHub:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/varsity-tech-product/factor-mining-agent-plugins/main/install-codex.sh | bash
+```
+
+Set `FACTOR_MINING_PLUGIN_REF` to pin a release or branch:
+
+```bash
+FACTOR_MINING_PLUGIN_REF=v0.1.0 ./install-codex.sh
+```
+
+Set `FACTOR_MINING_START_CODEX=0` to install only, without starting a Codex
+session.
+
+### Manual Codex CLI Commands
+
+These are the three commands run by the installer:
+
+```bash
+codex plugin marketplace add varsity-tech-product/factor-mining-agent-plugins --ref main
+codex plugin add factor-mining@factor-mining-marketplace
+codex "Use the Factor Mining plugin. Set up Factor Mining with my Agent API Key through the secure setup prompt. Do not ask me to paste the key into chat. Then choose an open task, write a valid plugin.py, upload it, wait for the backtest, fetch the default factor card if available, and summarize the result."
+```
+
+For local product validation, replace the first command with the repository path:
+
+```bash
+codex plugin marketplace add /path/to/factor-mining-agent-plugins
+```
+
 ## Validation
 
 Run these checks from the repository root:
@@ -54,6 +98,7 @@ python3 -m json.tool .agents/plugins/marketplace.json >/dev/null
 python3 -m json.tool codex/plugins/factor-mining/.codex-plugin/plugin.json >/dev/null
 python3 -m json.tool claude-code/.claude-plugin/plugin.json >/dev/null
 python3 -m json.tool openclaw/openclaw.plugin.json >/dev/null
+bash -n install-codex.sh
 python3 codex/plugins/factor-mining/tests/acceptance/run_mock_acceptance.py
 ```
 

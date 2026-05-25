@@ -1,4 +1,5 @@
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -99,6 +100,24 @@ class AdapterPluginTests(unittest.TestCase):
                 with self.subTest(adapter=adapter, path=str(relative)):
                     self.assertTrue(adapter_path.exists())
                     self.assertEqual(adapter_path.read_bytes(), codex_path.read_bytes())
+
+    def test_codex_installer_documents_product_install_flow(self):
+        installer = REPO_ROOT / "install-codex.sh"
+        readme = REPO_ROOT / "README.md"
+
+        self.assertTrue(installer.exists())
+        self.assertTrue(os.access(installer, os.X_OK))
+        installer_text = installer.read_text(encoding="utf-8")
+        readme_text = readme.read_text(encoding="utf-8")
+
+        for expected in (
+            "codex plugin marketplace add",
+            "codex plugin add",
+            "factor-mining@factor-mining-marketplace",
+            "secure setup prompt",
+        ):
+            self.assertIn(expected, installer_text + readme_text)
+        self.assertNotIn("FACTOR_MINING_AGENT_API_KEY=", installer_text)
 
 
 if __name__ == "__main__":

@@ -36,6 +36,9 @@ jobs:
           python3 -m json.tool claude-code/.claude-plugin/plugin.json >/dev/null
           python3 -m json.tool openclaw/openclaw.plugin.json >/dev/null
 
+      - name: Validate Codex installer
+        run: bash -n install-codex.sh
+
       - name: Scan product text
         run: |
           python3 - <<'PY' >/tmp/factor-mining-forbidden.txt
