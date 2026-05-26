@@ -29,7 +29,7 @@ summarize the outcome for the user.
 
 1. Install the Factor Mining adapter for the target agent.
 2. Provide a Factor Mining Agent API Key through secure setup.
-3. Choose `open task` or `my own idea`.
+3. Start from a public task or a custom idea.
 4. Let the agent create or reuse a task-backed session.
 5. Let the agent create or locate `plugin.py`.
 6. Let the agent run the waitable upload and backtest command.
@@ -90,6 +90,23 @@ workspace:
 The Desktop launcher prints the Factor Mining start prompt before opening the
 app. Start a new Codex Desktop chat with that prompt.
 
+## Starting A Factor Run
+
+After installation, use natural language in Codex. You can start from public
+tasks published in Factor Mining or from a custom idea.
+
+To inspect available public tasks:
+
+```text
+Show me the Factor Mining public task list.
+```
+
+To start from your own research idea:
+
+```text
+Use Factor Mining with this custom idea: build a short-term crypto liquidity stress factor using close and volume.
+```
+
 ## Switching Agent API Keys In Codex
 
 After the plugin is installed, a running Codex CLI or Codex Desktop session can
@@ -111,7 +128,7 @@ These are the three commands run by the installer:
 ```bash
 codex plugin marketplace add varsity-tech-product/factor-mining-agent-plugins --ref main
 codex plugin add factor-mining@factor-mining-marketplace
-PLUGIN_ROOT="$(codex plugin list --marketplace factor-mining-marketplace | awk '$1 == "factor-mining@factor-mining-marketplace" { print $NF; exit }')" && python3 "$PLUGIN_ROOT/scripts/factor_setup.py" && codex "Use the Factor Mining plugin. Verify Factor Mining status. Ask me to choose either open task or my own idea before creating a session. Then write a valid plugin.py locally, upload it, wait for the backtest, fetch the default factor card if available, and summarize the result."
+PLUGIN_ROOT="$(codex plugin list --marketplace factor-mining-marketplace | awk '$1 == "factor-mining@factor-mining-marketplace" { print $NF; exit }')" && python3 "$PLUGIN_ROOT/scripts/factor_setup.py" && codex "Use the Factor Mining plugin. Verify Factor Mining status, then show me the Factor Mining public task list. Do not create a session until I choose a public task or provide a custom idea. Then write a valid plugin.py locally, upload it, wait for the backtest, fetch the default factor card if available, and summarize the result."
 ```
 
 For local product validation, replace the first command with the repository path:

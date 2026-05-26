@@ -30,9 +30,10 @@ class LocalStateTests(unittest.TestCase):
         skill = (PLUGIN_ROOT / "skills" / "factor-mining" / "SKILL.md").read_text(encoding="utf-8")
         combined = root_readme + "\n" + readme + "\n" + skill
 
-        self.assertIn("open task", combined)
-        self.assertIn("my own idea", combined)
-        self.assertIn("Ask the user to choose", skill)
+        self.assertIn("public task", combined)
+        self.assertIn("custom idea", combined)
+        self.assertIn("Show me the Factor Mining public task list.", combined)
+        self.assertNotIn("Ask me to choose either open task or my own idea", combined)
         self.assertIn("python3 scripts/factor_setup.py --browser", combined)
         self.assertIn("python3 scripts/factor_setup.py", readme)
         self.assertNotIn("factor_setup.py --base-url <factor-mining-api-url>", combined)

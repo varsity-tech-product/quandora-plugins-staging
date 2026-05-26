@@ -7,8 +7,12 @@ executing generated code, upload the plugin to Factor Mining, submit a backtest,
 wait for terminal workflow and job state, retrieve the default factor card, and
 summarize the result.
 
-The default Factor Mining entry point asks the user to choose `open task` or
-`my own idea` before a session is created.
+Factor Mining can start from a public task or from a custom idea. A simple
+first prompt is:
+
+```text
+Show me the Factor Mining public task list.
+```
 
 ## Codex CLI Install
 
@@ -29,7 +33,7 @@ Manual install uses three Codex CLI commands:
 ```bash
 codex plugin marketplace add varsity-tech-product/factor-mining-agent-plugins --ref main
 codex plugin add factor-mining@factor-mining-marketplace
-PLUGIN_ROOT="$(codex plugin list --marketplace factor-mining-marketplace | awk '$1 == "factor-mining@factor-mining-marketplace" { print $NF; exit }')" && python3 "$PLUGIN_ROOT/scripts/factor_setup.py" && codex "Use the Factor Mining plugin. Verify Factor Mining status. Ask me to choose either open task or my own idea before creating a session. Then write a valid plugin.py locally, upload it, wait for the backtest, fetch the default factor card if available, and summarize the result."
+PLUGIN_ROOT="$(codex plugin list --marketplace factor-mining-marketplace | awk '$1 == "factor-mining@factor-mining-marketplace" { print $NF; exit }')" && python3 "$PLUGIN_ROOT/scripts/factor_setup.py" && codex "Use the Factor Mining plugin. Verify Factor Mining status, then show me the Factor Mining public task list. Do not create a session until I choose a public task or provide a custom idea. Then write a valid plugin.py locally, upload it, wait for the backtest, fetch the default factor card if available, and summarize the result."
 ```
 
 For Codex Desktop, run from the repository root:
@@ -107,6 +111,12 @@ direct `task_payload` so external-agent uploads are task-backed. The payload mus
 include `task_id`, `title`, `category`, `description`, non-empty `allowed_data`,
 and `fwd_period`. Include any useful hints, research fields, or mechanism notes
 that help Codex generate the factor.
+
+For a custom idea, ask Codex in natural language, for example:
+
+```text
+Use Factor Mining with this custom idea: build a short-term crypto liquidity stress factor using close and volume.
+```
 
 The upload helper default is `fwd_period=7`. The wait command returns compact
 JSON containing `ok`, `status`, `terminal_status`, `client_run_id`,

@@ -9,7 +9,7 @@ START_MODE="${FACTOR_MINING_START_MODE:-cli}"
 SKIP_SETUP="${FACTOR_MINING_SKIP_SETUP:-0}"
 FORCE_SETUP="${FACTOR_MINING_FORCE_SETUP:-0}"
 WORKSPACE_PATH="${FACTOR_MINING_WORKSPACE:-.}"
-CODEX_PROMPT="${FACTOR_MINING_CODEX_PROMPT:-Use the Factor Mining plugin. Verify Factor Mining status. Ask me to choose either \"open task\" or \"my own idea\" before creating a session. If I choose open task, list open tasks and ask me to pick one. If I choose my own idea, ask for my factor idea and create a task-backed custom session. Then write a valid plugin.py locally, upload it, wait for the backtest, fetch the default factor card if available, and summarize the result. If I need to use a different Agent API Key, run python3 scripts/factor_setup.py --browser and do not ask me to paste the key into chat.}"
+CODEX_PROMPT="${FACTOR_MINING_CODEX_PROMPT:-Use the Factor Mining plugin. Verify Factor Mining status, then show me the Factor Mining public task list. Do not create a session until I choose a public task or provide a custom idea. Then write a valid plugin.py locally, upload it, wait for the backtest, fetch the default factor card if available, and summarize the result. If I need to use a different Agent API Key, run python3 scripts/factor_setup.py --browser and do not ask me to paste the key into chat.}"
 
 if [[ "${FACTOR_MINING_START_CODEX:-1}" == "0" ]]; then
   START_MODE="none"

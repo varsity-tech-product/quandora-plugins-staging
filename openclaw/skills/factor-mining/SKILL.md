@@ -44,9 +44,9 @@ not bypass this check.
 python3 scripts/factor_status.py
 ```
 
-2. Ask the user to choose `open task` or `my own idea` before creating a
-   session. For `open task`, list available tasks and ask the user to choose.
-   For `my own idea`, ask for the custom factor idea and create a direct
+2. Determine whether the user is starting from a public task or a custom idea.
+   For a public task flow, list available tasks and ask the user to choose. For
+   a custom idea flow, use the user's factor idea to create a direct
    `task_payload`.
 
 ```bash

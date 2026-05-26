@@ -126,8 +126,9 @@ class AdapterPluginTests(unittest.TestCase):
             "--desktop",
             "/dev/tty",
             "input hidden",
-            "open task",
-            "my own idea",
+            "public task",
+            "custom idea",
+            "Show me the Factor Mining public task list.",
         ):
             self.assertIn(expected, installer_text + desktop_installer_text + readme_text + manifest_text)
         self.assertNotIn("FACTOR_MINING_AGENT_API_KEY=", installer_text)

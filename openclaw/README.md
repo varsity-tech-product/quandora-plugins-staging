@@ -11,8 +11,8 @@ task-backed session, write or receive `plugin.py`, inspect metadata without
 executing generated code, upload the plugin, submit a backtest, wait for
 terminal results, retrieve the default factor card, and summarize the outcome.
 
-The normal entry point asks the user to choose `open task` or `my own idea`
-before a session is created.
+Factor Mining can start from a public task or from a custom idea. A simple
+first prompt is: `Show me the Factor Mining public task list.`
 
 ## Setup
 
@@ -59,7 +59,6 @@ python3 scripts/factor_upload_backtest.py --session-id <session_id> --plugin-pat
 python3 scripts/factor_api.py resume --client-run-id <client_run_id> --wait
 ```
 
-Ask the user to choose `open task` or `my own idea` before creating a session.
-Worker sessions use a published `task_id`. Custom or free-form sessions require
-a direct `task_payload` before upload. The payload must include `task_id`,
+Public task sessions use a published `task_id`. Custom idea sessions require a
+direct `task_payload` before upload. The payload must include `task_id`,
 `title`, `category`, `description`, non-empty `allowed_data`, and `fwd_period`.

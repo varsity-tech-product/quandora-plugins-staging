@@ -18,8 +18,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Factor Mining",
-    "shortDescription": "Turn open tasks or your own factor ideas into backtested plugin.py factors.",
-    "longDescription": "A Codex-first local-agent helper for writing Factor Mining plugin.py files from published tasks or custom ideas, validating metadata statically, uploading factors, submitting backtests, polling workflow state, retrieving artifacts, and summarizing results.",
+    "shortDescription": "Turn public tasks or custom factor ideas into backtested plugin.py factors.",
+    "longDescription": "A Codex-first local-agent helper for writing Factor Mining plugin.py files from public tasks or custom ideas, validating metadata statically, uploading factors, submitting backtests, polling workflow state, retrieving artifacts, and summarizing results.",
     "developerName": "Varsity Tech Product",
     "category": "Productivity",
     "capabilities": [
@@ -28,7 +28,8 @@
     ],
     "websiteURL": "https://github.com/varsity-tech-product/factor-mining-agent-plugins",
     "defaultPrompt": [
-      "Use Factor Mining and ask me to choose open task or my own idea.",
+      "Show me the Factor Mining public task list.",
+      "Use Factor Mining with my custom factor idea.",
       "Switch Factor Mining to a different Agent API Key with the secure setup page.",
       "Resume my Factor Mining run and summarize results."
     ],

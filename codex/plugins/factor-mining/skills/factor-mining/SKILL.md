@@ -100,12 +100,11 @@ Run state is stored at:
    - If setup rejects the key, tell the user to provide a Factor Mining Agent
      API Key, not a frontend user key.
 
-2. Ask the user to choose the research entry point before creating a session:
-   `open task` or `my own idea`.
-   - For `open task`, read open tasks, show concise choices, and ask the user
-     to pick one unless they explicitly ask Codex to choose.
-   - For `my own idea`, ask for the user's custom factor idea, then create a
-     direct `task_payload` before session creation.
+2. Determine whether the user is starting from a public task or a custom idea.
+   - For a public task flow, read open tasks, show concise choices, and ask the
+     user to pick one unless they explicitly ask Codex to choose.
+   - For a custom idea flow, use the user's factor idea to create a direct
+     `task_payload` before session creation.
 
 ```bash
 python3 scripts/factor_api.py tasks --limit 20 --status open
