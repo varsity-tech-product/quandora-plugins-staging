@@ -1,0 +1,11 @@
+{
+  "mcp_servers": {
+    "quandora-factor-mining": {
+      "command": "python3",
+      "cwd": ".",
+      "args": [
+        "./mcp/server.py"
+      ]
+    }
+  }
+}

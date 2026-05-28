@@ -1,162 +1,97 @@
-# Factor Mining Agent Plugins
+# Quandora Factor Mining
 
-Local agent plugins that connect coding agents to Factor Mining.
+Quandora Factor Mining is a Codex local-agent plugin for turning public factor
+tasks or custom factor ideas into local `plugin.py` factors, then submitting
+them to Quandora for validation, upload, backtesting, artifact retrieval, and
+result summaries.
 
-The included adapters let an agent create or locate `plugin.py`, validate
-metadata without executing generated code, upload the plugin to Factor Mining,
-submit a backtest, wait for results, retrieve the default factor card, and
-summarize the outcome for the user.
+Codex uses the bundled Quandora MCP tools for formal Factor Mining actions.
+The plugin does not expose generic API-call tools and does not ask users to
+copy or paste full Factor Mining credential values.
 
-## Supported Adapters
+## Buddy Requirement
 
-- Codex: supported with a native Codex plugin manifest and skill.
-- Claude Code: packaged with a native Claude Code plugin manifest, skill, and
-  helper scripts.
-- OpenClaw: packaged with a native OpenClaw manifest, skill, and helper scripts.
+Quandora Buddy is a separate required local desktop app for account connection
+and backtesting. Plugin installation does not silently install, start, update,
+bundle, or include Buddy.
 
-## Repository Layout
+Install, start, and connect Buddy explicitly through the official Quandora path:
 
-- `.agents/plugins/marketplace.json` publishes the local plugin entry.
-- `codex/plugins/factor-mining/.codex-plugin/plugin.json` is the Codex plugin manifest.
-- `codex/plugins/factor-mining/scripts/` contains the setup and workflow helpers.
-- `codex/plugins/factor-mining/skills/factor-mining/SKILL.md` defines Codex behavior.
-- `codex/plugins/factor-mining/tests/` covers local state, security, and API request construction.
-- `codex/plugins/factor-mining/tests/acceptance/` runs the mock backend acceptance flow.
-- `claude-code/` contains the Claude Code plugin package.
-- `openclaw/` contains the OpenClaw plugin package.
+```text
+https://app.quandora.ai/download/buddy
+```
 
-## User Flow
-
-1. Install the Factor Mining adapter for the target agent.
-2. Provide a Factor Mining Agent API Key through secure setup.
-3. Start from a public task or a custom idea.
-4. Let the agent create or reuse a task-backed session.
-5. Let the agent create or locate `plugin.py`.
-6. Let the agent run the waitable upload and backtest command.
-7. Review the summarized result, including job status, failures, metrics, and artifacts.
-
-Setup always verifies `/health` and `/agent/status`. Setup succeeds only when
-the API is healthy and `/agent/status` accepts the delegated Factor Mining Agent
-API Key. The current success response is `status: ok` and `agent_key: valid`;
-a `403` response means the key is not an external-agent credential.
+If Buddy is missing, stopped, disconnected, or unable to provide the delegated
+local-agent credential, Codex must stop authenticated Factor Mining work and
+guide you to install, start, and connect Buddy.
 
 ## Codex CLI Install
 
-For Codex, the shortest product flow is to install the marketplace, install the
-plugin, configure the Factor Mining Agent API Key in the terminal, and start a
-Codex session with the Factor Mining workflow prompt. The key is entered at a
-hidden terminal prompt before Codex starts; it is not pasted into chat, not passed
-as a command argument, and not written to shell history. The setup helper stores
-configuration under `~/.factor-mining-agent` with user-only file permissions.
+Install from the public marketplace source:
 
-Install directly from the public GitHub repository:
+```bash
+codex plugin marketplace add varsity-tech-product/factor-mining-agent-plugins --ref main
+codex plugin add factor-mining@factor-mining-marketplace
+```
+
+Or run the installer:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/varsity-tech-product/factor-mining-agent-plugins/main/install-codex.sh | bash
 ```
 
-From a local clone of this repository:
+The installer checks Buddy readiness with:
 
 ```bash
-./install-codex.sh
+quandora-buddy doctor --json --min-version 0.1.0
 ```
 
-Set `FACTOR_MINING_PLUGIN_REF` to pin a release or branch:
-
-```bash
-FACTOR_MINING_PLUGIN_REF=v0.1.0 ./install-codex.sh
-```
-
-For the direct installer, pass the same variable to the shell that runs the
-installer:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/varsity-tech-product/factor-mining-agent-plugins/main/install-codex.sh | FACTOR_MINING_PLUGIN_REF=v0.1.0 bash
-```
-
-Set `FACTOR_MINING_START_CODEX=0` or pass `--no-start` to install and configure
-without starting a Codex session. Pass `--install-only` to install without
-configuration. Pass `--force-setup` to replace the saved Agent API Key.
+Codex starts only after Buddy is ready. If Buddy is unavailable, the installer
+prints Buddy setup guidance and skips Codex startup.
 
 ## Codex Desktop Install
 
-Install, configure Factor Mining, and open Codex Desktop for the current
-workspace:
+In Codex Desktop, add this marketplace:
+
+```text
+Marketplace source: varsity-tech-product/factor-mining-agent-plugins
+Marketplace ref: main
+Plugin: factor-mining@factor-mining-marketplace
+```
+
+You can also run:
 
 ```bash
 ./install-codex-desktop.sh
 ```
 
-The Desktop launcher prints the Factor Mining start prompt before opening the
-app. Start a new Codex Desktop chat with that prompt.
-
-## Starting A Factor Run
-
-After installation, use natural language in Codex. You can start from public
-tasks published in Factor Mining or from a custom idea.
-
-To inspect available public tasks:
+## First Prompts
 
 ```text
 Show me the Factor Mining public task list.
+Use Factor Mining with my custom factor idea.
+Resume my Factor Mining run and summarize results.
 ```
 
-To start from your own research idea:
+## Security And Privacy
 
-```text
-Use Factor Mining with this custom idea: build a short-term crypto liquidity stress factor using close and volume.
-```
+- Buddy is the local credential provider for authenticated Factor Mining work.
+- No formal user path requires copying or pasting a full `vt_` key.
+- The plugin should never print or persist full credential values.
+- The bundled MCP server does not expose raw credentials, generic URL fetches,
+  or generic API-call tools.
+- Generated `plugin.py` source stays local until the user asks Codex to submit
+  it through the bundled Factor Mining workflow.
 
-## Switching Agent API Keys In Codex
+## Troubleshooting
 
-After the plugin is installed, a running Codex CLI or Codex Desktop session can
-switch to a different Factor Mining Agent API Key without reinstalling or
-restarting Codex. Ask Codex to run:
+If Codex says Buddy is unavailable:
 
-```bash
-python3 scripts/factor_setup.py --browser
-```
+1. Install Quandora Buddy from the official download path.
+2. Start Buddy.
+3. Connect Quandora through Buddy.
+4. Ask Codex to run Quandora status again.
 
-The helper opens a local browser setup page on `127.0.0.1`. Paste the new
-Agent API Key into that page, not into chat. The next Factor Mining command will
-use the updated key.
-
-### Manual Codex CLI Commands
-
-These are the three commands run by the installer:
-
-```bash
-codex plugin marketplace add varsity-tech-product/factor-mining-agent-plugins --ref main
-codex plugin add factor-mining@factor-mining-marketplace
-PLUGIN_ROOT="$(codex plugin list --marketplace factor-mining-marketplace | awk '$1 == "factor-mining@factor-mining-marketplace" { print $NF; exit }')" && python3 "$PLUGIN_ROOT/scripts/factor_setup.py" && codex "Use the Factor Mining plugin. Verify Factor Mining status, then show me the Factor Mining public task list. Do not create a session until I choose a public task or provide a custom idea. Then write a valid plugin.py locally, upload it, wait for the backtest, fetch the default factor card if available, and summarize the result."
-```
-
-For local product validation, replace the first command with the repository path:
-
-```bash
-codex plugin marketplace add /path/to/factor-mining-agent-plugins
-```
-
-## Quality Checks
-
-Run these checks from the repository root:
-
-```bash
-python3 -m unittest discover -s codex/plugins/factor-mining/tests -v
-python3 -m compileall -q codex/plugins/factor-mining/scripts codex/plugins/factor-mining/tests
-python3 -m compileall -q claude-code/scripts openclaw/scripts
-python3 -m json.tool .agents/plugins/marketplace.json >/dev/null
-python3 -m json.tool codex/plugins/factor-mining/.codex-plugin/plugin.json >/dev/null
-python3 -m json.tool claude-code/.claude-plugin/plugin.json >/dev/null
-python3 -m json.tool openclaw/openclaw.plugin.json >/dev/null
-bash -n install-codex.sh
-bash -n install-codex-desktop.sh
-python3 codex/plugins/factor-mining/tests/acceptance/run_mock_acceptance.py
-```
-
-When a Codex plugin validator is available in the environment, run it against
-`codex/plugins/factor-mining`.
-
-## License
-
-This repository is licensed under the Apache License 2.0. See [LICENSE](LICENSE).
+If Buddy is installed but not ready, open Buddy and check its status. Codex will
+not continue with upload, backtest, polling, session creation, or artifact
+fetching until Buddy is connected and ready.

@@ -48,8 +48,9 @@ class AgentStatusError(ApiError):
 
 
 AGENT_KEY_GUIDANCE = (
-    "Factor Mining setup requires a delegated Factor Mining Agent API Key. "
-    "Run setup again with a Factor Mining Agent API Key, not a frontend user key."
+    "Quandora Buddy is a separate required local desktop app for Factor Mining "
+    "account connection and backtesting. Install Buddy from "
+    "https://app.quandora.ai/download/buddy, start it, and connect Quandora through Buddy."
 )
 
 

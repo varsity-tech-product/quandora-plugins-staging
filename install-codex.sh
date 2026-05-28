@@ -6,10 +6,10 @@ MARKETPLACE_REF="${FACTOR_MINING_PLUGIN_REF:-main}"
 MARKETPLACE_NAME="${FACTOR_MINING_PLUGIN_MARKETPLACE:-factor-mining-marketplace}"
 PLUGIN_NAME="${FACTOR_MINING_PLUGIN_NAME:-factor-mining}"
 START_MODE="${FACTOR_MINING_START_MODE:-cli}"
-SKIP_SETUP="${FACTOR_MINING_SKIP_SETUP:-0}"
-FORCE_SETUP="${FACTOR_MINING_FORCE_SETUP:-0}"
+INSTALL_ONLY="0"
 WORKSPACE_PATH="${FACTOR_MINING_WORKSPACE:-.}"
-CODEX_PROMPT="${FACTOR_MINING_CODEX_PROMPT:-Use the Factor Mining plugin. Verify Factor Mining status, then show me the Factor Mining public task list. Do not create a session until I choose a public task or provide a custom idea. Then write a valid plugin.py locally, upload it, wait for the backtest, fetch the default factor card if available, and summarize the result. If I need to use a different Agent API Key, run python3 scripts/factor_setup.py --browser and do not ask me to paste the key into chat.}"
+CODEX_PROMPT="${FACTOR_MINING_CODEX_PROMPT:-Use Quandora Factor Mining. First use the bundled Quandora MCP tools to run quandora_status. If Buddy is missing, stopped, disconnected, or unavailable, stop and show the Buddy setup guidance including https://app.quandora.ai/download/buddy. Show me the Factor Mining public task list. Do not create a session until I choose a public task or provide a custom idea. Then write a valid plugin.py locally, upload it, wait for the backtest, fetch the default factor card if available, and summarize the result.}"
+BUDDY_DOWNLOAD_URL="https://app.quandora.ai/download/buddy"
 
 if [[ "${FACTOR_MINING_START_CODEX:-1}" == "0" ]]; then
   START_MODE="none"
@@ -20,16 +20,19 @@ usage() {
 Usage: install-codex.sh [options]
 
 Options:
-  --desktop       Install and configure, then open Codex Desktop for this workspace.
-  --no-start      Install and configure without starting Codex.
-  --install-only  Install the Codex plugin without configuring Factor Mining or starting Codex.
-  --setup-only    Install the Codex plugin and run Factor Mining setup without starting Codex.
-  --force-setup   Run setup even if Factor Mining is already configured.
-  --skip-setup    Install and start without configuring Factor Mining.
-  -h, --help      Show this help.
+  --desktop             Install, print Buddy-required next steps, then open Codex Desktop.
+  --no-start            Install and print Buddy-required next steps without starting Codex.
+  --install-only        Install the Codex plugin and print Buddy-required next steps.
+  -h, --help            Show this help.
 
-Inside an existing Codex session, switch Agent API Keys with:
-  python3 scripts/factor_setup.py --browser
+Default flow:
+  codex plugin marketplace add varsity-tech-product/factor-mining-agent-plugins --ref main
+  codex plugin add factor-mining@factor-mining-marketplace
+  codex "Show me the Factor Mining public task list."
+
+Plugin installation never downloads or installs Buddy in the background. Buddy
+is a separate required local desktop app installed, started, and connected
+through an explicit user action.
 USAGE
 }
 
@@ -43,17 +46,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     --install-only)
       START_MODE="none"
-      SKIP_SETUP="1"
-      ;;
-    --setup-only)
-      START_MODE="none"
-      FORCE_SETUP="1"
-      ;;
-    --force-setup)
-      FORCE_SETUP="1"
-      ;;
-    --skip-setup)
-      SKIP_SETUP="1"
+      INSTALL_ONLY="1"
       ;;
     -h|--help)
       usage
@@ -87,44 +80,85 @@ plugin_root() {
     | awk -v plugin="${PLUGIN_NAME}@${MARKETPLACE_NAME}" '$1 == plugin { print $NF; exit }'
 }
 
-prompt_agent_key() {
-  local key
-  if [[ -n "${FACTOR_MINING_AGENT_API_KEY:-}" ]]; then
-    printf '%s\n' "${FACTOR_MINING_AGENT_API_KEY}"
-    return
-  fi
-  if [[ ! -r /dev/tty ]]; then
-    echo "A terminal is required to enter the Factor Mining Agent API Key securely." >&2
-    echo "Run this script from an interactive terminal, or set FACTOR_MINING_SKIP_SETUP=1 and configure setup later." >&2
-    exit 1
-  fi
-  printf 'Paste Factor Mining Agent API Key (input hidden): ' >/dev/tty
-  IFS= read -r -s key </dev/tty
-  printf '\n' >/dev/tty
-  if [[ -z "${key}" ]]; then
-    echo "A Factor Mining Agent API Key is required for setup." >&2
-    exit 1
-  fi
-  printf '%s\n' "${key}"
+buddy_required_guidance() {
+  echo "Quandora Buddy is required for account connection and backtesting."
+  echo "Buddy is a separate required local desktop app."
+  echo "Plugin installation never downloads or installs Buddy in the background."
+  echo "Download Buddy explicitly: ${BUDDY_DOWNLOAD_URL}"
+  echo "After Buddy is installed and running, connect Quandora through Buddy."
 }
 
-configure_factor_mining() {
-  local root="$1"
-  if [[ "${SKIP_SETUP}" == "1" ]]; then
-    echo "Skipping Factor Mining setup because FACTOR_MINING_SKIP_SETUP=1."
-    return
-  fi
-  if [[ "${FORCE_SETUP}" != "1" ]] && python3 "${root}/scripts/factor_status.py" >/dev/null 2>&1; then
-    echo "Factor Mining is already configured."
-    return
+run_buddy_doctor() {
+  if ! command -v quandora-buddy >/dev/null 2>&1; then
+    echo "Quandora Buddy is required for account connection and backtesting and was not found on PATH."
+    echo "Buddy is a separate required local desktop app."
+    echo "Download Buddy explicitly: ${BUDDY_DOWNLOAD_URL}"
+    echo "Connect Quandora through Buddy after installing and starting Buddy."
+    return 1
   fi
 
-  echo "Configuring Factor Mining Agent API access."
-  echo "Paste the vt_ Agent API Key at the next prompt. It is hidden, not passed as a command argument, and not sent to Codex chat."
-  local agent_key
-  agent_key="$(prompt_agent_key)"
-  printf '%s\n' "${agent_key}" | python3 "${root}/scripts/factor_setup.py" --api-key-stdin
-  unset agent_key
+  local output
+  set +e
+  output="$(quandora-buddy doctor --json --min-version 0.1.0 2>&1)"
+  set -e
+
+  if [[ -n "${output}" ]]; then
+    echo "${output}"
+  fi
+
+  local doctor_status
+  doctor_status="$(
+    printf '%s' "${output}" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("status","unknown_error"))' 2>/dev/null \
+      || printf '%s' "unknown_error"
+  )"
+
+  case "${doctor_status}" in
+    ready)
+      echo "Quandora Buddy is ready."
+      return 0
+      ;;
+    missing_cli)
+      echo "Quandora Buddy is required for account connection and backtesting and was not found on PATH."
+      echo "Buddy is a separate required local desktop app."
+      echo "Download Buddy explicitly: ${BUDDY_DOWNLOAD_URL}"
+      echo "Connect Quandora through Buddy after installing and starting Buddy."
+      ;;
+    runtime_not_running)
+      echo "Quandora Buddy is installed but the local runtime is not ready."
+      echo "Buddy is a separate required local desktop app."
+      echo "Start Buddy, then ask Codex to check Quandora status again."
+      ;;
+    disconnected)
+      echo "Quandora Buddy is installed but not connected."
+      echo "Buddy is a separate required local desktop app."
+      echo "Connect Quandora through Buddy, then ask Codex to check Quandora status again."
+      ;;
+    outdated)
+      echo "Quandora Buddy is installed but does not satisfy the required version."
+      echo "Buddy is a separate required local desktop app."
+      echo "Update Buddy from: ${BUDDY_DOWNLOAD_URL}"
+      ;;
+    *)
+      echo "Quandora Buddy readiness could not be verified."
+      echo "Buddy is a separate required local desktop app."
+      echo "Open Buddy and check the official Buddy setup guidance."
+      ;;
+  esac
+
+  return 1
+}
+
+print_buddy_first_next_steps() {
+  echo "Codex plugin is installed."
+  echo "Buddy is required for account connection and backtesting."
+  echo "Buddy is a separate required local desktop app."
+  echo "Plugin installation never downloads or installs Buddy in the background."
+  echo "Download Buddy explicitly: ${BUDDY_DOWNLOAD_URL}"
+  echo "Next steps:"
+  echo "  1. Install and start Quandora Buddy."
+  echo "  2. Connect Quandora through Buddy."
+  echo "  3. Start Codex with:"
+  printf '     codex %q\n' "${CODEX_PROMPT}"
 }
 
 echo "Configuring Codex marketplace: ${MARKETPLACE_NAME}"
@@ -152,11 +186,28 @@ if [[ -z "${PLUGIN_ROOT}" || ! -d "${PLUGIN_ROOT}" ]]; then
   exit 1
 fi
 
-configure_factor_mining "${PLUGIN_ROOT}"
+if ! run_buddy_doctor; then
+  print_buddy_first_next_steps
+  if [[ "${INSTALL_ONLY}" == "1" ]]; then
+    echo "Codex startup was skipped because --install-only was used."
+    exit 0
+  fi
+  echo "Codex startup was skipped until Buddy is ready."
+  if [[ "${START_MODE}" == "desktop" || "${START_MODE}" == "none" ]]; then
+    echo "For Codex Desktop, run:"
+    printf 'codex app %q\n' "${WORKSPACE_PATH}"
+  fi
+  exit 0
+fi
+
+if [[ "${INSTALL_ONLY}" == "1" ]]; then
+  print_buddy_first_next_steps
+  echo "Codex startup was skipped because --install-only was used."
+  exit 0
+fi
 
 if [[ "${START_MODE}" == "none" ]]; then
-  echo "Codex plugin is installed. Start it with:"
-  printf 'codex %q\n' "${CODEX_PROMPT}"
+  print_buddy_first_next_steps
   echo "For Codex Desktop, run:"
   printf 'codex app %q\n' "${WORKSPACE_PATH}"
   exit 0
@@ -164,10 +215,10 @@ fi
 
 if [[ "${START_MODE}" == "desktop" ]]; then
   echo "Opening Codex Desktop."
-  echo "Start a new chat with this prompt:"
-  printf '%s\n' "${CODEX_PROMPT}"
+  print_buddy_first_next_steps
   exec codex app "${WORKSPACE_PATH}"
 fi
 
 echo "Starting Codex CLI."
+print_buddy_first_next_steps
 exec codex "${CODEX_PROMPT}"
