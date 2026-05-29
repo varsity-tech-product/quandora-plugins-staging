@@ -1,5 +1,5 @@
 {
-  "mcp_servers": {
+  "mcpServers": {
     "quandora-factor-mining": {
       "command": "python3",
       "cwd": ".",
