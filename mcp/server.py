@@ -32,7 +32,7 @@ from factor_mining_agent_lib.workflow import is_workflow_terminal, summarize_fac
 
 PROTOCOL_VERSION = "2024-11-05"
 SERVER_NAME = "quandora-factor-mining"
-SERVER_VERSION = "0.2.1"
+SERVER_VERSION = "0.2.2"
 BUDDY_REQUIRED_MESSAGE = (
     "Quandora Buddy is a separate required local desktop app for Factor Mining "
     "account connection and backtesting. Install Buddy from "
