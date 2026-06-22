@@ -138,22 +138,37 @@ Implementation requirements:
    - Server/resource name: quandora-factor-mining.
    - Do not include a stdio command, local python command, cwd, args, or local
      MCP launcher in production manifests.
+   - Prefer a shared plugins/quandora/.mcp.json as the logical Remote MCP
+     source when platform manifests support it.
    - Validate exact manifest syntax with installed CLIs or official docs.
    - If a platform cannot auto-register remote MCP from plugin metadata,
      implement a platform-specific installer command using that platform's
      supported MCP CLI. Keep this as Remote MCP, not stdio.
+   - Treat whether all three platforms can consume the shared .mcp.json as a
+     test-feedback item. Start with the shared declaration, then adjust only as
+     validation proves necessary.
+   - Do not require or document a separate user login command during install.
+     OAuth should be triggered by first Remote MCP use or by the platform MCP UI.
 
 Known supported CLI forms on this machine:
 codex mcp add quandora-factor-mining --url https://mcp.quandora.ai/factor-mining --oauth-resource https://mcp.quandora.ai/factor-mining
-codex mcp login quandora-factor-mining
 claude mcp add --transport http quandora-factor-mining https://mcp.quandora.ai/factor-mining
 openclaw mcp add quandora-factor-mining --transport streamable-http --url https://mcp.quandora.ai/factor-mining --auth oauth
+
+Do not put `codex mcp login quandora-factor-mining` or equivalent login
+commands into README/installers as stable user steps. Such commands may be run
+manually only during internal validation if a platform cannot otherwise expose
+the OAuth flow.
 
 4. Skill:
    - Create plugins/quandora/skills/factor-mining/SKILL.md.
    - Create plugins/quandora/skills/factor-mining/agents/openai.yaml.
-   - Use the demo skill as the workflow reference, but rewrite tool names and
-     auth guidance for production Remote MCP.
+   - Use the demo skill as the workflow reference, but rewrite auth guidance for
+     production Remote MCP.
+   - Do not invent production tool names by mechanically renaming demo tools.
+     Before release, confirm the actual Remote MCP tool names from staging or
+     production tools/list, deployed server contract, or backend owner
+     confirmation, and update the skill to match.
    - The skill must start with status, trigger MCP OAuth when needed, list public
      tasks, support custom ideas, request dedup context, submit inline
      plugin_source, upload/backtest/wait/resume through Remote MCP, fetch safe
@@ -177,6 +192,9 @@ openclaw mcp add quandora-factor-mining --transport streamable-http --url https:
    - install-openclaw.sh, if present, installs the plugin and registers Remote
      MCP through OpenClaw's HTTP/OAuth MCP config. It must not configure a local
      python stdio MCP server.
+   - User-facing README/installers must not include Cursor install claims in
+     v0.4.0. Cursor support is out of scope for this release and should be tested
+     separately after Codex, Claude Code, and OpenClaw pass.
 
 6. Validation tooling:
    - Add or update a validator that checks:
@@ -207,15 +225,23 @@ Validation:
   CODEX_HOME="$TMP_CODEX_HOME" codex plugin add quandora@quandora
   CODEX_HOME="$TMP_CODEX_HOME" codex plugin list --marketplace quandora
 - OpenClaw install/inspect/skills check if openclaw is installed.
+- Remote MCP registration validation for each platform:
+  record whether Codex, Claude Code, and OpenClaw consumed the shared
+  plugins/quandora/.mcp.json, required a platform-specific Remote MCP
+  declaration, or required installer-based registration.
+- Remote MCP tool-name validation:
+  fetch or confirm the quandora-factor-mining tool list from staging or
+  production and update the factor-mining skill before release.
 - git diff --check
 
 Product-facing pollution scan:
-rg -n "factor-mining-agent-plugins|factor-mining-marketplace|factor-mining-batch-test|factor-mining-demo|vt_|stdio|python3|python|mcp/server.py|mcp/launch.py|factor_mining_agent_lib|plugin_path|direct Product Backend|direct Factor Mining|d25q1jf66e8y4g|CloudFront|/api/cast" README.md install-codex.sh install-openclaw.sh .agents .claude-plugin plugins/quandora
+rg -n "factor-mining-agent-plugins|factor-mining-marketplace|factor-mining-batch-test|factor-mining-demo|vt_|stdio|python3|python|mcp/server.py|mcp/launch.py|factor_mining_agent_lib|plugin_path|direct Product Backend|direct Factor Mining|d25q1jf66e8y4g|CloudFront|/api/cast|codex mcp login|claude mcp login|openclaw mcp login|Cursor|cursor" README.md install-codex.sh install-openclaw.sh .agents .claude-plugin plugins/quandora
 
 Review every product-facing hit. Remove setup paths and implementation leaks.
 Explicit prohibition language is allowed in the skill. Developer docs may
 mention archived branch names and historical context, but user-facing install
-docs must not expose old repo names or local-MCP setup paths.
+docs must not expose old repo names, local-MCP setup paths, separate login
+steps, or Cursor stable-install claims.
 
 Developer-doc install-reference scan:
 rg -n "varsity-tech-product/factor-mining-agent-plugins|factor-mining-marketplace|--ref main|@main|/main/" docs
@@ -235,6 +261,12 @@ Report:
 - exact validation output
 - Remote MCP declaration format used per platform
 - whether any platform needs installer-based Remote MCP registration
+- whether shared plugins/quandora/.mcp.json worked for Codex, Claude Code, and
+  OpenClaw, or which platform-specific adaptation was required
+- confirmed quandora-factor-mining Remote MCP tool names and source of
+  confirmation
+- confirmation that user-facing docs do not require separate login/auth commands
+- confirmation that Cursor is not included in v0.4.0 user-facing install docs
 - whether v0.4.0 tag is ready to create after review
 ```
 

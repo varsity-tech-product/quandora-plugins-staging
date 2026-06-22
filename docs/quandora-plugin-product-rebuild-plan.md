@@ -155,11 +155,33 @@ platform-specific installer command that registers the Remote MCP server through
 the platform's supported CLI. Do not reintroduce local stdio MCP to work around
 platform gaps.
 
+Shared MCP configuration is the preferred first implementation shape, but it is
+not assumed to be release-proven before testing. Start with a shared
+`plugins/quandora/.mcp.json` as the logical source of the Factor Mining Remote
+MCP declaration where platform manifests support it. If Codex, Claude Code, or
+OpenClaw cannot consume that shared declaration directly, keep the shared file
+as documentation/source-of-truth and add the smallest platform-specific Remote
+MCP declaration or installer registration required by that platform. This is a
+validation feedback item, not permission to add stdio or local MCP.
+
+User-facing installation must not require a separate login/auth command.
+Authorization should be triggered by the agent platform when the skill first
+uses the Remote MCP server or when the platform's MCP UI requests connection.
+CLI login commands may be used only as internal validation aids and must not be
+listed as stable install steps unless the product owner explicitly changes this
+policy.
+
+Do not invent production MCP tool names by mechanically renaming demo tools.
+Before release, discover or confirm the actual `quandora-factor-mining` Remote
+MCP tool names from the deployed server contract, `tools/list`, or backend
+owner confirmation, then update the skill to reference those names. A package
+that installs successfully but contains unverified tool names is not release
+complete.
+
 Known CLI capabilities on this machine:
 
 ```bash
 codex mcp add quandora-factor-mining --url https://mcp.quandora.ai/factor-mining --oauth-resource https://mcp.quandora.ai/factor-mining
-codex mcp login quandora-factor-mining
 
 claude mcp add --transport http quandora-factor-mining https://mcp.quandora.ai/factor-mining
 
@@ -171,6 +193,16 @@ openclaw mcp add quandora-factor-mining \
 
 The implementation must validate the exact plugin-bundled Remote MCP declaration
 format for Codex, Claude Code, and OpenClaw before release.
+
+## Cursor Policy
+
+Cursor is not part of the v0.4.0 release acceptance matrix.
+
+Do not add Cursor install commands, Cursor marketplace claims, or Cursor local
+copy instructions to the stable user-facing v0.4.0 README. Cursor support can
+be researched and tested separately after the Codex, Claude Code, and OpenClaw
+Remote MCP product flow is validated. If Cursor artifacts are added later, they
+must not change the v0.4.0 scope or reintroduce local MCP.
 
 ## Version-Pinned Install Policy
 
@@ -326,8 +358,10 @@ repository: https://github.com/varsity-tech-product/quandora-plugins
 ```
 
 - [ ] Implement Remote MCP declaration for Factor Mining with no local stdio
-      server. Use the platform-supported manifest format confirmed by the
-      installed CLI or official docs.
+      server. Prefer a shared `plugins/quandora/.mcp.json` as the logical
+      source. If testing shows a platform cannot consume the shared declaration,
+      add the smallest platform-specific Remote MCP declaration or installer
+      registration for that platform. Use only Remote MCP over HTTP/OAuth.
 
 - [ ] Implement one skill:
 
@@ -340,6 +374,7 @@ The skill must:
 
 - call Remote MCP tools only
 - trigger MCP OAuth when authorization is missing
+- avoid requiring users to run a separate login command during installation
 - support public task flow
 - support custom idea flow
 - send inline `plugin_source`
@@ -349,6 +384,10 @@ The skill must:
 - save workspace outputs under `.quandora/factor-mining/runs/<run_id>/` when the host permits file writes
 - avoid raw HTTP, local scripts, direct Product Backend, direct Factor Mining,
   and `vt_` key flows
+
+Before release, the skill's tool names must be verified against the production
+or staging Remote MCP server. Do not ship tool names copied from the demo unless
+the Remote MCP server confirms the same names.
 
 - [ ] Do not include batch skill files in v0.4.0.
 
@@ -368,11 +407,12 @@ python3 -m json.tool plugins/quandora/.claude-plugin/plugin.json >/dev/null
 - [ ] Validate product-facing pollution:
 
 ```bash
-rg -n "factor-mining-agent-plugins|factor-mining-marketplace|factor-mining-batch-test|factor-mining-demo|vt_|stdio|python3|python|mcp/server.py|mcp/launch.py|factor_mining_agent_lib|plugin_path|direct Product Backend|direct Factor Mining|d25q1jf66e8y4g|CloudFront|/api/cast" README.md install-codex.sh install-openclaw.sh .agents .claude-plugin plugins/quandora
+rg -n "factor-mining-agent-plugins|factor-mining-marketplace|factor-mining-batch-test|factor-mining-demo|vt_|stdio|python3|python|mcp/server.py|mcp/launch.py|factor_mining_agent_lib|plugin_path|direct Product Backend|direct Factor Mining|d25q1jf66e8y4g|CloudFront|/api/cast|codex mcp login|claude mcp login|openclaw mcp login|Cursor|cursor" README.md install-codex.sh install-openclaw.sh .agents .claude-plugin plugins/quandora
 ```
 
 Every hit must be removed unless it is an explicit prohibition in the skill.
-User-facing install docs must not contain these terms as setup paths.
+User-facing install docs must not contain these terms as setup paths, separate
+login steps, or Cursor stable-install claims.
 
 - [ ] Validate developer docs for old install commands:
 
@@ -411,7 +451,13 @@ openclaw skills check
       result is that the host can see the Factor Mining Remote MCP tools or can
       start the platform's OAuth flow. If a platform cannot auto-register Remote
       MCP through plugin metadata, the installer must register it through that
-      platform's supported MCP CLI and document the command.
+      platform's supported MCP CLI and document the command. Record whether the
+      platform consumed the shared `.mcp.json`, required a platform-specific
+      declaration, or required installer-based registration.
+
+- [ ] Validate production/staging Remote MCP tool names. Fetch or confirm the
+      `quandora-factor-mining` tool list, update the skill if needed, and record
+      the confirmed tool names in the Phase 1 report.
 
 - [ ] Merge to `main`, tag, and push:
 
@@ -455,5 +501,9 @@ Expected output should list only `refs/heads/main`.
 - No direct `vt_` key setup exists.
 - Codex, Claude Code, and OpenClaw can install the package or have a documented
   supported Remote MCP registration command.
+- User-facing install docs do not require a separate login/auth command.
+- Factor Mining skill tool names are confirmed against the Remote MCP server
+  before release.
+- Cursor is not included in the v0.4.0 stable release scope.
 - The previous local-MCP batch feature branch is archived in
   `factor-mining-demo` and removed from the product repo after release.
