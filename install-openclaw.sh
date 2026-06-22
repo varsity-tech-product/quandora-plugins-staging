@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PLUGIN_NAME="${QUANDORA_PLUGIN_NAME:-quandora}"
-MARKETPLACE_URL="${QUANDORA_PLUGIN_MARKETPLACE_URL:-https://github.com/varsity-tech-product/quandora-plugins.git#v0.4.0}"
+MARKETPLACE_URL="${QUANDORA_PLUGIN_MARKETPLACE_URL:-https://github.com/varsity-tech-product/quandora-plugins.git#v0.4.1}"
 MCP_NAME="${QUANDORA_FACTOR_MINING_MCP_NAME:-quandora-factor-mining}"
 MCP_URL="${QUANDORA_FACTOR_MINING_MCP_URL:-https://mcp.quandora.ai/factor-mining}"
 
@@ -14,7 +14,7 @@ Options:
   -h, --help    Show this help.
 
 Default install:
-  openclaw plugins install quandora --marketplace https://github.com/varsity-tech-product/quandora-plugins.git#v0.4.0 --force
+  openclaw plugins install quandora --marketplace https://github.com/varsity-tech-product/quandora-plugins.git#v0.4.1 --force
   openclaw mcp add quandora-factor-mining --transport streamable-http --url https://mcp.quandora.ai/factor-mining --auth oauth --no-probe
 USAGE
 }

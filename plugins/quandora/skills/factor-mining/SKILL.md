@@ -6,18 +6,33 @@ description: Use when an agent should create or submit a Quandora Factor Mining 
 # Quandora Factor Mining
 
 Use this skill for Factor Mining through the Quandora Remote MCP server
-`quandora-factor-mining`. The agent writes or locates one local `plugin.py`,
-submits its source inline through Remote MCP, waits for the backtest result,
-fetches safe artifacts, and summarizes the outcome.
+`quandora-factor-mining`. The agent drafts a valid Factor Mining `plugin.py`
+source, submits that source inline through Remote MCP, waits for the backtest
+result, fetches safe artifacts, and summarizes the outcome.
 
 If Remote MCP tools are not loaded, stop and tell the user the Quandora Remote
-MCP server is unavailable. Do not use raw HTTP calls, local helper scripts,
-direct Product Backend calls, direct Factor Mining calls, local execution keys,
-or credential paste flows as a fallback.
+MCP tools are unavailable in the current host session. Give the host-specific
+connection step when it is known:
+
+- Codex Desktop: ask the user to complete the browser authorization that Codex
+  opens, then start a new chat if the tools still are not visible.
+- Codex CLI/TUI: ask the user to run `codex mcp login quandora-factor-mining`
+  in the shell before starting or reloading the TUI session.
+- Claude Desktop: ask the user to connect the required Quandora connector from
+  Settings -> Connectors, then enable it for the current chat from the `+`
+  menu.
+- Claude Code: ask the user to open `/mcp`, authenticate
+  `quandora-factor-mining`, then retry the skill.
+- OpenClaw: ask the user to authenticate the registered Remote MCP server from
+  OpenClaw's MCP UI or first-use auth flow.
+
+Do not use raw HTTP calls, local helper scripts, direct Product Backend calls,
+direct Factor Mining calls, local execution keys, or credential paste flows as a
+fallback.
 
 ## Remote MCP Tools
 
-Use only these v0.4.0 Factor Mining tools:
+Use only these v0.4.1 Factor Mining tools:
 
 - `factor_mining_status`
 - `factor_mining_list_public_tasks`
@@ -32,14 +47,13 @@ Use only these v0.4.0 Factor Mining tools:
 Some hosts may prefix tool names with the server name, such as
 `quandora-factor-mining__factor_mining_status`. Treat those as the same tools.
 
-Do not use or advertise batch mining in v0.4.0.
+Do not use or advertise batch mining in v0.4.1.
 
 ## Workflow
 
-Start with `factor_mining_status`. If the host reports missing authorization,
-trigger the platform's MCP OAuth flow for `quandora-factor-mining` and wait for
-the user to approve it in the host or browser UI. Do not ask the user to run a
-separate login command and do not ask for `vt_` keys.
+Start with `factor_mining_status`. If the tool call reports missing
+authorization, use the host's MCP OAuth path. Do not ask for Quandora API keys
+or `vt_` keys.
 
 Determine whether the user wants a public task or a custom idea:
 
@@ -55,11 +69,15 @@ Before submission, call `factor_mining_request_dedup_context` with the session
 context and revise the factor if the returned similar-factor guidance shows a
 near duplicate.
 
-Write or locate one `plugin.py` in the workspace. Read the file and send the
-complete contents as inline `plugin_source`; never submit a filesystem path or
-ask the Remote MCP server to read local files. Validate the source with
-`factor_mining_validate_plugin_source`. The validation step is static; do not
-import, execute, eval, or shell-run generated factor code.
+Create or locate one `plugin.py` source. In local coding hosts with a writable
+workspace, save the working copy as `plugin.py`, read it back, and send the
+complete contents as inline `plugin_source`. In chat-only hosts such as Claude
+Desktop, keep the generated source in the conversation/tool-call context and
+submit it directly as inline `plugin_source`; do not require a local file.
+Never submit a filesystem path or ask the Remote MCP server to read local
+files. Validate the source with `factor_mining_validate_plugin_source`. The
+validation step is static; do not import, execute, eval, or shell-run generated
+factor code.
 
 When the source is valid and the user is ready to submit, call
 `factor_mining_upload_backtest_wait` with `session_id`, inline `plugin_source`,
@@ -144,8 +162,8 @@ keep all data columns within the session `allowed_data` contract.
   credentials, raw Factor Mining credentials, local execution keys, or `vt_`
   keys.
 - Never print, persist in logs, or summarize full credential values.
-- Do not call hosted generation endpoints; local-agent mode generates code
-  inside the active coding agent.
+- Do not call hosted generation endpoints; the active agent generates factor
+  source in its current host session.
 - Do not call frontend-user credential management, BYOK, Codex profile, task
   publishing, Product Backend URLs, Factor Mining URLs, or generic URL/API
   surfaces.

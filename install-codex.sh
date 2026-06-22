@@ -2,7 +2,7 @@
 set -euo pipefail
 
 MARKETPLACE_SOURCE="${QUANDORA_PLUGIN_SOURCE:-varsity-tech-product/quandora-plugins}"
-MARKETPLACE_REF="${QUANDORA_PLUGIN_REF:-v0.4.0}"
+MARKETPLACE_REF="${QUANDORA_PLUGIN_REF:-v0.4.1}"
 MARKETPLACE_NAME="${QUANDORA_PLUGIN_MARKETPLACE:-quandora}"
 PLUGIN_NAME="${QUANDORA_PLUGIN_NAME:-quandora}"
 START_MODE="${QUANDORA_START_MODE:-none}"
@@ -20,8 +20,9 @@ Options:
   -h, --help     Show this help.
 
 Default install:
-  codex plugin marketplace add varsity-tech-product/quandora-plugins --ref v0.4.0
+  codex plugin marketplace add varsity-tech-product/quandora-plugins --ref v0.4.1
   codex plugin add quandora@quandora
+  codex mcp login quandora-factor-mining   # needed for Codex CLI/TUI
 USAGE
 }
 
@@ -65,7 +66,8 @@ plugin_installed() {
 
 print_next_steps() {
   echo "Quandora plugin is installed."
-  echo "Remote MCP authorization is handled by Codex during first use."
+  echo "Codex Desktop can authorize Remote MCP during first use."
+  echo "Codex CLI/TUI users should run: codex mcp login quandora-factor-mining"
   echo "Try:"
   printf '  codex %q\n' "${CODEX_PROMPT}"
 }

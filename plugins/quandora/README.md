@@ -22,8 +22,19 @@ MCP loading and an HTTP MCP declaration in the Claude Code manifest. OpenClaw
 registration is handled by the repository installer because OpenClaw stores
 Remote MCP definitions in its own registry.
 
-Authorization is handled by the host platform's Remote MCP OAuth flow during
-first use or through the platform MCP UI.
+Authorization is handled by the host platform's Remote MCP OAuth flow:
+
+- Codex Desktop can open the Quandora OAuth page during first use.
+- Codex CLI/TUI requires `codex mcp login quandora-factor-mining`.
+- Claude Desktop requires connecting and enabling the required Quandora
+  connector in the chat.
+- Claude Code requires authenticating `quandora-factor-mining` from `/mcp`.
+- OpenClaw uses its MCP registry and auth UI.
+
+Claude Desktop chat can use the connected Remote MCP tools after the connector
+is enabled; it does not need a local coding workspace. Local coding agents such
+as Codex CLI and Claude Code may write a local `plugin.py`, but all hosts submit
+the factor as inline `plugin_source`.
 
 ## Skills
 
