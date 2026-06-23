@@ -61,6 +61,10 @@ Codex CLI uses:
 codex mcp login quandora-mcp
 ```
 
+After installing or authorizing the plugin, start a new Codex chat before using
+Factor Mining. If the tools still do not appear, fully quit and reopen Codex
+Desktop, then start a new chat.
+
 ### Use
 
 Use the skill command when available:
@@ -98,6 +102,10 @@ claude plugin update quandora@quandora
 ### Authorize
 
 Open `/mcp` in Claude Code and authenticate `quandora-mcp`.
+
+After installing or authorizing the plugin, start a new Claude chat before
+using Factor Mining. If the tools still do not appear, fully quit and reopen
+Claude Desktop or Claude Code, then start a new chat.
 
 ### Use
 
@@ -152,6 +160,10 @@ Verify the authorized MCP connection:
 ```bash
 openclaw mcp doctor quandora-mcp --probe
 ```
+
+After installing or authorizing the plugin, start a new OpenClaw chat before
+using Factor Mining. If the tools still do not appear, restart the OpenClaw
+gateway and start a new chat.
 
 ### Use
 

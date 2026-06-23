@@ -47,6 +47,10 @@ Codex CLI:
 codex mcp login quandora-mcp
 ```
 
+After installing or authorizing the plugin, start a new Codex chat before using
+Factor Mining. If the tools still do not appear, fully quit and reopen Codex
+Desktop, then start a new chat.
+
 ### Use
 
 Use `/factor-mining show public tasks`, or ask directly for Quandora Factor
@@ -67,6 +71,10 @@ again without a ref before updating.
 ### Authorize
 
 Open `/mcp` in Claude Code and authenticate `quandora-mcp`.
+
+After installing or authorizing the plugin, start a new Claude chat before
+using Factor Mining. If the tools still do not appear, fully quit and reopen
+Claude Desktop or Claude Code, then start a new chat.
 
 ### Use
 
@@ -95,6 +103,10 @@ openclaw mcp login quandora-mcp
 
 Open the printed URL, approve access, then finish with the `--code` command
 printed by OpenClaw.
+
+After installing or authorizing the plugin, start a new OpenClaw chat before
+using Factor Mining. If the tools still do not appear, restart the OpenClaw
+gateway and start a new chat.
 
 ### Use
 

@@ -12,10 +12,15 @@ result, fetches safe artifacts, and summarizes the outcome.
 
 The host should expose `quandora-mcp` tools through the installed Quandora
 plugin or connector. If the tools are visible, continue automatically. If the
-tools are not visible in the current session, stop with a concise
-connection-required message naming `quandora-mcp`; do not treat
-`factor_mining_status` as a bootstrap tool because it is only callable after
-the host exposes the Remote MCP tools.
+tools are not visible in a Codex host, first check whether the host can run
+`codex mcp login quandora-mcp`; use that command to start the official OAuth
+connection flow when available. After authorization, tell the user to start a
+new chat; if tools still do not appear, tell them to fully quit and reopen
+Codex Desktop, then start a new chat. In non-Codex hosts where no MCP login
+command or connector UI is available, stop with a concise connection-required
+message naming `quandora-mcp`. Do not treat `factor_mining_status` as a
+bootstrap tool because it is only callable after the host exposes the Remote
+MCP tools.
 
 Do not use raw HTTP calls, local helper scripts, direct Product Backend calls,
 direct Factor Mining calls, local execution keys, `vt_` keys, or credential
