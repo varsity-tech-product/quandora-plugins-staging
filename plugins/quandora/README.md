@@ -11,12 +11,6 @@ The Factor Mining skill uses the `quandora-mcp` Remote MCP server:
 https://mcp-staging.varsity.lol/factor-mining
 ```
 
-Internal validation may use:
-
-```text
-https://mcp-staging.varsity.lol/factor-mining
-```
-
 The plugin package includes a shared `.mcp.json` for Codex-compatible bundled
 MCP loading and an HTTP MCP declaration in the Claude Code manifest. OpenClaw
 registration is handled by the repository installer because OpenClaw stores
@@ -120,6 +114,16 @@ Factor Mining.
 All hosts submit factors as inline `plugin_source`. Local coding agents such as
 Codex CLI and Claude Code may write a local `plugin.py` working copy first, but
 the Remote MCP server never reads a local file path.
+
+When the host supports local files, Factor Mining archives each run under:
+
+```text
+results/factor-mining/<session_id>/attempt-<n>/
+```
+
+The archive keeps the submitted `plugin.py`, redacted run summary, factor-card
+JSON when available, and safe artifacts returned by Quandora. The agent prints
+the result folder path after each run so the user can open the files directly.
 
 ## Skills
 

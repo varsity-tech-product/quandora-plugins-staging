@@ -28,7 +28,7 @@ paste flows as a fallback.
 
 ## Remote MCP Tools
 
-Use only these v0.4.9 Factor Mining tools:
+Use only these v0.4.10 Factor Mining tools:
 
 - `factor_mining_status`
 - `factor_mining_list_public_tasks`
@@ -43,7 +43,7 @@ Use only these v0.4.9 Factor Mining tools:
 Some hosts may prefix tool names with the server name, such as
 `quandora-mcp__factor_mining_status`. Treat those as the same tools.
 
-Do not use or advertise batch mining in v0.4.9.
+Do not use or advertise batch mining in v0.4.10.
 
 ## Workflow
 
@@ -80,18 +80,35 @@ When the source is valid and the user is ready to submit, call
 and the selected `fwd_period` when required. Use `fwd_period=7` only when
 neither the task nor the user specifies a horizon.
 
-Use `factor_mining_resume_run` when a prior run was interrupted. Use
-`factor_mining_get_artifact` only for artifact identifiers returned by Remote
-MCP. If the host permits file writes, save safe outputs under:
+When a session is created in a local coding host with a writable workspace,
+create a run archive before writing `plugin.py`. Use this path shape:
 
 ```text
-.quandora/factor-mining/runs/<run_id>/
+results/factor-mining/<session_id>/attempt-<n>/
 ```
 
-Save only redacted summaries, factor-card JSON, and image artifacts returned by
-Remote MCP. Do not save bearer tokens, presigned URLs, raw service metadata, or
-generated source copies unless the user explicitly asks for a local working
-copy.
+Use `attempt-1` for the first submission in a session and increment it only
+when submitting a revised factor in the same session. If a session has not been
+created yet but a local folder is needed, use
+`results/factor-mining/local-YYYYMMDD-HHMMSS/` and move or copy the files into
+the session folder after the session exists.
+
+In local coding hosts, save the submitted source as `plugin.py` inside the run
+archive before validation and upload. Read the file back and submit the full
+contents as inline `plugin_source`; never submit a filesystem path. After each
+tool result, save safe result files into the same run archive:
+
+- `run_summary.json` for the redacted structured run summary.
+- `factor_card.json` for factor-card metrics when available.
+- `artifacts/<artifact_name>` for safe artifacts fetched with
+  `factor_mining_get_artifact`.
+
+Use `factor_mining_resume_run` when a prior run was interrupted. Use
+`factor_mining_get_artifact` only for artifact identifiers returned by Remote
+MCP. Do not save bearer tokens, presigned URLs, raw service metadata, hidden
+backend IDs, or credentials. If a host does not support file writes, continue
+the Remote MCP workflow and say that local archiving is not available in that
+host.
 
 ## Summary Rules
 
@@ -102,6 +119,20 @@ failures are present, report the failed or cancelled terminal status clearly.
 Never show backend job IDs, presigned URLs, bearer tokens, raw credentials, or
 full `plugin.py` source in user-facing summaries. Use concise filenames for
 saved artifacts instead of local absolute paths.
+
+At the end of every completed, failed, or interrupted run, explicitly print a
+short line with the local result path when a run archive was created:
+
+```text
+Result folder: results/factor-mining/<session_id>/attempt-<n>/
+```
+
+This line is required even when the rest of the answer contains analysis,
+metrics, or next-step guidance. If the host could not write files, print:
+
+```text
+Result folder: not available in this host
+```
 
 ## plugin.py Contract
 

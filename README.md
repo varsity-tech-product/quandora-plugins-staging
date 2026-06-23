@@ -1,7 +1,7 @@
 # Quandora Plugins
 
 Quandora Plugins is the public marketplace for Quandora agent integrations.
-Version 0.4.9 ships one all-in-one plugin package for staging Remote MCP testing:
+Version 0.4.10 ships one all-in-one plugin package:
 
 ```text
 quandora@quandora
@@ -80,6 +80,16 @@ Use Quandora Factor Mining to show public tasks.
 Use Quandora Factor Mining with my custom factor idea.
 Use Quandora Factor Mining to resume a run and summarize results.
 ```
+
+When the host supports local files, Factor Mining saves each run under:
+
+```text
+results/factor-mining/<session_id>/attempt-<n>/
+```
+
+The run folder contains the submitted `plugin.py`, a `run_summary.json`, a
+`factor_card.json` when available, and safe artifacts returned by Quandora. The
+agent also prints the result folder path at the end of every completed run.
 
 ## Claude Code
 
