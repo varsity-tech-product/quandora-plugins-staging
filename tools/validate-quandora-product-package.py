@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the v0.4.5 Quandora Remote MCP product package."""
+"""Validate the v0.4.6 Quandora Remote MCP product package."""
 
 from __future__ import annotations
 
@@ -11,8 +11,8 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.4.5"
-TAG = "v0.4.5"
+VERSION = "0.4.6"
+TAG = "v0.4.6"
 PLUGIN = "quandora"
 PLUGIN_DIR = ROOT / "plugins" / PLUGIN
 REMOTE_MCP_URL = "https://mcp-staging.varsity.lol/factor-mining"
@@ -131,6 +131,16 @@ def validate_shared_mcp() -> None:
     expect(not (FORBIDDEN_REMOTE_MCP_KEYS & set(server)), "shared MCP must not contain stdio keys")
 
 
+def validate_openai_yaml() -> None:
+    path = PLUGIN_DIR / "skills" / "factor-mining" / "agents" / "openai.yaml"
+    text = path.read_text(encoding="utf-8") if path.exists() else ""
+    expect(f'url: "{REMOTE_MCP_URL}"' in text, "openai.yaml Remote MCP URL is wrong")
+    expect(
+        f'oauth_resource: "{REMOTE_MCP_URL}"' in text,
+        "openai.yaml Remote MCP OAuth resource is wrong",
+    )
+
+
 def validate_layout() -> None:
     expect(PLUGIN_DIR.is_dir(), "plugins/quandora must exist")
     packages = sorted(path.name for path in (ROOT / "plugins").iterdir() if path.is_dir()) if (ROOT / "plugins").exists() else []
@@ -174,7 +184,7 @@ def validate_skill() -> None:
     for tool in required_tools:
         expect(tool in text, f"skill must mention Remote MCP tool {tool}")
     for tool in forbidden_tools:
-        expect(tool not in text, f"skill must not expose v0.4.5 batch tool {tool}")
+        expect(tool not in text, f"skill must not expose v0.4.6 batch tool {tool}")
     expect("plugin_source" in text, "skill must require inline plugin_source")
     expect("plugin_path" not in text, "skill must not allow plugin_path upload")
 
@@ -189,6 +199,7 @@ def main() -> int:
     validate_plugin_manifest(PLUGIN_DIR / ".codex-plugin" / "plugin.json", codex=True)
     validate_plugin_manifest(PLUGIN_DIR / ".claude-plugin" / "plugin.json", codex=False)
     validate_shared_mcp()
+    validate_openai_yaml()
     validate_docs()
     validate_skill()
 

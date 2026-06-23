@@ -10,30 +10,20 @@ Use this skill for Factor Mining through the Quandora Remote MCP server
 source, submits that source inline through Remote MCP, waits for the backtest
 result, fetches safe artifacts, and summarizes the outcome.
 
-If Remote MCP tools are not loaded, stop and tell the user the Quandora Remote
-MCP tools are unavailable in the current host session. Give the host-specific
-connection step when it is known:
-
-- Codex Desktop: ask the user to complete the browser authorization that Codex
-  opens, then start a new chat if the tools still are not visible.
-- Codex CLI: ask the user to run `codex mcp login quandora-mcp`
-  in the shell before starting or reloading the CLI session.
-- Claude Desktop: ask the user to connect the required Quandora connector from
-  Settings -> Connectors, then enable it for the current chat from the `+`
-  menu.
-- Claude Code: ask the user to open `/mcp`, authenticate
-  `quandora-mcp`, then retry the skill.
-- OpenClaw: ask the user to run `openclaw mcp login quandora-mcp`, open the
-  printed URL, approve access, then finish with the `--code` command printed by
-  OpenClaw.
+The host should expose `quandora-mcp` tools through the installed Quandora
+plugin or connector. If the tools are visible, continue automatically. If the
+tools are not visible in the current session, stop with a concise
+connection-required message naming `quandora-mcp`; do not treat
+`factor_mining_status` as a bootstrap tool because it is only callable after
+the host exposes the Remote MCP tools.
 
 Do not use raw HTTP calls, local helper scripts, direct Product Backend calls,
-direct Factor Mining calls, local execution keys, or credential paste flows as a
-fallback.
+direct Factor Mining calls, local execution keys, `vt_` keys, or credential
+paste flows as a fallback.
 
 ## Remote MCP Tools
 
-Use only these v0.4.5 Factor Mining tools:
+Use only these v0.4.6 Factor Mining tools:
 
 - `factor_mining_status`
 - `factor_mining_list_public_tasks`
@@ -48,7 +38,7 @@ Use only these v0.4.5 Factor Mining tools:
 Some hosts may prefix tool names with the server name, such as
 `quandora-mcp__factor_mining_status`. Treat those as the same tools.
 
-Do not use or advertise batch mining in v0.4.5.
+Do not use or advertise batch mining in v0.4.6.
 
 ## Workflow
 
