@@ -22,20 +22,88 @@ MCP loading and an HTTP MCP declaration in the Claude Code manifest. OpenClaw
 registration is handled by the repository installer because OpenClaw stores
 Remote MCP definitions in its own registry.
 
-Authorization is handled by the host platform's Remote MCP OAuth flow:
+## Codex
 
-- Codex Desktop can open the Quandora OAuth page during first use.
-- Codex CLI requires `codex mcp login quandora-mcp`.
-- Claude Desktop requires connecting and enabling the required Quandora
-  connector in the chat.
-- Claude Code requires authenticating `quandora-mcp` from `/mcp`.
-- OpenClaw requires `openclaw mcp login quandora-mcp`. Open the printed URL,
-  approve access, then finish with the `--code` command printed by OpenClaw.
+### Install
 
-Claude Desktop chat can use the connected Remote MCP tools after the connector
-is enabled; it does not need a local coding workspace. Local coding agents such
-as Codex CLI and Claude Code may write a local `plugin.py`, but all hosts submit
-the factor as inline `plugin_source`.
+Codex Desktop uses repository source `varsity-tech-product/quandora-plugins`,
+git ref `v0.4.4`, and plugin `quandora@quandora`.
+
+Codex CLI:
+
+```bash
+codex plugin marketplace add varsity-tech-product/quandora-plugins --ref v0.4.4
+codex plugin add quandora@quandora
+```
+
+### Authorize
+
+Codex Desktop can open the Quandora OAuth page during first use.
+
+Codex CLI:
+
+```bash
+codex mcp login quandora-mcp
+```
+
+### Use
+
+Use `/factor-mining show public tasks`, or ask directly for Quandora Factor
+Mining.
+
+## Claude Code
+
+### Install
+
+```bash
+claude plugin marketplace add varsity-tech-product/quandora-plugins@v0.4.4
+claude plugin install quandora@quandora
+```
+
+### Authorize
+
+Open `/mcp` in Claude Code and authenticate `quandora-mcp`.
+
+### Use
+
+Use `/factor-mining show public tasks`, or ask directly for Quandora Factor
+Mining.
+
+## OpenClaw
+
+### Install
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/varsity-tech-product/quandora-plugins/v0.4.4/install-openclaw.sh | bash
+```
+
+If the installer reports `Excluded by agent allowlist`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/varsity-tech-product/quandora-plugins/v0.4.4/install-openclaw.sh | bash -s -- --allow-skill
+```
+
+### Authorize
+
+```bash
+openclaw mcp login quandora-mcp
+```
+
+Open the printed URL, approve access, then finish with the `--code` command
+printed by OpenClaw.
+
+### Use
+
+```bash
+openclaw chat
+```
+
+Then run `/factor-mining show public tasks`, or ask directly for Quandora
+Factor Mining.
+
+All hosts submit factors as inline `plugin_source`. Local coding agents such as
+Codex CLI and Claude Code may write a local `plugin.py` working copy first, but
+the Remote MCP server never reads a local file path.
 
 ## Skills
 

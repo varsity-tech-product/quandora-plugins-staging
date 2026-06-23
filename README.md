@@ -18,9 +18,15 @@ The Remote MCP server is named:
 quandora-mcp
 ```
 
-## Install
+The current Quandora Remote MCP endpoint is:
 
-### Codex Desktop
+```text
+https://mcp.quandora.ai/factor-mining
+```
+
+## Codex
+
+### Install
 
 Use these fields in Codex Desktop:
 
@@ -30,25 +36,71 @@ Git ref: v0.4.4
 Plugin: quandora@quandora
 ```
 
-### Codex CLI
+Codex CLI:
 
 ```bash
 codex plugin marketplace add varsity-tech-product/quandora-plugins --ref v0.4.4
 codex plugin add quandora@quandora
 ```
 
-### Claude Desktop
+### Authorize
 
-Install the Quandora plugin in Claude Desktop.
+Codex Desktop can open the Quandora OAuth page during first use.
 
-### Claude Code
+Codex CLI uses:
+
+```bash
+codex mcp login quandora-mcp
+```
+
+### Use
+
+Use the skill command when available:
+
+```text
+/factor-mining show public tasks
+```
+
+You can also ask directly:
+
+```text
+Use Quandora Factor Mining to show public tasks.
+Use Quandora Factor Mining with my custom factor idea.
+Use Quandora Factor Mining to resume a run and summarize results.
+```
+
+## Claude Code
+
+### Install
 
 ```bash
 claude plugin marketplace add varsity-tech-product/quandora-plugins@v0.4.4
 claude plugin install quandora@quandora
 ```
 
-### OpenClaw
+### Authorize
+
+Open `/mcp` in Claude Code and authenticate `quandora-mcp`.
+
+### Use
+
+Use the skill command when available:
+
+```text
+/factor-mining show public tasks
+```
+
+You can also ask directly:
+
+```text
+Use Quandora Factor Mining to show public tasks.
+Use Quandora Factor Mining with my custom factor idea.
+Use Quandora Factor Mining to resume a run and summarize results.
+```
+
+## OpenClaw
+
+### Install
 
 Install and verify the plugin bundle and Remote MCP server:
 
@@ -63,32 +115,36 @@ verify again:
 curl -fsSL https://raw.githubusercontent.com/varsity-tech-product/quandora-plugins/v0.4.4/install-openclaw.sh | bash -s -- --allow-skill
 ```
 
-## Authorization
+### Authorize
 
-The current Quandora Remote MCP endpoint is:
+Run:
 
-```text
-https://mcp.quandora.ai/factor-mining
+```bash
+openclaw mcp login quandora-mcp
 ```
 
-Authorize `quandora-mcp` through the host platform:
+Open the printed URL, approve access, then run the code command printed by
+OpenClaw:
 
-- Codex Desktop can open the Quandora OAuth page during first use.
-- Codex CLI uses `codex mcp login quandora-mcp`.
-- Claude Desktop connects the Quandora connector from Settings -> Connectors.
-- Claude Code authenticates `quandora-mcp` from `/mcp`.
-- OpenClaw uses `openclaw mcp login quandora-mcp`. Open the printed URL,
-  approve access, then run `openclaw mcp login quandora-mcp --code <code>`.
+```bash
+openclaw mcp login quandora-mcp --code <code>
+```
 
-## Use
+Verify the authorized MCP connection:
 
-In OpenClaw, start chat first:
+```bash
+openclaw mcp doctor quandora-mcp --probe
+```
+
+### Use
+
+Start OpenClaw:
 
 ```bash
 openclaw chat
 ```
 
-Use the slash command when the host supports skills:
+Then run:
 
 ```text
 /factor-mining show public tasks
