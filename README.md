@@ -1,7 +1,7 @@
 # Quandora Plugins
 
 Quandora Plugins is the public marketplace for Quandora agent integrations.
-Version 0.4.8 ships one all-in-one plugin package for staging Remote MCP testing:
+Version 0.4.9 ships one all-in-one plugin package for staging Remote MCP testing:
 
 ```text
 quandora@quandora
@@ -32,15 +32,23 @@ Use these fields in Codex Desktop:
 
 ```text
 Source: varsity-tech-product/quandora-plugins
-Git ref: v0.4.8
+Git ref: leave blank when possible; use the default branch marketplace source
 Plugin: quandora@quandora
 ```
 
 Codex CLI:
 
 ```bash
-codex plugin marketplace add varsity-tech-product/quandora-plugins --ref v0.4.8
+codex plugin marketplace add varsity-tech-product/quandora-plugins
 codex plugin add quandora@quandora
+```
+
+If an older pinned marketplace already exists, remove and add it again without
+a Git ref:
+
+```bash
+codex plugin marketplace remove quandora || true
+codex plugin marketplace add varsity-tech-product/quandora-plugins
 ```
 
 ### Authorize
@@ -74,8 +82,17 @@ Use Quandora Factor Mining to resume a run and summarize results.
 ### Install
 
 ```bash
-claude plugin marketplace add varsity-tech-product/quandora-plugins@v0.4.8
+claude plugin marketplace add varsity-tech-product/quandora-plugins
 claude plugin install quandora@quandora
+```
+
+If a previous marketplace was added with a version suffix, remove and add it
+again without a ref so Claude tracks the repository default branch:
+
+```bash
+claude plugin marketplace remove quandora
+claude plugin marketplace add varsity-tech-product/quandora-plugins
+claude plugin update quandora@quandora
 ```
 
 ### Authorize
@@ -105,14 +122,14 @@ Use Quandora Factor Mining to resume a run and summarize results.
 Install and verify the plugin bundle and Remote MCP server:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/varsity-tech-product/quandora-plugins/v0.4.8/install-openclaw.sh | bash
+curl -fsSL https://raw.githubusercontent.com/varsity-tech-product/quandora-plugins/HEAD/install-openclaw.sh | bash
 ```
 
 If the installer reports `Excluded by agent allowlist`, allow the skill and
 verify again:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/varsity-tech-product/quandora-plugins/v0.4.8/install-openclaw.sh | bash -s -- --allow-skill
+curl -fsSL https://raw.githubusercontent.com/varsity-tech-product/quandora-plugins/HEAD/install-openclaw.sh | bash -s -- --allow-skill
 ```
 
 ### Authorize

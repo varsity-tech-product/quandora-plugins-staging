@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the v0.4.8 Quandora Remote MCP product package."""
+"""Validate the v0.4.9 Quandora Remote MCP product package."""
 
 from __future__ import annotations
 
@@ -11,8 +11,7 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "0.4.8"
-TAG = "v0.4.8"
+VERSION = "0.4.9"
 PLUGIN = "quandora"
 PLUGIN_DIR = ROOT / "plugins" / PLUGIN
 REMOTE_MCP_URL = "https://mcp-staging.varsity.lol/factor-mining"
@@ -40,7 +39,7 @@ FORBIDDEN_TEXT_PATTERNS = [
     (re.compile(r"factor-mining-batch-test"), "batch package reference"),
     (re.compile(r"\bvt_"), "direct vt_ credential flow"),
     (re.compile(r"\bCursor\b|\bcursor\b"), "Cursor install claim"),
-    (re.compile(r"--ref main|@main|/main/"), "moving main install ref"),
+    (re.compile(r"--ref v\d|@v\d|/v\d"), "fixed release install ref"),
     (re.compile(r"quandora-factor-mining"), "old Factor Mining-specific MCP name"),
     (re.compile(r"Codex CLI/TUI|Codex CLI and TUI"), "Codex TUI install label"),
 ]
@@ -160,7 +159,6 @@ def validate_docs() -> None:
         if not path.exists():
             continue
         text = path.read_text(encoding="utf-8")
-        expect(TAG in text, f"{rel(path)} must pin stable install docs to {TAG}")
         for pattern, reason in FORBIDDEN_TEXT_PATTERNS:
             if pattern.search(text):
                 fail(f"{rel(path)} contains {reason}")
@@ -184,7 +182,7 @@ def validate_skill() -> None:
     for tool in required_tools:
         expect(tool in text, f"skill must mention Remote MCP tool {tool}")
     for tool in forbidden_tools:
-        expect(tool not in text, f"skill must not expose v0.4.8 batch tool {tool}")
+        expect(tool not in text, f"skill must not expose v0.4.9 batch tool {tool}")
     expect("plugin_source" in text, "skill must require inline plugin_source")
     expect("plugin_path" not in text, "skill must not allow plugin_path upload")
 

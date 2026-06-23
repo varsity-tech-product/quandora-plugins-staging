@@ -27,12 +27,13 @@ Remote MCP definitions in its own registry.
 ### Install
 
 Codex Desktop uses repository source `varsity-tech-product/quandora-plugins`,
-git ref `v0.4.8`, and plugin `quandora@quandora`.
+plugin `quandora@quandora`. Leave Git ref blank when possible so the
+marketplace follows the repository default branch.
 
 Codex CLI:
 
 ```bash
-codex plugin marketplace add varsity-tech-product/quandora-plugins --ref v0.4.8
+codex plugin marketplace add varsity-tech-product/quandora-plugins
 codex plugin add quandora@quandora
 ```
 
@@ -56,9 +57,12 @@ Mining.
 ### Install
 
 ```bash
-claude plugin marketplace add varsity-tech-product/quandora-plugins@v0.4.8
+claude plugin marketplace add varsity-tech-product/quandora-plugins
 claude plugin install quandora@quandora
 ```
+
+If a previous marketplace was added with a version suffix, remove and add it
+again without a ref before updating.
 
 ### Authorize
 
@@ -74,13 +78,13 @@ Mining.
 ### Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/varsity-tech-product/quandora-plugins/v0.4.8/install-openclaw.sh | bash
+curl -fsSL https://raw.githubusercontent.com/varsity-tech-product/quandora-plugins/HEAD/install-openclaw.sh | bash
 ```
 
 If the installer reports `Excluded by agent allowlist`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/varsity-tech-product/quandora-plugins/v0.4.8/install-openclaw.sh | bash -s -- --allow-skill
+curl -fsSL https://raw.githubusercontent.com/varsity-tech-product/quandora-plugins/HEAD/install-openclaw.sh | bash -s -- --allow-skill
 ```
 
 ### Authorize
