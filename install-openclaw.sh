@@ -22,13 +22,12 @@ Options:
   -h, --help          Show this help.
 
 Default install:
-  openclaw plugins install quandora --marketplace https://github.com/varsity-tech-product/quandora-plugins.git --force
-  openclaw mcp add quandora-mcp --transport streamable-http --url https://mcp-staging.varsity.lol/factor-mining --auth oauth --no-probe
+  Installs the Quandora plugin and registers the Quandora connection for OpenClaw.
 USAGE
 }
 
 print_openclaw_auth_steps() {
-  echo "Authorize Quandora Remote MCP before use:"
+  echo "Authorize Quandora before use:"
   echo "  openclaw mcp login ${MCP_NAME}"
   echo "After approval, run the code command printed by OpenClaw:"
   echo "  openclaw mcp login ${MCP_NAME} --code <code>"
@@ -46,7 +45,7 @@ verify_openclaw_install() {
   echo "Verifying OpenClaw plugin: ${PLUGIN_NAME}"
   openclaw plugins inspect "${PLUGIN_NAME}" >/dev/null
 
-  echo "Verifying Remote MCP server: ${MCP_NAME}"
+  echo "Verifying Quandora connection: ${MCP_NAME}"
   openclaw mcp show "${MCP_NAME}" >/dev/null
 
   echo "Verifying OpenClaw skill: ${SKILL_NAME}"
@@ -62,12 +61,12 @@ verify_openclaw_install() {
 
   echo "OpenClaw plugin and skill verification passed."
   if ! mcp_has_oauth_tokens; then
-    echo "Quandora Remote MCP is registered but not authorized yet."
+    echo "Quandora is registered but not authorized yet."
     print_openclaw_auth_steps
     return 0
   fi
 
-  echo "Quandora Remote MCP is authorized."
+  echo "Quandora is authorized."
   echo "Start OpenClaw:"
   echo "  openclaw chat"
   echo "Then run:"
@@ -206,7 +205,7 @@ fi
 echo "Installing OpenClaw plugin: ${PLUGIN_NAME}"
 openclaw plugins install "${PLUGIN_NAME}" --marketplace "${MARKETPLACE_URL}" --force
 
-echo "Registering Remote MCP server: ${MCP_NAME}"
+echo "Registering Quandora connection: ${MCP_NAME}"
 if openclaw mcp add "${MCP_NAME}" \
   --transport streamable-http \
   --url "${MCP_URL}" \

@@ -1,7 +1,7 @@
 {
   "name": "quandora",
-  "version": "0.4.10",
-  "description": "All-in-one Quandora plugin for Remote MCP workflows.",
+  "version": "0.1.0",
+  "description": "All-in-one Quandora plugin for agent workflows.",
   "author": {
     "name": "Varsity Tech Product",
     "url": "https://github.com/varsity-tech-product"

@@ -1,38 +1,22 @@
 # Quandora Plugins
 
-Quandora Plugins is the public marketplace for Quandora agent integrations.
-Version 0.4.10 ships one all-in-one plugin package:
+Quandora Plugins is the public marketplace for Quandora agent integrations. The current package is:
 
 ```text
 quandora@quandora
 ```
 
-Factor Mining is the first bundled skill. It uses Quandora Remote MCP over
-HTTP/OAuth for public task listing, custom factor sessions, inline
-`plugin_source` submission, backtesting, artifact retrieval, and result
-summaries.
+Quandora Factor Mining lets local agents create `plugin.py`, submit it through the authenticated Quandora connection, run a backtest, retrieve available artifacts, and save the run files in the local workspace.
 
-The Remote MCP server is named:
+## Install
 
-```text
-quandora-mcp
-```
+### Codex
 
-The current Quandora Remote MCP endpoint is:
-
-```text
-https://mcp-staging.varsity.lol/factor-mining
-```
-
-## Codex
-
-### Install
-
-Use these fields in Codex Desktop:
+Codex Desktop:
 
 ```text
 Source: varsity-tech-product/quandora-plugins
-Git ref: leave blank when possible; use the default branch marketplace source
+Git ref: leave blank
 Plugin: quandora@quandora
 ```
 
@@ -43,81 +27,48 @@ codex plugin marketplace add varsity-tech-product/quandora-plugins
 codex plugin add quandora@quandora
 ```
 
-If an older pinned marketplace already exists, remove and add it again without
-a Git ref:
-
-```bash
-codex plugin marketplace remove quandora || true
-codex plugin marketplace add varsity-tech-product/quandora-plugins
-```
-
-### Authorize
-
-Codex Desktop can open the Quandora OAuth page during first use.
-
-Codex CLI uses:
+Authorize when prompted. In Codex CLI, use:
 
 ```bash
 codex mcp login quandora-mcp
 ```
 
-After installing or authorizing the plugin, start a new Codex chat before using
-Factor Mining. If the tools still do not appear, fully quit and reopen Codex
-Desktop, then start a new chat.
+Start a new chat after installation or authorization.
 
-### Use
+### Claude
 
-Use the skill command when available:
-
-```text
-/factor-mining show public tasks
-```
-
-You can also ask directly:
-
-```text
-Use Quandora Factor Mining to show public tasks.
-Use Quandora Factor Mining with my custom factor idea.
-Use Quandora Factor Mining to resume a run and summarize results.
-```
-
-When the host supports local files, Factor Mining saves each run under:
-
-```text
-results/factor-mining/<session_id>/attempt-<n>/
-```
-
-The run folder contains the submitted `plugin.py`, a `run_summary.json`, a
-`factor_card.json` when available, and safe artifacts returned by Quandora. The
-agent also prints the result folder path at the end of every completed run.
-
-## Claude Code
-
-### Install
+Claude Code:
 
 ```bash
 claude plugin marketplace add varsity-tech-product/quandora-plugins
 claude plugin install quandora@quandora
 ```
 
-If a previous marketplace was added with a version suffix, remove and add it
-again without a ref so Claude tracks the repository default branch:
+Claude Desktop requires both the Quandora plugin and the Quandora connector. Use the Connectors page to connect your Quandora account, then start a new chat.
+
+In Claude Code, open `/mcp` and authenticate `quandora-mcp`, then start a new chat.
+
+### OpenClaw
 
 ```bash
-claude plugin marketplace remove quandora
-claude plugin marketplace add varsity-tech-product/quandora-plugins
-claude plugin update quandora@quandora
+curl -fsSL https://raw.githubusercontent.com/varsity-tech-product/quandora-plugins/HEAD/install-openclaw.sh | bash
 ```
 
-### Authorize
+Authorize Quandora:
 
-Open `/mcp` in Claude Code and authenticate `quandora-mcp`.
+```bash
+openclaw mcp login quandora-mcp
+```
 
-After installing or authorizing the plugin, start a new Claude chat before
-using Factor Mining. If the tools still do not appear, fully quit and reopen
-Claude Desktop or Claude Code, then start a new chat.
+Open the printed URL, approve access, then run the code command printed by OpenClaw:
 
-### Use
+```bash
+openclaw mcp login quandora-mcp --code <code>
+```
+
+Start a new OpenClaw chat after installation or authorization.
+
+## Use Factor Mining
 
 Use the skill command when available:
 
@@ -125,7 +76,7 @@ Use the skill command when available:
 /factor-mining show public tasks
 ```
 
-You can also ask directly:
+You can also ask naturally:
 
 ```text
 Use Quandora Factor Mining to show public tasks.
@@ -133,69 +84,13 @@ Use Quandora Factor Mining with my custom factor idea.
 Use Quandora Factor Mining to resume a run and summarize results.
 ```
 
-## OpenClaw
-
-### Install
-
-Install and verify the plugin bundle and Remote MCP server:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/varsity-tech-product/quandora-plugins/HEAD/install-openclaw.sh | bash
-```
-
-If the installer reports `Excluded by agent allowlist`, allow the skill and
-verify again:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/varsity-tech-product/quandora-plugins/HEAD/install-openclaw.sh | bash -s -- --allow-skill
-```
-
-### Authorize
-
-Run:
-
-```bash
-openclaw mcp login quandora-mcp
-```
-
-Open the printed URL, approve access, then run the code command printed by
-OpenClaw:
-
-```bash
-openclaw mcp login quandora-mcp --code <code>
-```
-
-Verify the authorized MCP connection:
-
-```bash
-openclaw mcp doctor quandora-mcp --probe
-```
-
-After installing or authorizing the plugin, start a new OpenClaw chat before
-using Factor Mining. If the tools still do not appear, restart the OpenClaw
-gateway and start a new chat.
-
-### Use
-
-Start OpenClaw:
-
-```bash
-openclaw chat
-```
-
-Then run:
+When the host supports local files, each run is saved under:
 
 ```text
-/factor-mining show public tasks
+results/factor-mining/<session_id>/attempt-<n>/
 ```
 
-You can also ask directly:
-
-```text
-Use Quandora Factor Mining to show public tasks.
-Use Quandora Factor Mining with my custom factor idea.
-Use Quandora Factor Mining to resume a run and summarize results.
-```
+The run folder contains the submitted `plugin.py`, a redacted `run_summary.json`, a `factor_card.json` when available, and safe artifacts returned by Quandora. The agent prints the result folder path at the end of each run.
 
 ## License
 

@@ -7,7 +7,7 @@ dependencies:
   tools:
     - type: "mcp"
       value: "quandora-mcp"
-      description: "Quandora Factor Mining Remote MCP server"
+      description: "Quandora Factor Mining connection"
       transport: "streamable_http"
       url: "https://mcp-staging.varsity.lol/factor-mining"
       oauth_resource: "https://mcp-staging.varsity.lol/factor-mining"
