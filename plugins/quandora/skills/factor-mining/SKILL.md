@@ -32,6 +32,7 @@ Use only the Factor Mining actions exposed by `quandora-mcp`:
 - `factor_mining_upload_backtest_wait`
 - `factor_mining_resume_run`
 - `factor_mining_get_artifact`
+- `factor_mining_get_backtest_png_artifacts`
 
 Some hosts may prefix action names with the server name, such as `quandora-mcp__factor_mining_status`. Treat those as the same actions.
 
@@ -88,14 +89,18 @@ Treat `factor_card.metrics` returned by `factor_mining_upload_backtest_wait` or 
 
 Only call `factor_mining_get_artifact` with an `artifact_id` returned from `upload_backtest_wait` or `resume_run`. Do not call it without `artifact_id`. Missing, null, unavailable, omitted, or non-inline artifact content is not a run failure. Treat artifact fetch failures as optional attachment failures unless the run itself failed. Never tell the user backend-oriented messages such as "the factor-card artifact has no inline body", "artifact body is missing", `structuredContent`, "MCP response shape", or "backend envelope".
 
+After a backtest reaches a terminal state, fetch chart PNGs with `factor_mining_get_backtest_png_artifacts` when the tool is available. Use the bare backtest `job_id` from `run.run_id` or each value in `run.job_ids[]`; do not pass an `artifact_id` to this tool. If multiple job IDs are present, fetch PNGs for each job ID.
+
 When the host supports file writes, save safe result files in the same run archive:
 
 - Always save `run_summary.json` from the redacted structured run response.
 - Always save `factor_card.json` from `run_response.factor_card`, not from artifact fetching.
 - Always save `artifact_manifest.json` with each returned artifact's `artifact_id`, `name`, `content_type`, and fetch status.
 - Save `artifacts/<artifact_name>` only when `factor_mining_get_artifact` returns safe inline JSON/text content or another supported safe content envelope.
+- Save PNG chart images returned by `factor_mining_get_backtest_png_artifacts` under `artifacts/png/`. For each `png_artifacts[]` item with `content_type="image/png"` and non-empty `content_b64`, decode the base64 content and write `artifacts/png/<safe_name>.png`. Never print or expose the base64 payload to the user.
+- Include PNG chart metadata in `artifact_manifest.json`: `job_id`, `name`, `window`, `content_type`, `size_bytes`, `md5_hex`, `saved_path`, `omitted`, and `omitted_windows`.
 
-If artifact content is null, omitted, unavailable, or unsupported, record that status in `artifact_manifest.json` and continue.
+If artifact content is null, omitted, unavailable, or unsupported, record that status in `artifact_manifest.json` and continue. If a PNG item has `content_b64=null`, record its `omitted` reason such as `oversize` or `total_cap` and do not treat it as a failed run. If `omitted_windows` reports withheld `oos` or `all` charts, mention only that additional chart windows were withheld from local display; do not imply the charts do not exist.
 
 Do not save bearer tokens, presigned URLs, raw service metadata, hidden backend IDs, or credentials. If the host does not support file writes, continue the workflow and say local archiving is not available in that host.
 
@@ -111,6 +116,7 @@ For GUI/Desktop hosts, use Markdown links with absolute local paths and angle-br
 
 Result folder: [Open result folder](</absolute/path/to/results/factor-mining/<session_id>/attempt-1/>)
 Artifact folder: [Open artifact folder](</absolute/path/to/results/factor-mining/<session_id>/attempt-1/artifacts/>)
+PNG chart folder: [Open PNG chart folder](</absolute/path/to/results/factor-mining/<session_id>/attempt-1/artifacts/png/>)
 Plugin source: [plugin.py](</absolute/path/to/results/factor-mining/<session_id>/attempt-1/plugin.py>)
 Run summary: [run_summary.json](</absolute/path/to/results/factor-mining/<session_id>/attempt-1/run_summary.json>)
 Factor card: [factor_card.json](</absolute/path/to/results/factor-mining/<session_id>/attempt-1/factor_card.json>)
@@ -120,6 +126,7 @@ For CLI/TUI hosts, use plain absolute paths, not Markdown links:
 
 Result folder: /absolute/path/to/results/factor-mining/<session_id>/attempt-1/
 Artifact folder: /absolute/path/to/results/factor-mining/<session_id>/attempt-1/artifacts/
+PNG chart folder: /absolute/path/to/results/factor-mining/<session_id>/attempt-1/artifacts/png/
 Plugin source: /absolute/path/to/results/factor-mining/<session_id>/attempt-1/plugin.py
 Run summary: /absolute/path/to/results/factor-mining/<session_id>/attempt-1/run_summary.json
 Factor card: /absolute/path/to/results/factor-mining/<session_id>/attempt-1/factor_card.json
@@ -129,6 +136,7 @@ If the host could not write files, print:
 
 Result folder: not available in this host
 Artifact folder: not available in this host
+PNG chart folder: not available in this host
 
 ## plugin.py Contract
 
