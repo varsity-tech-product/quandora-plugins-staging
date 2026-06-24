@@ -27,13 +27,13 @@ codex plugin marketplace add varsity-tech-product/quandora-plugins
 codex plugin add quandora@quandora
 ```
 
-Authorize when prompted. In Codex CLI, use:
+Authorize when prompted. If Codex does not open the authorization flow automatically, use:
 
 ```bash
 codex mcp login quandora-mcp
 ```
 
-Start a new chat after installation or authorization.
+After installation or authorization, open a new chat. If Codex Desktop still does not expose Quandora tools, fully quit and reopen Codex Desktop.
 
 ### Claude
 

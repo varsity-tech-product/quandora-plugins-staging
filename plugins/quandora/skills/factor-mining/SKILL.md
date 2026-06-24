@@ -9,10 +9,9 @@ Use this skill to run Factor Mining through the authenticated Quandora connectio
 
 The agent drafts a valid Factor Mining `plugin.py`, submits the complete source inline, waits for the backtest result, fetches available artifacts, saves safe local files when the host allows it, and summarizes the outcome.
 
-If the required Quandora tools are visible, continue automatically. If they are not visible, use the host's normal Quandora connection path:
+If the required Quandora tools are visible, continue automatically. If they are not visible, use the host's normal Quandora connection path before stopping:
 
-- Codex CLI: run `codex mcp login quandora-mcp`, then start a new chat.
-- Codex Desktop: use the authorization page opened by Codex, then start a new chat.
+- Codex CLI or Codex Desktop: run `codex mcp login quandora-mcp`. Wait for the user to complete the browser authorization flow, then check again for `factor_mining_status`. If the tools still are not visible in the current host session, tell the user to fully quit/reopen Codex Desktop or start a new chat.
 - Claude Code: open `/mcp`, authenticate `quandora-mcp`, then start a new chat.
 - Claude Desktop: connect the Quandora connector in Settings, then start a new chat.
 - OpenClaw: run `openclaw mcp login quandora-mcp`, complete the printed authorization flow, then start a new chat.
@@ -39,7 +38,7 @@ Do not use or advertise batch mining.
 
 ## Workflow
 
-Start with `factor_mining_status`. If authorization is missing, use the host's Quandora connection path. Do not ask the user for direct keys.
+Start with `factor_mining_status`. If authorization is missing or the tools are not exposed, use the host's Quandora connection path. In Codex, run `codex mcp login quandora-mcp` yourself before asking the user to take action. Do not ask the user for direct keys.
 
 Determine whether the user wants a public task or a custom idea:
 
