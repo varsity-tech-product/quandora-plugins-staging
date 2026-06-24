@@ -6,7 +6,7 @@ interface:
 dependencies:
   tools:
     - type: "mcp"
-      value: "quandora-mcp"
+      value: "quandora"
       description: "Quandora Factor Mining connection"
       transport: "streamable_http"
       url: "https://mcp.quandora.ai/factor-mining"

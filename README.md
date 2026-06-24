@@ -30,7 +30,7 @@ codex plugin add quandora@quandora
 Authorize when prompted. If Codex does not open the authorization flow automatically, use:
 
 ```bash
-codex mcp login quandora-mcp
+codex mcp login quandora
 ```
 
 After installation or authorization, open a new chat. If Codex Desktop still does not expose Quandora tools, fully quit and reopen Codex Desktop.
@@ -53,7 +53,7 @@ URL: https://mcp.quandora.ai/factor-mining
 
 Use Settings -> Connectors, add the Connector above, click Connect, authorize Quandora in the browser, then start a new chat.
 
-In Claude Code, open `/mcp` and authenticate `quandora-mcp`, then start a new chat.
+In Claude Code, open `/mcp` and authenticate `quandora`, then start a new chat.
 
 ### OpenClaw
 
@@ -64,13 +64,13 @@ curl -fsSL https://raw.githubusercontent.com/varsity-tech-product/quandora-plugi
 Authorize Quandora:
 
 ```bash
-openclaw mcp login quandora-mcp
+openclaw mcp login quandora
 ```
 
 Open the printed URL, approve access, then run the code command printed by OpenClaw:
 
 ```bash
-openclaw mcp login quandora-mcp --code <code>
+openclaw mcp login quandora --code <code>
 ```
 
 Start a new OpenClaw chat after installation or authorization.

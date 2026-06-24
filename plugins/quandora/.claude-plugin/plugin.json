@@ -11,7 +11,7 @@
   "license": "Apache-2.0",
   "skills": "./skills/",
   "mcpServers": {
-    "quandora-mcp": {
+    "quandora": {
       "type": "http",
       "url": "https://mcp.quandora.ai/factor-mining"
     }

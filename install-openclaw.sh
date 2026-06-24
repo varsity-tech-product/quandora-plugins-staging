@@ -4,7 +4,7 @@ set -euo pipefail
 PLUGIN_NAME="${QUANDORA_PLUGIN_NAME:-quandora}"
 MARKETPLACE_URL="${QUANDORA_PLUGIN_MARKETPLACE_URL:-https://github.com/varsity-tech-product/quandora-plugins.git}"
 INSTALLER_URL="${QUANDORA_OPENCLAW_INSTALLER_URL:-https://raw.githubusercontent.com/varsity-tech-product/quandora-plugins/HEAD/install-openclaw.sh}"
-MCP_NAME="${QUANDORA_MCP_NAME:-quandora-mcp}"
+MCP_NAME="${QUANDORA_MCP_NAME:-quandora}"
 MCP_URL="${QUANDORA_MCP_URL:-https://mcp.quandora.ai/factor-mining}"
 SKILL_NAME="${QUANDORA_FACTOR_MINING_SKILL_NAME:-factor-mining}"
 ALLOW_SKILL=0
