@@ -58,13 +58,14 @@ Determine whether the user wants a public task or a custom idea:
 - For public tasks, call `factor_mining_list_public_tasks`, show concise choices, and ask the user to pick one unless they explicitly ask the agent to choose. The selected task's returned `allowed_data` is the authoritative list of data columns available for that task: use only fields included there and do not invent unavailable market fields. If a public task does not include `allowed_data`, stay conservative and use only `close` unless the user chooses a custom idea/session with explicit `allowed_data`. Then call `factor_mining_create_task_session`.
 - For a custom idea, call `factor_mining_create_custom_session` with a clear title, category, description, non-empty `allowed_data`, and `fwd_period`. Include every input column the generated factor needs, such as `close`, `volume`, `funding_rate_close`, or `open_interest_close`.
 
-After a session exists, prepare a local result archive when the host supports file writes:
+After a session exists, prepare a local result archive when the host supports file writes. Name the run folder from the factor name, not the session ID:
 
 ```text
-results/factor-mining/<session_id>/attempt-<n>/
+results/factor-mining/<safe_factor_name>/
+results/factor-mining/<safe_factor_name>/factor_mining_artifacts/
 ```
 
-Use `attempt-1` for the first submission in a session and increment it only when submitting a revised factor in the same session. If a local folder is needed before a session exists, use `results/factor-mining/local-YYYYMMDD-HHMMSS/`, then move or copy the files into the session folder after the session exists.
+Use the static `FACTOR_NAME` or `FACTOR_TYPE` from the submitted source to create `<safe_factor_name>`. Convert it to lowercase snake_case, replace unsafe characters with `_`, trim repeated separators, and keep it concise. If that folder already exists, append `-2`, `-3`, or another small unique suffix rather than overwriting a prior run. If a local folder is needed before the factor name is known, use `results/factor-mining/local-YYYYMMDD-HHMMSS/`, then move or copy the files into the factor-name folder after the source exists.
 
 Before submission, call `factor_mining_request_dedup_context` with the session context and revise the factor if the returned similar-factor guidance shows a near duplicate.
 
@@ -91,13 +92,14 @@ Only call `factor_mining_get_artifact` with an `artifact_id` returned from `uplo
 
 After a backtest reaches a terminal state, fetch chart PNGs with `factor_mining_get_backtest_png_artifacts` when the tool is available. Use the bare backtest `job_id` from `run.run_id` or each value in `run.job_ids[]`; do not pass an `artifact_id` to this tool. If multiple job IDs are present, fetch PNGs for each job ID.
 
-When the host supports file writes, save safe result files in the same run archive:
+When the host supports file writes, save `plugin.py` in the factor-name folder and save all generated or fetched result files inside `factor_mining_artifacts/`:
 
-- Always save `run_summary.json` from the redacted structured run response.
-- Always save `factor_card.json` from `run_response.factor_card`, not from artifact fetching.
-- Always save `artifact_manifest.json` with each returned artifact's `artifact_id`, `name`, `content_type`, and fetch status.
-- Save `artifacts/<artifact_name>` only when `factor_mining_get_artifact` returns safe inline JSON/text content or another supported safe content envelope.
-- Save PNG chart images returned by `factor_mining_get_backtest_png_artifacts` under `artifacts/png/`. For each `png_artifacts[]` item with `content_type="image/png"` and non-empty `content_b64`, decode the base64 content and write `artifacts/png/<safe_name>.png`. Never print or expose the base64 payload to the user.
+- Always save `<safe_factor_name>/plugin.py`.
+- Always save `factor_mining_artifacts/run_summary.json` from the redacted structured run response.
+- Always save `factor_mining_artifacts/factor_card.json` from `run_response.factor_card`, not from artifact fetching.
+- Always save `factor_mining_artifacts/artifact_manifest.json` with each returned artifact's `artifact_id`, `name`, `content_type`, and fetch status.
+- Save `factor_mining_artifacts/<artifact_name>` only when `factor_mining_get_artifact` returns safe inline JSON/text content or another supported safe content envelope.
+- Save PNG chart images returned by `factor_mining_get_backtest_png_artifacts` directly under `factor_mining_artifacts/`. For each `png_artifacts[]` item with `content_type="image/png"` and non-empty `content_b64`, decode the base64 content and write `factor_mining_artifacts/<safe_name>.png`. Never print or expose the base64 payload to the user.
 - Include PNG chart metadata in `artifact_manifest.json`: `job_id`, `name`, `window`, `content_type`, `size_bytes`, `md5_hex`, `saved_path`, `omitted`, and `omitted_windows`.
 
 If artifact content is null, omitted, unavailable, or unsupported, record that status in `artifact_manifest.json` and continue. If a PNG item has `content_b64=null`, record its `omitted` reason such as `oversize` or `total_cap` and do not treat it as a failed run. If `omitted_windows` reports withheld `oos` or `all` charts, mention only that additional chart windows were withheld from local display; do not imply the charts do not exist.
@@ -114,29 +116,26 @@ At the end of every completed, failed, or interrupted run, always explicitly sho
 
 For GUI/Desktop hosts, use Markdown links with absolute local paths and angle-bracket link targets so paths with spaces work:
 
-Result folder: [Open result folder](</absolute/path/to/results/factor-mining/<session_id>/attempt-1/>)
-Artifact folder: [Open artifact folder](</absolute/path/to/results/factor-mining/<session_id>/attempt-1/artifacts/>)
-PNG chart folder: [Open PNG chart folder](</absolute/path/to/results/factor-mining/<session_id>/attempt-1/artifacts/png/>)
-Plugin source: [plugin.py](</absolute/path/to/results/factor-mining/<session_id>/attempt-1/plugin.py>)
-Run summary: [run_summary.json](</absolute/path/to/results/factor-mining/<session_id>/attempt-1/run_summary.json>)
-Factor card: [factor_card.json](</absolute/path/to/results/factor-mining/<session_id>/attempt-1/factor_card.json>)
-Artifact manifest: [artifact_manifest.json](</absolute/path/to/results/factor-mining/<session_id>/attempt-1/artifact_manifest.json>)
+Result folder: [Open result folder](</absolute/path/to/results/factor-mining/<safe_factor_name>/>)
+Artifact folder: [Open artifact folder](</absolute/path/to/results/factor-mining/<safe_factor_name>/factor_mining_artifacts/>)
+Plugin source: [plugin.py](</absolute/path/to/results/factor-mining/<safe_factor_name>/plugin.py>)
+Run summary: [run_summary.json](</absolute/path/to/results/factor-mining/<safe_factor_name>/factor_mining_artifacts/run_summary.json>)
+Factor card: [factor_card.json](</absolute/path/to/results/factor-mining/<safe_factor_name>/factor_mining_artifacts/factor_card.json>)
+Artifact manifest: [artifact_manifest.json](</absolute/path/to/results/factor-mining/<safe_factor_name>/factor_mining_artifacts/artifact_manifest.json>)
 
 For CLI/TUI hosts, use plain absolute paths, not Markdown links:
 
-Result folder: /absolute/path/to/results/factor-mining/<session_id>/attempt-1/
-Artifact folder: /absolute/path/to/results/factor-mining/<session_id>/attempt-1/artifacts/
-PNG chart folder: /absolute/path/to/results/factor-mining/<session_id>/attempt-1/artifacts/png/
-Plugin source: /absolute/path/to/results/factor-mining/<session_id>/attempt-1/plugin.py
-Run summary: /absolute/path/to/results/factor-mining/<session_id>/attempt-1/run_summary.json
-Factor card: /absolute/path/to/results/factor-mining/<session_id>/attempt-1/factor_card.json
-Artifact manifest: /absolute/path/to/results/factor-mining/<session_id>/attempt-1/artifact_manifest.json
+Result folder: /absolute/path/to/results/factor-mining/<safe_factor_name>/
+Artifact folder: /absolute/path/to/results/factor-mining/<safe_factor_name>/factor_mining_artifacts/
+Plugin source: /absolute/path/to/results/factor-mining/<safe_factor_name>/plugin.py
+Run summary: /absolute/path/to/results/factor-mining/<safe_factor_name>/factor_mining_artifacts/run_summary.json
+Factor card: /absolute/path/to/results/factor-mining/<safe_factor_name>/factor_mining_artifacts/factor_card.json
+Artifact manifest: /absolute/path/to/results/factor-mining/<safe_factor_name>/factor_mining_artifacts/artifact_manifest.json
 
 If the host could not write files, print:
 
 Result folder: not available in this host
 Artifact folder: not available in this host
-PNG chart folder: not available in this host
 
 ## plugin.py Contract
 
