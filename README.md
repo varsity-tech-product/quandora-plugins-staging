@@ -197,10 +197,10 @@ Use Quandora Factor Mining with my custom factor idea.
 Use Quandora Factor Mining to resume a run and summarize results.
 ```
 
-When the host supports local files, each run is saved under:
+When the host supports local files, each run is saved under a stable folder named after the factor slug:
 
 ```text
-results/factor-mining/<session_id>/<attempt_id>/
+Quandora result/factor-mining/aggressive_flow_exhaustion_reversal/
 ```
 
 The run folder contains the submitted `plugin.py`, a redacted `run_summary.json`, `factor_card_is.json` and `factor_card_all.json` when available, `artifact_manifest.json`, and PNG charts under `artifacts/is/` and `artifacts/all/`. The agent prints the result, artifact, and chart folder paths at the end of each run.

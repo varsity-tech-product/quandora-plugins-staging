@@ -61,14 +61,14 @@ Determine whether the user wants a public task or a custom idea:
 - For public tasks, call `factor_mining_list_public_tasks`, show concise choices, and ask the user to pick one unless they explicitly ask the agent to choose. The selected task's returned `allowed_data` is the authoritative list of data columns available for that task: use only fields included there and do not invent unavailable market fields. If a public task does not include `allowed_data`, stay conservative and use only `close` unless the user chooses a custom idea/session with explicit `allowed_data`. Then call `factor_mining_create_task_session`.
 - For a custom idea, call `factor_mining_create_custom_session` with a clear title, category, description, non-empty `allowed_data`, and `fwd_period`. Include every input column the generated factor needs, such as `close`, `volume`, `funding_rate_close`, or `open_interest_close`.
 
-After a session exists, prepare a local result archive when the host supports file writes. Use the session id and attempt id for the stable run folder:
+After a session exists, prepare one local result archive when the host supports file writes. Use a stable factor slug for the run folder. Prefer the generated top-level `FACTOR_TYPE`; if it is missing, convert `FACTOR_NAME` to lowercase snake_case. For example, `FACTOR_TYPE = "aggressive_flow_exhaustion_reversal"` uses:
 
 ```text
-results/factor-mining/<session_id>/<attempt_id>/
-results/factor-mining/<session_id>/<attempt_id>/artifacts/
+Quandora result/factor-mining/aggressive_flow_exhaustion_reversal/
+Quandora result/factor-mining/aggressive_flow_exhaustion_reversal/artifacts/
 ```
 
-Use the exact session id returned by `factor_mining_create_task_session` or `factor_mining_create_custom_session`. Use the attempt id from the upload/resume result when present; otherwise create a stable local attempt folder such as `attempt-1`, incrementing only to avoid overwriting an existing run. Do not use the factor name for the canonical result folder.
+Use only the factor slug as the canonical archive directory. The latest run for a factor updates that factor's folder. Keep backend session and run ids only inside `run_summary.json` / `artifact_manifest.json` when they are needed for traceability, not in the user-facing directory name.
 
 Before submission, call `factor_mining_request_dedup_context` with the session context and revise the factor if the returned similar-factor guidance shows a near duplicate.
 
@@ -101,7 +101,7 @@ Treat the terminal `factor_mining_upload_backtest_wait` or `factor_mining_resume
 Use this standard local layout:
 
 ```text
-results/factor-mining/<session_id>/<attempt_id>/
+Quandora result/factor-mining/<factor_slug>/
   plugin.py
   run_summary.json
   factor_card_is.json
@@ -138,25 +138,25 @@ At the end of every completed, failed, or interrupted run, always explicitly sho
 
 For GUI/Desktop hosts, use Markdown links with absolute local paths and angle-bracket link targets so paths with spaces work:
 
-Result folder: [Open result folder](</absolute/path/to/results/factor-mining/<session_id>/<attempt_id>/>)
-Artifact folder: [Open artifact folder](</absolute/path/to/results/factor-mining/<session_id>/<attempt_id>/artifacts/>)
-PNG chart folder: [Open PNG chart folder](</absolute/path/to/results/factor-mining/<session_id>/<attempt_id>/artifacts/>)
-Plugin source: [plugin.py](</absolute/path/to/results/factor-mining/<session_id>/<attempt_id>/plugin.py>)
-Run summary: [run_summary.json](</absolute/path/to/results/factor-mining/<session_id>/<attempt_id>/run_summary.json>)
-IS factor card: [factor_card_is.json](</absolute/path/to/results/factor-mining/<session_id>/<attempt_id>/factor_card_is.json>)
-ALL factor card: [factor_card_all.json](</absolute/path/to/results/factor-mining/<session_id>/<attempt_id>/factor_card_all.json>)
-Artifact manifest: [artifact_manifest.json](</absolute/path/to/results/factor-mining/<session_id>/<attempt_id>/artifact_manifest.json>)
+Result folder: [Open result folder](</absolute/path/to/Quandora result/factor-mining/<factor_slug>/>)
+Artifact folder: [Open artifact folder](</absolute/path/to/Quandora result/factor-mining/<factor_slug>/artifacts/>)
+PNG chart folder: [Open PNG chart folder](</absolute/path/to/Quandora result/factor-mining/<factor_slug>/artifacts/>)
+Plugin source: [plugin.py](</absolute/path/to/Quandora result/factor-mining/<factor_slug>/plugin.py>)
+Run summary: [run_summary.json](</absolute/path/to/Quandora result/factor-mining/<factor_slug>/run_summary.json>)
+IS factor card: [factor_card_is.json](</absolute/path/to/Quandora result/factor-mining/<factor_slug>/factor_card_is.json>)
+ALL factor card: [factor_card_all.json](</absolute/path/to/Quandora result/factor-mining/<factor_slug>/factor_card_all.json>)
+Artifact manifest: [artifact_manifest.json](</absolute/path/to/Quandora result/factor-mining/<factor_slug>/artifact_manifest.json>)
 
 For CLI/TUI hosts, use plain absolute paths, not Markdown links:
 
-Result folder: /absolute/path/to/results/factor-mining/<session_id>/<attempt_id>/
-Artifact folder: /absolute/path/to/results/factor-mining/<session_id>/<attempt_id>/artifacts/
-PNG chart folder: /absolute/path/to/results/factor-mining/<session_id>/<attempt_id>/artifacts/
-Plugin source: /absolute/path/to/results/factor-mining/<session_id>/<attempt_id>/plugin.py
-Run summary: /absolute/path/to/results/factor-mining/<session_id>/<attempt_id>/run_summary.json
-IS factor card: /absolute/path/to/results/factor-mining/<session_id>/<attempt_id>/factor_card_is.json
-ALL factor card: /absolute/path/to/results/factor-mining/<session_id>/<attempt_id>/factor_card_all.json
-Artifact manifest: /absolute/path/to/results/factor-mining/<session_id>/<attempt_id>/artifact_manifest.json
+Result folder: /absolute/path/to/Quandora result/factor-mining/<factor_slug>/
+Artifact folder: /absolute/path/to/Quandora result/factor-mining/<factor_slug>/artifacts/
+PNG chart folder: /absolute/path/to/Quandora result/factor-mining/<factor_slug>/artifacts/
+Plugin source: /absolute/path/to/Quandora result/factor-mining/<factor_slug>/plugin.py
+Run summary: /absolute/path/to/Quandora result/factor-mining/<factor_slug>/run_summary.json
+IS factor card: /absolute/path/to/Quandora result/factor-mining/<factor_slug>/factor_card_is.json
+ALL factor card: /absolute/path/to/Quandora result/factor-mining/<factor_slug>/factor_card_all.json
+Artifact manifest: /absolute/path/to/Quandora result/factor-mining/<factor_slug>/artifact_manifest.json
 
 If the host could not write files, print:
 
