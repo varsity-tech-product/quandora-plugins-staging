@@ -95,7 +95,7 @@ Treat the terminal `factor_mining_upload_backtest_wait` or `factor_mining_resume
 2. Call `factor_mining_get_backtest_window_cards` with `windows: ["is", "all"]` and the bare backtest `job_id` from `run.run_id` or `run.job_ids[]`.
 3. Save each available returned `factor_card` to the returned `standard_local_name`: `factor_card_is.json` and `factor_card_all.json`.
 4. For every returned `png_artifacts[].source_name`, prefer `factor_mining_create_backtest_png_download_ticket`. Download the short-lived ticket URL directly to the returned `standard_local_path`, verify `size_bytes` and `md5_hex` when the download response provides them, and never print or persist the URL.
-5. Fall back to `factor_mining_get_backtest_png_artifact_chunk` only if ticket download is unavailable or fails with an optional artifact error. Use the exact server `source_name` in API calls. Loop with `offset=0`, `limit=262144`, decode each `content_b64` chunk, append bytes to the returned `standard_local_path`, and stop when `next_offset` is null.
+5. Fall back to `factor_mining_get_backtest_png_artifact_chunk` only if ticket download is unavailable or fails with an optional artifact error. Use the exact server `source_name` in API calls. Do not use `standard_local_path` as an API artifact name. Loop with `offset=0`, `limit=262144`, decode each `content_b64` chunk, append bytes to the returned `standard_local_path`, and stop when `next_offset` is null.
 6. Save `artifact_manifest.json` listing every source artifact name, local path, window key, `size_bytes`, `md5_hex`, download status, and any omitted or unavailable reason.
 
 Use this standard local layout:
@@ -118,7 +118,7 @@ results/factor-mining/<session_id>/<attempt_id>/
       cs_profile_4panel.png
 ```
 
-Remove the `default_` prefix only for local saved filenames. Do not rename server artifact names in API calls.
+Local saved filenames intentionally remove the `default_` prefix and p2/p3 suffixes. Do not rename server artifact names in API calls. For API/download-ticket/chunk calls, always use `png_artifacts[].source_name`; for local files, always save to `png_artifacts[].standard_local_path`.
 
 Inline content is only an optimization for small artifacts. Missing inline content is not a failure. Agents must use download tickets or chunks for PNGs and must not inline large binary payloads in the conversation. Do not treat an empty JSON artifact body as failure when window card data is available from `factor_mining_get_backtest_window_cards`.
 
@@ -134,7 +134,7 @@ Summarize status, factor name, key metrics from the IS factor card when availabl
 
 Never show backend job IDs, presigned URLs, bearer tokens, raw credentials, or full `plugin.py` source in user-facing summaries. It is safe to show local result and artifact folder paths created by the current host.
 
-At the end of every completed, failed, or interrupted run, always explicitly show where local result files were saved. If a specific file was not created, omit only that file line. Still print the result folder if available.
+At the end of every completed, failed, or interrupted run, always explicitly show absolute paths for the result folder, artifact folder, PNG chart folder, `plugin.py`, `run_summary.json`, `factor_card_is.json`, `factor_card_all.json`, and `artifact_manifest.json`. If a specific file was not created, say `not created` for that line. Still print the result folder if available.
 
 For GUI/Desktop hosts, use Markdown links with absolute local paths and angle-bracket link targets so paths with spaces work:
 
