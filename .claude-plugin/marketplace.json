@@ -5,12 +5,12 @@
     "url": "https://github.com/varsity-tech-product"
   },
   "description": "Quandora plugin marketplace.",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "plugins": [
     {
       "name": "quandora",
       "description": "All-in-one Quandora plugin for agent workflows.",
-      "version": "1.0.5",
+      "version": "1.0.6",
       "source": "./plugins/quandora",
       "category": "Productivity",
       "tags": [
