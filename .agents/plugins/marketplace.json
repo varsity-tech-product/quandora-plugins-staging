@@ -1,14 +1,14 @@
 {
-  "name": "quandora",
+  "name": "quandora-staging",
   "interface": {
-    "displayName": "Quandora"
+    "displayName": "Quandora Staging"
   },
   "plugins": [
     {
-      "name": "quandora",
+      "name": "quandora-staging",
       "source": {
         "source": "local",
-        "path": "./plugins/quandora"
+        "path": "./plugins/quandora-staging"
       },
       "policy": {
         "installation": "AVAILABLE",

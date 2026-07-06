@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PLUGIN_NAME="${QUANDORA_PLUGIN_NAME:-quandora}"
-MARKETPLACE_URL="${QUANDORA_PLUGIN_MARKETPLACE_URL:-https://github.com/varsity-tech-product/quandora-plugins.git}"
-INSTALLER_URL="${QUANDORA_OPENCLAW_INSTALLER_URL:-https://raw.githubusercontent.com/varsity-tech-product/quandora-plugins/HEAD/install-openclaw.sh}"
-MCP_NAME="${QUANDORA_MCP_NAME:-quandora}"
-MCP_URL="${QUANDORA_MCP_URL:-https://mcp.quandora.ai/factor-mining}"
+PLUGIN_NAME="${QUANDORA_PLUGIN_NAME:-quandora-staging}"
+MARKETPLACE_URL="${QUANDORA_PLUGIN_MARKETPLACE_URL:-https://github.com/varsity-tech-product/quandora-plugins-staging.git}"
+INSTALLER_URL="${QUANDORA_OPENCLAW_INSTALLER_URL:-https://raw.githubusercontent.com/varsity-tech-product/quandora-plugins-staging/HEAD/install-openclaw.sh}"
+MCP_NAME="${QUANDORA_MCP_NAME:-quandora-staging}"
+MCP_URL="${QUANDORA_MCP_URL:-https://mcp-staging.varsity.lol/factor-mining}"
 SKILL_NAME="${QUANDORA_FACTOR_MINING_SKILL_NAME:-factor-mining}"
 ALLOW_SKILL=0
 TARGET_AGENT="${QUANDORA_OPENCLAW_AGENT_ID:-}"
@@ -22,12 +22,12 @@ Options:
   -h, --help          Show this help.
 
 Default install:
-  Installs the Quandora plugin and registers the Quandora connection for OpenClaw.
+  Installs the Quandora Staging plugin and registers the staging Quandora connection for OpenClaw.
 USAGE
 }
 
 print_openclaw_auth_steps() {
-  echo "Authorize Quandora before use:"
+  echo "Authorize Quandora Staging before use:"
   echo "  openclaw mcp login ${MCP_NAME}"
   echo "After approval, run the code command printed by OpenClaw:"
   echo "  openclaw mcp login ${MCP_NAME} --code <code>"
@@ -45,7 +45,7 @@ verify_openclaw_install() {
   echo "Verifying OpenClaw plugin: ${PLUGIN_NAME}"
   openclaw plugins inspect "${PLUGIN_NAME}" >/dev/null
 
-  echo "Verifying Quandora connection: ${MCP_NAME}"
+  echo "Verifying Quandora Staging connection: ${MCP_NAME}"
   openclaw mcp show "${MCP_NAME}" >/dev/null
 
   echo "Verifying OpenClaw skill: ${SKILL_NAME}"
@@ -61,12 +61,12 @@ verify_openclaw_install() {
 
   echo "OpenClaw plugin and skill verification passed."
   if ! mcp_has_oauth_tokens; then
-    echo "Quandora is registered but not authorized yet."
+    echo "Quandora Staging is registered but not authorized yet."
     print_openclaw_auth_steps
     return 0
   fi
 
-  echo "Quandora is authorized."
+  echo "Quandora Staging is authorized."
   echo "Start OpenClaw:"
   echo "  openclaw chat"
   echo "Then run:"
@@ -205,7 +205,7 @@ fi
 echo "Installing OpenClaw plugin: ${PLUGIN_NAME}"
 openclaw plugins install "${PLUGIN_NAME}" --marketplace "${MARKETPLACE_URL}" --force
 
-echo "Registering Quandora connection: ${MCP_NAME}"
+echo "Registering Quandora Staging connection: ${MCP_NAME}"
 if openclaw mcp add "${MCP_NAME}" \
   --transport streamable-http \
   --url "${MCP_URL}" \
@@ -216,5 +216,5 @@ else
   openclaw mcp set "${MCP_NAME}" "{\"url\":\"${MCP_URL}\",\"transport\":\"streamable-http\",\"auth\":\"oauth\"}" >/dev/null
 fi
 
-echo "Quandora plugin is installed for OpenClaw."
+echo "Quandora Staging plugin is installed for OpenClaw."
 verify_openclaw_install

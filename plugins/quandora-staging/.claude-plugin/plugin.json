@@ -1,0 +1,19 @@
+{
+  "name": "quandora-staging",
+  "version": "1.0.8-staging.1",
+  "description": "Staging Quandora plugin for pre-release agent workflow testing.",
+  "author": {
+    "name": "Varsity Tech Product",
+    "url": "https://github.com/varsity-tech-product"
+  },
+  "homepage": "https://github.com/varsity-tech-product/quandora-plugins-staging",
+  "repository": "https://github.com/varsity-tech-product/quandora-plugins-staging",
+  "license": "Apache-2.0",
+  "skills": "./skills/",
+  "mcpServers": {
+    "quandora-staging": {
+      "type": "http",
+      "url": "https://mcp-staging.varsity.lol/factor-mining"
+    }
+  }
+}

@@ -3,25 +3,25 @@ name: factor-mining
 description: Use when an agent should create or submit a Quandora Factor Mining plugin.py, run a user-scoped backtest, fetch safe artifacts, save local result files, summarize outcomes, or resume a run through Quandora.
 ---
 
-# Quandora Factor Mining
+# Quandora Staging Factor Mining
 
-Use this skill to run Factor Mining through the authenticated Quandora connection exposed by the host as `quandora`.
+Use this skill to run Factor Mining through the authenticated Quandora Staging connection exposed by the host as `quandora-staging`.
 
 The agent drafts a valid Factor Mining `plugin.py`, submits the complete source inline, waits for the backtest result, fetches available artifacts, saves safe local files when the host allows it, and summarizes the outcome.
 
-If the required Quandora tools are visible, continue automatically. If they are not visible, use the host's normal Quandora connection path before stopping:
+If the required Quandora Staging tools are visible, continue automatically. If they are not visible, use the host's normal Quandora Staging connection path before stopping:
 
-- Codex CLI/TUI: run `codex mcp login quandora`. Wait for the user to complete the browser authorization flow, then check again for `factor_mining_status`.
-- Codex Desktop: the plugin provides the Quandora connector. If the first use opens the authorization flow, wait for the user to authorize Quandora in the browser, then continue in a new chat. If the tools still are not visible, tell the user to fully quit and reopen Codex Desktop.
-- Claude Code: open `/mcp`, authenticate `quandora`, then start a new chat.
-- Claude Desktop: the plugin alone is not enough. Tell the user to open Settings -> Connectors, add a Connector named `quandora` with URL `https://mcp.quandora.ai/factor-mining`, click Connect, authorize Quandora in the browser, then start a new chat.
-- OpenClaw: run `openclaw mcp login quandora`, complete the printed authorization flow, then start a new chat.
+- Codex CLI/TUI: run `codex mcp login quandora-staging`. Wait for the user to complete the browser authorization flow, then check again for `factor_mining_status`.
+- Codex Desktop: the plugin provides the Quandora Staging connector. If the first use opens the authorization flow, wait for the user to authorize Quandora Staging in the browser, then continue in a new chat. If the tools still are not visible, tell the user to fully quit and reopen Codex Desktop.
+- Claude Code: open `/mcp`, authenticate `quandora-staging`, then start a new chat.
+- Claude Desktop: the plugin alone is not enough. Tell the user to open Settings -> Connectors, add a Connector named `quandora-staging` with URL `https://mcp-staging.varsity.lol/factor-mining`, click Connect, authorize Quandora Staging in the browser, then start a new chat.
+- OpenClaw: run `openclaw mcp login quandora-staging`, complete the printed authorization flow, then start a new chat.
 
 Do not ask for Quandora API keys, `vt_` keys, bearer tokens, service tokens, or credentials. Do not use raw HTTP calls, local helper scripts, direct internal service calls, local execution keys, or credential paste flows as a fallback.
 
 ## Available Actions
 
-Use only the Factor Mining actions exposed by `quandora`:
+Use only the Factor Mining actions exposed by `quandora-staging`:
 
 - `factor_mining_status`
 - `factor_mining_list_public_tasks`
@@ -37,7 +37,7 @@ Use only the Factor Mining actions exposed by `quandora`:
 - `factor_mining_create_backtest_png_download_ticket`
 - `factor_mining_get_backtest_png_artifact_chunk`
 
-Some hosts may prefix action names with the server name, such as `quandora__factor_mining_status`. Treat those as the same actions.
+Some hosts may prefix action names with the server name, such as `quandora_staging__factor_mining_status`. Treat those as the same actions.
 
 Do not use or advertise batch mining.
 
@@ -54,7 +54,7 @@ For example, use `_takerBuyBuf.Enqueue(bar.TakerBuyVolume);`, not `_takerBuyBuf.
 
 ## Workflow
 
-Start with `factor_mining_status`. If authorization is missing or the tools are not exposed, use the host's Quandora connection path: desktop hosts use their Connector settings, while CLI/TUI hosts use their MCP login command. Do not ask the user for direct keys.
+Start with `factor_mining_status`. If authorization is missing or the tools are not exposed, use the host's Quandora Staging connection path: desktop hosts use their Connector settings, while CLI/TUI hosts use their MCP login command. Do not ask the user for direct keys.
 
 Determine whether the user wants a public task or a custom idea:
 
@@ -64,8 +64,8 @@ Determine whether the user wants a public task or a custom idea:
 After a session exists, prepare one local result archive when the host supports file writes. Use a stable factor slug for the run folder. Prefer the generated top-level `FACTOR_TYPE`; if it is missing, convert `FACTOR_NAME` to lowercase snake_case. For example, `FACTOR_TYPE = "aggressive_flow_exhaustion_reversal"` uses:
 
 ```text
-Quandora result/factor-mining/aggressive_flow_exhaustion_reversal/
-Quandora result/factor-mining/aggressive_flow_exhaustion_reversal/artifacts/
+Quandora staging result/factor-mining/aggressive_flow_exhaustion_reversal/
+Quandora staging result/factor-mining/aggressive_flow_exhaustion_reversal/artifacts/
 ```
 
 Use only the factor slug as the canonical archive directory. The latest run for a factor updates that factor's folder. Keep backend session and run ids only inside `run_summary.json` / `artifact_manifest.json` when they are needed for traceability, not in the user-facing directory name.
@@ -101,7 +101,7 @@ Treat the terminal `factor_mining_upload_backtest_wait` or `factor_mining_resume
 Use this standard local layout:
 
 ```text
-Quandora result/factor-mining/<factor_slug>/
+Quandora staging result/factor-mining/<factor_slug>/
   plugin.py
   run_summary.json
   factor_card_is.json
@@ -138,25 +138,25 @@ At the end of every completed, failed, or interrupted run, always explicitly sho
 
 For GUI/Desktop hosts, use Markdown links with absolute local paths and angle-bracket link targets so paths with spaces work:
 
-Result folder: [Open result folder](</absolute/path/to/Quandora result/factor-mining/<factor_slug>/>)
-Artifact folder: [Open artifact folder](</absolute/path/to/Quandora result/factor-mining/<factor_slug>/artifacts/>)
-PNG chart folder: [Open PNG chart folder](</absolute/path/to/Quandora result/factor-mining/<factor_slug>/artifacts/>)
-Plugin source: [plugin.py](</absolute/path/to/Quandora result/factor-mining/<factor_slug>/plugin.py>)
-Run summary: [run_summary.json](</absolute/path/to/Quandora result/factor-mining/<factor_slug>/run_summary.json>)
-IS factor card: [factor_card_is.json](</absolute/path/to/Quandora result/factor-mining/<factor_slug>/factor_card_is.json>)
-ALL factor card: [factor_card_all.json](</absolute/path/to/Quandora result/factor-mining/<factor_slug>/factor_card_all.json>)
-Artifact manifest: [artifact_manifest.json](</absolute/path/to/Quandora result/factor-mining/<factor_slug>/artifact_manifest.json>)
+Result folder: [Open result folder](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/>)
+Artifact folder: [Open artifact folder](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/artifacts/>)
+PNG chart folder: [Open PNG chart folder](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/artifacts/>)
+Plugin source: [plugin.py](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/plugin.py>)
+Run summary: [run_summary.json](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/run_summary.json>)
+IS factor card: [factor_card_is.json](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/factor_card_is.json>)
+ALL factor card: [factor_card_all.json](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/factor_card_all.json>)
+Artifact manifest: [artifact_manifest.json](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/artifact_manifest.json>)
 
 For CLI/TUI hosts, use plain absolute paths, not Markdown links:
 
-Result folder: /absolute/path/to/Quandora result/factor-mining/<factor_slug>/
-Artifact folder: /absolute/path/to/Quandora result/factor-mining/<factor_slug>/artifacts/
-PNG chart folder: /absolute/path/to/Quandora result/factor-mining/<factor_slug>/artifacts/
-Plugin source: /absolute/path/to/Quandora result/factor-mining/<factor_slug>/plugin.py
-Run summary: /absolute/path/to/Quandora result/factor-mining/<factor_slug>/run_summary.json
-IS factor card: /absolute/path/to/Quandora result/factor-mining/<factor_slug>/factor_card_is.json
-ALL factor card: /absolute/path/to/Quandora result/factor-mining/<factor_slug>/factor_card_all.json
-Artifact manifest: /absolute/path/to/Quandora result/factor-mining/<factor_slug>/artifact_manifest.json
+Result folder: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/
+Artifact folder: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/artifacts/
+PNG chart folder: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/artifacts/
+Plugin source: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/plugin.py
+Run summary: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/run_summary.json
+IS factor card: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/factor_card_is.json
+ALL factor card: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/factor_card_all.json
+Artifact manifest: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/artifact_manifest.json
 
 If the host could not write files, print:
 

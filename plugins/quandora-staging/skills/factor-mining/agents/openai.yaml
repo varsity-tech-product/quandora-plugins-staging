@@ -1,0 +1,13 @@
+interface:
+  display_name: "Factor Mining Staging"
+  short_description: "Write and backtest Quandora staging factor plugins"
+  default_prompt: "Use $factor-mining to list public tasks or run a custom factor idea."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "quandora-staging"
+      description: "Quandora Staging Factor Mining connection"
+      transport: "streamable_http"
+      url: "https://mcp-staging.varsity.lol/factor-mining"
+      oauth_resource: "https://mcp-staging.varsity.lol/factor-mining"

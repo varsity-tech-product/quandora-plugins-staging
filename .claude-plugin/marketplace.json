@@ -1,17 +1,17 @@
 {
-  "name": "quandora",
+  "name": "quandora-staging",
   "owner": {
     "name": "Varsity Tech Product",
     "url": "https://github.com/varsity-tech-product"
   },
-  "description": "Quandora plugin marketplace.",
-  "version": "1.0.8",
+  "description": "Quandora staging plugin marketplace for pre-release testing.",
+  "version": "1.0.8-staging.1",
   "plugins": [
     {
-      "name": "quandora",
-      "description": "All-in-one Quandora plugin for agent workflows.",
-      "version": "1.0.8",
-      "source": "./plugins/quandora",
+      "name": "quandora-staging",
+      "description": "Staging Quandora plugin for pre-release agent workflow testing.",
+      "version": "1.0.8-staging.1",
+      "source": "./plugins/quandora-staging",
       "category": "Productivity",
       "tags": [
         "quandora",
