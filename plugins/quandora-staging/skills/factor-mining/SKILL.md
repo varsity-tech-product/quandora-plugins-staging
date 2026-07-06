@@ -31,15 +31,11 @@ Use only the Factor Mining actions exposed by `quandora-staging`:
 - `factor_mining_request_dedup_context`
 - `factor_mining_upload_backtest_wait`
 - `factor_mining_resume_run`
-- `factor_mining_get_artifact`
 - `factor_mining_get_backtest_window_cards`
-- `factor_mining_get_backtest_png_artifacts`
 - `factor_mining_create_backtest_png_download_ticket`
 - `factor_mining_get_backtest_png_artifact_chunk`
 
 Some hosts may prefix action names with the server name, such as `quandora_staging__factor_mining_status`. Treat those as the same actions.
-
-Do not use or advertise batch mining.
 
 ## Runtime Field Mapping
 
@@ -94,8 +90,8 @@ Treat the terminal `factor_mining_upload_backtest_wait` or `factor_mining_resume
 1. Save the redacted upload/resume result as `run_summary.json`.
 2. Call `factor_mining_get_backtest_window_cards` with `windows: ["is", "all"]` and the bare backtest `job_id` from `run.run_id` or `run.job_ids[]`.
 3. Save each available returned `factor_card` to the returned `standard_local_name`: `factor_card_is.json` and `factor_card_all.json`.
-4. For every returned `png_artifacts[].source_name`, prefer `factor_mining_create_backtest_png_download_ticket`. Download the short-lived ticket URL directly to the returned `standard_local_path`, verify `size_bytes` and `md5_hex` when the download response provides them, and never print or persist the URL.
-5. Fall back to `factor_mining_get_backtest_png_artifact_chunk` only if ticket download is unavailable or fails with an optional artifact error. Use the exact server `source_name` in API calls. Do not use `standard_local_path` as an API artifact name. Loop with `offset=0`, `limit=262144`, decode each `content_b64` chunk, append bytes to the returned `standard_local_path`, and stop when `next_offset` is null.
+4. For every returned `png_artifacts[].source_name`, call `factor_mining_create_backtest_png_download_ticket`. Download the short-lived ticket URL directly to the returned `standard_local_path`, verify `size_bytes` and `md5_hex` when the download response provides them, and never print or persist the URL.
+5. If ticket download is unavailable or fails with an optional artifact error, call `factor_mining_get_backtest_png_artifact_chunk`. Use the exact server `source_name` in API calls. Use `standard_local_path` only as the local output path. Loop with `offset=0`, `limit=262144`, decode each `content_b64` chunk, append bytes to the returned `standard_local_path`, and stop when `next_offset` is null.
 6. Save `artifact_manifest.json` listing every source artifact name, local path, window key, `size_bytes`, `md5_hex`, download status, and any omitted or unavailable reason.
 
 Use this standard local layout:
@@ -118,13 +114,11 @@ Quandora staging result/factor-mining/<factor_slug>/
       cs_profile_4panel.png
 ```
 
-Local saved filenames intentionally remove the `default_` prefix and p2/p3 suffixes. Do not rename server artifact names in API calls. For API/download-ticket/chunk calls, always use `png_artifacts[].source_name`; for local files, always save to `png_artifacts[].standard_local_path`.
+Local saved filenames intentionally remove the `default_` prefix and p2/p3 suffixes. For API/download-ticket/chunk calls, always use `png_artifacts[].source_name`; for local files, always save to `png_artifacts[].standard_local_path`.
 
-Inline content is only an optimization for small artifacts. Missing inline content is not a failure. Agents must use download tickets or chunks for PNGs and must not inline large binary payloads in the conversation. Do not treat an empty JSON artifact body as failure when window card data is available from `factor_mining_get_backtest_window_cards`.
+Agents must save PNGs through download tickets or chunked retrieval and must not inline large binary payloads in the conversation. The window-card response is the source of truth for factor cards and chart artifact names.
 
-`factor_mining_get_artifact` remains optional and is only for artifacts listed by upload/resume responses. Only call it with an `artifact_id` returned from `upload_backtest_wait` or `resume_run`. Missing, null, unavailable, omitted, or non-inline artifact content is not a run failure. Treat artifact fetch failures as optional attachment failures unless the run itself failed. Never tell the user backend-oriented messages such as "the factor-card artifact has no inline body", "artifact body is missing", `structuredContent`, "MCP response shape", or "backend envelope".
-
-If artifact content is null, omitted, unavailable, or unsupported, record that status in `artifact_manifest.json` and continue. If a returned window card has `status` other than `available`, record the omitted/unavailable reason and continue. If a PNG download or chunk fetch fails, record the failure in `artifact_manifest.json` without failing the completed run.
+If a returned window card has `status` other than `available`, record the omitted or unavailable reason and continue. If a PNG download or chunk fetch fails, record the failure in `artifact_manifest.json` without failing the completed run.
 
 Do not save bearer tokens, presigned URLs, raw service metadata, hidden backend IDs, or credentials. If the host does not support file writes, continue the workflow and say local archiving is not available in that host.
 
