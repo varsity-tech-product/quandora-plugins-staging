@@ -64,7 +64,7 @@ Quandora staging result/factor-mining/aggressive_flow_exhaustion_reversal/
 Quandora staging result/factor-mining/aggressive_flow_exhaustion_reversal/artifacts/
 ```
 
-Use only the factor slug as the canonical archive directory. The latest run for a factor updates that factor's folder. Keep backend session and run ids only inside `run_summary.json` / `artifact_manifest.json` when they are needed for traceability, not in the user-facing directory name.
+Use only the factor slug as the canonical archive directory. The latest run for a factor updates that factor's folder. Keep session and run ids only inside `run_summary.json` / `artifact_manifest.json` when they are needed for traceability, not in the user-facing directory name.
 
 Before submission, call `factor_mining_request_dedup_context` with the session context and revise the factor if the returned similar-factor guidance shows a near duplicate.
 
@@ -114,19 +114,19 @@ Quandora staging result/factor-mining/<factor_slug>/
       cs_profile_4panel.png
 ```
 
-Local saved filenames intentionally remove the `default_` prefix and p2/p3 suffixes. For API calls, use `png_artifacts[].source_name`; for local files, save to `png_artifacts[].standard_local_path`.
+For API calls, use `png_artifacts[].source_name`; for local files, save to `png_artifacts[].standard_local_path`.
 
 The normal PNG save path is window cards -> download ticket -> local file. Chunked retrieval is the compatibility path for hosts that cannot consume the ticket URL. Keep PNG bytes out of the conversation and record the chosen save method in `artifact_manifest.json`.
 
 If a returned window card has `status` other than `available`, record the omitted or unavailable reason and continue. If a PNG download or chunk fetch fails, record the failure in `artifact_manifest.json` without failing the completed run.
 
-Do not save bearer tokens, presigned URLs, raw service metadata, hidden backend IDs, or credentials. If the host does not support file writes, continue the workflow and say local archiving is not available in that host.
+Do not save bearer tokens, download URLs, raw service metadata, internal IDs, or credentials. If the host does not support file writes, continue the workflow and say local archiving is not available in that host.
 
 ## Final Response
 
-Summarize status, factor name, key metrics from the IS factor card when available, and safe diagnostics if the run failed. Inspect `ok`, `status`, `terminal_status`, `failures`, sanitized job statuses, artifact availability, and factor-card metrics. Do not mention backend internals, and do not treat optional artifact unavailability as failure.
+Summarize status, factor name, key metrics from the IS factor card when available, and safe diagnostics if the run failed. Inspect `ok`, `status`, `terminal_status`, `failures`, sanitized job statuses, artifact availability, and factor-card metrics. Do not mention internal implementation details, and do not treat optional artifact unavailability as failure.
 
-Never show backend job IDs, presigned URLs, bearer tokens, raw credentials, or full `plugin.py` source in user-facing summaries. It is safe to show local result and artifact folder paths created by the current host.
+Never show job IDs, download URLs, bearer tokens, raw credentials, or full `plugin.py` source in user-facing summaries. It is safe to show local result and artifact folder paths created by the current host.
 
 At the end of every completed, failed, or interrupted run, always explicitly show absolute paths for the result folder, artifact folder, PNG chart folder, `plugin.py`, `run_summary.json`, `factor_card_is.json`, `factor_card_all.json`, and `artifact_manifest.json`. If a specific file was not created, say `not created` for that line. Still print the result folder if available.
 
@@ -204,12 +204,12 @@ Keep `build_signal` and `FACTOR_SECTIONS` compute logic aligned. Return a `pd.Da
 ## Security
 
 - Use only Quandora actions for formal product workflows.
-- Never ask for OpenAI API keys, Codex auth files, BYOK secrets, frontend user credentials, raw Factor Mining credentials, local execution keys, `vt_` keys, bearer tokens, or service tokens.
+- Never ask for API keys, auth files, user credentials, local execution keys, `vt_` keys, bearer tokens, or service tokens.
 - Never print, persist in logs, or summarize full credential values.
 - Do not call hosted generation endpoints; the active agent generates factor source in its current host session.
-- Do not call frontend-user credential management, BYOK, Codex profile, task publishing, internal service URLs, or generic URL/API surfaces.
+- Do not call internal service URLs or generic URL/API surfaces.
 - Do not import, exec, eval, or otherwise execute generated `plugin.py`.
 - Do not submit filesystem paths instead of inline `plugin_source`.
 - Do not print generated `plugin.py` source in summaries.
-- Treat downstream IDs, presigned URLs, and service metadata as private.
-- Artifact `404` and `410` responses mean unavailable. Authentication, authorization, network, malformed response, and server errors must fail clearly with redacted messages.
+- Treat downstream IDs, download URLs, and service metadata as private.
+- Unavailable artifacts should be recorded in `artifact_manifest.json`. Authentication, authorization, network, malformed response, and server errors must fail clearly with redacted messages.
