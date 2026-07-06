@@ -25,6 +25,7 @@ Use only the Factor Mining actions exposed by `quandora-staging`:
 
 - `factor_mining_status`
 - `factor_mining_list_public_tasks`
+- `factor_mining_get_plugin_contract`
 - `factor_mining_create_task_session`
 - `factor_mining_create_custom_session`
 - `factor_mining_validate_plugin_source`
@@ -37,16 +38,19 @@ Use only the Factor Mining actions exposed by `quandora-staging`:
 
 Some hosts may prefix action names with the server name, such as `quandora_staging__factor_mining_status`. Treat those as the same actions.
 
-## Runtime Field Mapping
+## Plugin Construction Contract
 
-When writing Factor Sections, use the runtime `bar` object in C# code. Do not reference Python column names directly inside C#.
+Before writing `plugin.py`, call `factor_mining_get_plugin_contract` and use the returned `contract` as the source of truth for Python inputs, C# runtime expressions, runtime globals, and horizon defaults.
 
-- `close` -> `bar.Close`
-- `volume` -> `bar.Volume`
-- `taker_buy_volume` -> `bar.TakerBuyVolume`
-- `taker_sell_volume` -> `bar.TakerSellVolume`
+- For a public task, pass either the selected `task_id` before session creation or the created `session_id` after `factor_mining_create_task_session`.
+- For a custom idea, pass the full custom `task_payload` before session creation or the created `session_id` after `factor_mining_create_custom_session`.
+- Use `contract.allowed_data` to decide which input columns the factor may use.
+- Use `contract.fwd_period` unless the user explicitly asked for another horizon and the task allows it.
+- Use `contract.data_columns[].python_kwarg` for `build_signal` parameters.
+- For every C# runtime queue/buffer enqueue and every numeric C# runtime expression, use the matching `contract.data_columns[].csharp_double_expression`. Never infer `bar.*` fields or decimal/double casts from memory.
+- Follow `contract.runtime_rules` for required globals, `FACTOR_SECTIONS`, leak rules, extra-buffer rules, and reserved identifiers.
 
-For example, use `_takerBuyBuf.Enqueue(bar.TakerBuyVolume);`, not `_takerBuyBuf.Enqueue(takerBuyVolume);`.
+Illustrative only: if the contract says the `volume` column has `csharp_double_expression` equal to `(double)bar.Volume`, enqueue exactly that expression. The returned contract always wins.
 
 ## Workflow
 
@@ -54,8 +58,10 @@ Start with `factor_mining_status`. If authorization is missing or the tools are 
 
 Determine whether the user wants a public task or a custom idea:
 
-- For public tasks, call `factor_mining_list_public_tasks`, show concise choices, and ask the user to pick one unless they explicitly ask the agent to choose. The selected task's returned `allowed_data` is the authoritative list of data columns available for that task: use only fields included there and do not invent unavailable market fields. If a public task does not include `allowed_data`, stay conservative and use only `close` unless the user chooses a custom idea/session with explicit `allowed_data`. Then call `factor_mining_create_task_session`.
-- For a custom idea, call `factor_mining_create_custom_session` with a clear title, category, description, non-empty `allowed_data`, and `fwd_period`. Include every input column the generated factor needs, such as `close`, `volume`, `funding_rate_close`, or `open_interest_close`.
+- For public tasks, call `factor_mining_list_public_tasks`, show concise choices, and ask the user to pick one unless they explicitly ask the agent to choose. Then call `factor_mining_get_plugin_contract` with the selected `task_id` or create the session with `factor_mining_create_task_session` and call `factor_mining_get_plugin_contract` with the returned `session_id`.
+- For a custom idea, prepare a clear title, category, description, non-empty `allowed_data`, and `fwd_period`. Include every input column the generated factor needs, such as `close`, `volume`, `funding_rate_close`, or `open_interest_close`. Call `factor_mining_get_plugin_contract` with that `task_payload` before session creation, or create the session with `factor_mining_create_custom_session` and call `factor_mining_get_plugin_contract` with the returned `session_id`.
+
+Do not write `plugin.py` until the plugin construction contract has been returned. If the contract cannot be fetched, stop and report that plugin authoring is blocked by missing contract metadata.
 
 After a session exists, prepare one local result archive when the host supports file writes. Use a stable factor slug for the run folder. Prefer the generated top-level `FACTOR_TYPE`; if it is missing, convert `FACTOR_NAME` to lowercase snake_case. For example, `FACTOR_TYPE = "aggressive_flow_exhaustion_reversal"` uses:
 
@@ -73,7 +79,11 @@ Create or locate one `plugin.py` source:
 - In local coding hosts with a writable workspace, save the submitted source as `plugin.py` inside the run archive. Read the file back and submit the full contents as inline `plugin_source`.
 - In chat-only hosts without file writes, keep the generated source in the conversation/tool-call context and submit it directly as inline `plugin_source`.
 
+When writing `plugin.py`, keep `build_signal` inputs aligned with `contract.data_columns[].python_kwarg`. Keep `FACTOR_SECTIONS` runtime code aligned with the same columns, and use only `csharp_double_expression` for numeric runtime references to market data columns.
+
 Never submit a filesystem path or ask Quandora to read local files. Validate the source with `factor_mining_validate_plugin_source`. The validation step is static; do not import, execute, eval, or shell-run generated factor code.
+
+If compile diagnostics mention C# type or cast errors, re-read the plugin construction contract for the same session, task, or task payload. Replace every queue enqueue and numeric calculation that touches market data with the corresponding `csharp_double_expression`, then submit one corrected attempt.
 
 When the source is valid and the user is ready to submit, call `factor_mining_upload_backtest_wait` with `session_id`, inline `plugin_source`, and the selected `fwd_period` when required. Use `fwd_period=7` only when neither the task nor the user specifies a horizon.
 
@@ -199,7 +209,7 @@ def build_signal(close: pd.DataFrame, params: Dict[str, Any], **data: Any) -> pd
     return signal.reindex_like(close)
 ```
 
-Keep `build_signal` and `FACTOR_SECTIONS` compute logic aligned. Return a `pd.DataFrame` aligned with `close`, use only current and historical data, and keep all data columns within the session `allowed_data` contract.
+Keep `build_signal` and `FACTOR_SECTIONS` compute logic aligned. Return a `pd.DataFrame` aligned with `close`, use only current and historical data, and keep all data columns within the returned plugin construction contract.
 
 ## Security
 
