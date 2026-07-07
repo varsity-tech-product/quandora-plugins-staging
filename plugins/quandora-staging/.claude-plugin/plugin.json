@@ -1,6 +1,6 @@
 {
   "name": "quandora-staging",
-  "version": "1.0.8-staging.3",
+  "version": "1.0.8-staging.4",
   "description": "Staging Quandora plugin for pre-release agent workflow testing.",
   "author": {
     "name": "Varsity Tech Product",

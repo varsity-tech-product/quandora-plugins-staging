@@ -5,12 +5,12 @@
     "url": "https://github.com/varsity-tech-product"
   },
   "description": "Quandora staging plugin marketplace for pre-release testing.",
-  "version": "1.0.8-staging.3",
+  "version": "1.0.8-staging.4",
   "plugins": [
     {
       "name": "quandora-staging",
       "description": "Staging Quandora plugin for pre-release agent workflow testing.",
-      "version": "1.0.8-staging.3",
+      "version": "1.0.8-staging.4",
       "source": "./plugins/quandora-staging",
       "category": "Productivity",
       "tags": [
