@@ -34,6 +34,7 @@ Use only the Factor Mining actions exposed by `quandora-staging`:
 - `factor_mining_resume_run`
 - `factor_mining_get_backtest_window_cards`
 - `factor_mining_create_backtest_png_download_ticket`
+- `factor_mining_create_backtest_raw_artifact_download_ticket`
 - `factor_mining_get_backtest_png_artifact_chunk`
 
 Some hosts may prefix action names with the server name, such as `quandora_staging__factor_mining_status`. Treat those as the same actions.
@@ -95,14 +96,16 @@ If `upload_backtest_wait` returns `running`, call `factor_mining_resume_run` at 
 
 ### Artifact Handling
 
-Treat the terminal `factor_mining_upload_backtest_wait` or `factor_mining_resume_run` response as the run summary. After a backtest reaches a terminal state, use the window-card response as the manifest for factor cards and chart files:
+Treat the terminal `factor_mining_upload_backtest_wait` or `factor_mining_resume_run` response as the run summary. After a backtest reaches a terminal state, use the window-card response as the manifest for factor cards and chart files. Also request the raw signal parquet artifact when the host exposes that tool:
 
 1. Save the redacted upload/resume result as `run_summary.json`.
 2. Call `factor_mining_get_backtest_window_cards` with `windows: ["is", "all"]` and the bare backtest `job_id` from `run.run_id` or `run.job_ids[]`.
 3. Save each available returned `factor_card` to the returned `standard_local_name`: `factor_card_is.json` and `factor_card_all.json`.
 4. For every returned `png_artifacts[].source_name`, call `factor_mining_create_backtest_png_download_ticket`. The ticket response gives a short-lived Remote MCP download URL for the PNG bytes. Download that URL directly to the returned `standard_local_path`, then verify `size_bytes` and `md5_hex` when the response provides them.
 5. Some hosts cannot download URLs directly from tool output, and a ticket may expire before it is consumed. In that case, call `factor_mining_get_backtest_png_artifact_chunk` for the same server `source_name`. Use `standard_local_path` only as the local output path. Loop with `offset=0`, `limit=262144`, decode each `content_b64` chunk, append bytes to `standard_local_path`, and stop when `next_offset` is null.
-6. Save `artifact_manifest.json` listing every source artifact name, local path, window key, `size_bytes`, `md5_hex`, download status, and any omitted or unavailable reason.
+6. Call `factor_mining_create_backtest_raw_artifact_download_ticket` with the same bare backtest `job_id` and `name: "step4/signal_raw.parquet"`. If a ticket is returned, download it directly to `artifacts/raw/signal_raw.parquet`, then verify `size_bytes` and `sha256_hex` when provided.
+7. If the raw signal parquet ticket is unavailable, expired, or the artifact is missing, record `artifacts/raw/signal_raw.parquet` as unavailable in `artifact_manifest.json` and continue. Do not treat raw parquet unavailability by itself as a failed backtest.
+8. Save `artifact_manifest.json` listing every source artifact name, local path, window key when applicable, `size_bytes`, `md5_hex` or `sha256_hex`, download status, and any omitted or unavailable reason.
 
 Use this standard local layout:
 
@@ -122,13 +125,17 @@ Quandora staging result/factor-mining/<factor_slug>/
       group_return_plot.png
       cs_nav_curves.png
       cs_profile_4panel.png
+    raw/
+      signal_raw.parquet
 ```
 
 For API calls, use `png_artifacts[].source_name`; for local files, save to `png_artifacts[].standard_local_path`.
 
 The normal PNG save path is window cards -> download ticket -> local file. Chunked retrieval is the compatibility path for hosts that cannot consume the ticket URL. Keep PNG bytes out of the conversation and record the chosen save method in `artifact_manifest.json`.
 
-If a returned window card has `status` other than `available`, record the omitted or unavailable reason and continue. If a PNG download or chunk fetch fails, record the failure in `artifact_manifest.json` without failing the completed run.
+The raw signal save path is terminal run -> raw artifact download ticket -> `artifacts/raw/signal_raw.parquet`. Keep parquet bytes out of the conversation and record the raw artifact availability in `artifact_manifest.json`.
+
+If a returned window card has `status` other than `available`, record the omitted or unavailable reason and continue. If a PNG download, chunk fetch, or raw signal download fails, record the failure in `artifact_manifest.json` without failing the completed run.
 
 Do not save bearer tokens, download URLs, raw service metadata, internal IDs, or credentials. If the host does not support file writes, continue the workflow and say local archiving is not available in that host.
 
