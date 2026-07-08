@@ -41,17 +41,17 @@ Some hosts may prefix action names with the server name, such as `quandora_stagi
 
 ## Plugin Construction Contract
 
-Before writing `plugin.py`, call `factor_mining_get_plugin_contract` and use the returned `contract` as the source of truth for Python inputs, C# runtime expressions, runtime globals, and horizon defaults.
+Before writing `plugin.py`, call `factor_mining_get_plugin_contract` and use the returned `plugin_contract` as the source of truth for Python inputs, C# runtime expressions, runtime globals, and horizon defaults.
 
 - For a public task, pass either the selected `task_id` before session creation or the created `session_id` after `factor_mining_create_task_session`.
 - For a custom idea, pass the full custom `task_payload` before session creation or the created `session_id` after `factor_mining_create_custom_session`.
-- Use `contract.allowed_data` to decide which input columns the factor may use.
-- Use `contract.fwd_period` unless the user explicitly asked for another horizon and the task allows it.
-- Use `contract.data_columns[].python_kwarg` for `build_signal` parameters.
-- For every C# runtime queue/buffer enqueue and every numeric C# runtime expression, use the matching `contract.data_columns[].csharp_double_expression`. Never infer `bar.*` fields or decimal/double casts from memory.
-- Follow `contract.runtime_rules` for required globals, `FACTOR_SECTIONS`, leak rules, extra-buffer rules, and reserved identifiers.
+- Use `plugin_contract.allowed_data` to decide which input columns the factor may use.
+- Use `plugin_contract.fwd_period` unless the user explicitly asked for another supported horizon.
+- Use `plugin_contract.data_columns[].python_kwarg` for `build_signal` parameters.
+- For every C# runtime queue/buffer enqueue and every numeric C# runtime expression, use the matching `plugin_contract.data_columns[].csharp_double_expression`.
+- Follow `plugin_contract.runtime_rules` for required globals, `FACTOR_SECTIONS`, runtime variant, leak rules, extra-buffer rules, and reserved identifiers.
 
-Illustrative only: if the contract says the `volume` column has `csharp_double_expression` equal to `(double)bar.Volume`, enqueue exactly that expression. The returned contract always wins.
+Never infer C# bar fields, field types, decimal/double casts, runtime buffer expressions, or supported data columns from memory. The returned plugin construction contract wins.
 
 ## Workflow
 
@@ -80,13 +80,13 @@ Create or locate one `plugin.py` source:
 - In local coding hosts with a writable workspace, save the submitted source as `plugin.py` inside the run archive. Read the file back and submit the full contents as inline `plugin_source`.
 - In chat-only hosts without file writes, keep the generated source in the conversation/tool-call context and submit it directly as inline `plugin_source`.
 
-When writing `plugin.py`, keep `build_signal` inputs aligned with `contract.data_columns[].python_kwarg`. Keep `FACTOR_SECTIONS` runtime code aligned with the same columns, and use only `csharp_double_expression` for numeric runtime references to market data columns.
+When writing `plugin.py`, keep `build_signal` inputs aligned with `plugin_contract.data_columns[].python_kwarg`. Keep `FACTOR_SECTIONS` runtime code aligned with the same columns, and use only `plugin_contract.data_columns[].csharp_double_expression` for numeric runtime references to market data columns.
 
-Never submit a filesystem path or ask Quandora to read local files. Validate the source with `factor_mining_validate_plugin_source`. The validation step is static; do not import, execute, eval, or shell-run generated factor code.
+Never submit a filesystem path or ask Quandora to read local files. Validate the source with `factor_mining_validate_plugin_source`, inline `plugin_source`, and the same context used for the plugin construction contract. Prefer `session_id` after session creation. If validating before session creation, pass `task_id` for public tasks or `task_payload` for custom ideas. The validation step is static; do not import, execute, eval, or shell-run generated factor code.
 
-If compile diagnostics mention C# type or cast errors, re-read the plugin construction contract for the same session, task, or task payload. Replace every queue enqueue and numeric calculation that touches market data with the corresponding `csharp_double_expression`, then submit one corrected attempt.
+If validation returns diagnostics, use `repair_hint`, `expected`, `actual`, `field`, and `contract_key_path` to revise `plugin.py`. If a backtest fails with safe diagnostics, use those diagnostics for one focused repair attempt. For C# type or cast failures, re-read the same plugin construction contract and replace runtime expressions with the corresponding `plugin_contract.data_columns[].csharp_double_expression`.
 
-When the source is valid and the user is ready to submit, call `factor_mining_upload_backtest_wait` with `session_id`, inline `plugin_source`, and the selected `fwd_period` when required. Use `fwd_period=7` only when neither the task nor the user specifies a horizon.
+When the source is valid and the user is ready to submit, call `factor_mining_upload_backtest_wait` with `session_id`, inline `plugin_source`, and the selected `fwd_period` when required. Use `plugin_contract.fwd_period` unless the user explicitly requested another supported horizon.
 
 Use `factor_mining_resume_run` when a prior run was interrupted.
 
@@ -215,7 +215,7 @@ def build_signal(close: pd.DataFrame, params: Dict[str, Any], **data: Any) -> pd
     return signal.reindex_like(close)
 ```
 
-Keep `build_signal` and `FACTOR_SECTIONS` compute logic aligned. Return a `pd.DataFrame` aligned with `close`, use only current and historical data, and keep all data columns within the returned plugin construction contract.
+Keep `build_signal` and `FACTOR_SECTIONS` compute logic aligned. Return a `pd.DataFrame` aligned with `close`, use only current and historical data, and keep all data columns within `plugin_contract.allowed_data`.
 
 ## Security
 
