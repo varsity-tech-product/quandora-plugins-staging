@@ -37,6 +37,8 @@ Use only the Factor Mining actions exposed by `quandora-staging`:
 - `factor_mining_create_backtest_raw_artifact_download_ticket`
 - `factor_mining_get_backtest_png_artifact_chunk`
 
+When the host exposes `factor_mining_explain_result_fields`, use it only for user-requested result insight, metric explanation, diagnosis, or optimization. Default mining requests can proceed without it.
+
 Some hosts may prefix action names with the server name, such as `quandora_staging__factor_mining_status`. Treat those as the same actions.
 
 ## Plugin Construction Contract
@@ -73,7 +75,11 @@ Quandora staging result/factor-mining/aggressive_flow_exhaustion_reversal/artifa
 
 Use only the factor slug as the canonical archive directory. The latest run for a factor updates that factor's folder. Keep session and run ids only inside `run_summary.json` / `artifact_manifest.json` when they are needed for traceability, not in the user-facing directory name.
 
-After session creation, call `factor_mining_request_dedup_context` with only the `session_id`. Treat the returned `query_mode`, `similar_factors`, and `duplicate_risk` as task-level context for choosing a distinct direction.
+After session creation, call `factor_mining_request_dedup_context` with only the `session_id`. Treat the result as task-level memory for choosing a distinct direction, not as a draft-level rejection. If the response includes `task_memory_pressure`, use it to understand crowded or previously failed regions. If the response includes `duplicate_risk` at this stage, read it as task-context pressure.
+
+Before drafting, form a concise research thesis. For public tasks, stay inside the task's economic direction and allowed data. For custom ideas, stay inside the user's stated idea. Consider two or three plausible mechanisms, then choose the one with the clearest economic rationale, the best fit to the plugin contract, and the least overlap with the returned task memory. Prefer genuinely different mechanisms over parameter variants of the same formula.
+
+For named indicators or established formulas, use the canonical inputs when the plugin contract allows them. For example, MFI should use high, low, close, and volume when those columns are available. If required inputs are unavailable, clearly treat the factor as a variant and reflect that in `FACTOR_NAME`, `FACTOR_TYPE`, description, and formula.
 
 Create or locate one `plugin.py` source:
 
@@ -95,7 +101,7 @@ After drafting `plugin.py` and before validation or upload, call `factor_mining_
 }
 ```
 
-Use this second result as draft-factor duplicate-risk guidance. Revise the candidate before upload when `duplicate_risk.level` is `medium` or `high`, or when `similar_factors` show obvious repetition of the same mechanism. Empty `similar_factors` means no close match was returned; it is not a guarantee of acceptance, so continue with validation and backtesting.
+Use this second result as draft-factor duplicate-risk guidance. If the response includes `draft_duplicate_risk`, use that field as the main decision signal. If the response includes `duplicate_risk`, use it as draft-level guidance because this call includes the full draft source. Revise the candidate before upload when the draft risk is `medium` or `high` and the nearest factors share the same mechanism, formula family, or allowed-data pattern. Empty `similar_factors` means no close match was returned; it is not a guarantee of acceptance, so continue with validation and backtesting.
 
 Never submit a filesystem path or ask Quandora to read local files. Validate the source with `factor_mining_validate_plugin_source`, inline `plugin_source`, and the same context used for the plugin construction contract. Prefer `session_id` after session creation. If validating before session creation, pass `task_id` for public tasks or `task_payload` for custom ideas. The validation step is static; do not import, execute, eval, or shell-run generated factor code.
 
@@ -147,6 +153,20 @@ The raw signal save path is terminal run -> raw artifact download ticket -> `sig
 If a returned window card has `status` other than `available`, record the omitted or unavailable reason and continue. If a PNG download, chunk fetch, or raw signal download fails, record the failure in `artifact_manifest.json` without failing the completed run.
 
 Do not save bearer tokens, download URLs, raw service metadata, internal IDs, or credentials. If the host does not support file writes, continue the workflow and say local archiving is not available in that host.
+
+### Result Insight and Optimization
+
+Run this section only when the user asks for insight, diagnosis, explanation, or optimization. Do not add long reflection to ordinary mining requests.
+
+When `factor_mining_explain_result_fields` is visible, call it before explaining factor-card metrics, chart panels, or failure reasons. Request the relevant fields and chart names from the saved result, such as `rank_ic`, `rank_icir`, `cs_sharpe`, `factor_autocorr_lag1`, `group_return_plot.png`, `cs_nav_curves.png`, and `cs_profile_4panel.png`. Use the returned definitions as the authority for metric meaning.
+
+When interpreting a result:
+
+- Use in-sample IC / Rank IC sign to understand the factor's natural direction. Do not decide to invert a factor only because the realized backtest was poor.
+- Diagnose the economic mechanism first, then the implementation. Consider IC level and stability, ICIR, autocorrelation, group monotonicity, long-short behavior, long-only and short-only legs, drawdown, turnover, and whether the signal decay matches the requested horizon.
+- If optimizing, propose a new hypothesis within the same task or user idea. Avoid merely changing window lengths, renaming the factor, or making a post-hoc sign flip.
+- Use the first dedup result to avoid repeatedly exploring regions the user has already tried. Use the second dedup call on the revised draft before another upload.
+- If the host has general web or research tools and the user asks for broader insight, use them only for public background research. Do not send private factor source, run IDs, credentials, or artifact contents to external tools.
 
 ## Final Response
 
