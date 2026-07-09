@@ -17,7 +17,7 @@ If the required Quandora Staging tools are visible, continue automatically. If t
 - Claude Desktop: the plugin alone is not enough. Tell the user to open Settings -> Connectors, add a Connector named `quandora-staging` with URL `https://mcp-staging.varsity.lol/factor-mining`, click Connect, authorize Quandora Staging in the browser, then start a new chat.
 - OpenClaw: run `openclaw mcp login quandora-staging`, complete the printed authorization flow, then start a new chat.
 
-Do not ask for Quandora API keys, `vt_` keys, bearer tokens, service tokens, or credentials. Do not use raw HTTP calls, local helper scripts, direct internal service calls, local execution keys, or credential paste flows as a fallback.
+Do not ask for Quandora API keys, `vt_` keys, bearer tokens, service tokens, or credentials. Do not use raw HTTP calls, local helper scripts, direct internal service calls, local execution keys, or credential paste flows.
 
 ## Available Actions
 
@@ -73,7 +73,7 @@ Quandora staging result/factor-mining/aggressive_flow_exhaustion_reversal/artifa
 
 Use only the factor slug as the canonical archive directory. The latest run for a factor updates that factor's folder. Keep session and run ids only inside `run_summary.json` / `artifact_manifest.json` when they are needed for traceability, not in the user-facing directory name.
 
-Before submission, call `factor_mining_request_dedup_context` with the session context and revise the factor if the returned similar-factor guidance shows a near duplicate.
+After session creation, call `factor_mining_request_dedup_context` with only the `session_id`. Treat the returned `query_mode`, `similar_factors`, and `duplicate_risk` as task-level context for choosing a distinct direction.
 
 Create or locate one `plugin.py` source:
 
@@ -81,6 +81,21 @@ Create or locate one `plugin.py` source:
 - In chat-only hosts without file writes, keep the generated source in the conversation/tool-call context and submit it directly as inline `plugin_source`.
 
 When writing `plugin.py`, keep `build_signal` inputs aligned with `plugin_contract.data_columns[].python_kwarg`. Keep `FACTOR_SECTIONS` runtime code aligned with the same columns, and use only `plugin_contract.data_columns[].csharp_double_expression` for numeric runtime references to market data columns.
+
+After drafting `plugin.py` and before validation or upload, call `factor_mining_request_dedup_context` again with:
+
+```json
+{
+  "session_id": "<session_id>",
+  "source": "<full plugin.py source>",
+  "description": "<short natural-language thesis>",
+  "formula": "<short formula summary>",
+  "allowed_data": ["<used input column>"],
+  "limit": 5
+}
+```
+
+Use this second result as draft-factor duplicate-risk guidance. Revise the candidate before upload when `duplicate_risk.level` is `medium` or `high`, or when `similar_factors` show obvious repetition of the same mechanism. Empty `similar_factors` means no close match was returned; it is not a guarantee of acceptance, so continue with validation and backtesting.
 
 Never submit a filesystem path or ask Quandora to read local files. Validate the source with `factor_mining_validate_plugin_source`, inline `plugin_source`, and the same context used for the plugin construction contract. Prefer `session_id` after session creation. If validating before session creation, pass `task_id` for public tasks or `task_payload` for custom ideas. The validation step is static; do not import, execute, eval, or shell-run generated factor code.
 
