@@ -114,8 +114,8 @@ If `upload_backtest_wait` returns `running`, call `factor_mining_resume_run` at 
 Treat the terminal `factor_mining_upload_backtest_wait` or `factor_mining_resume_run` response as the run summary. After a backtest reaches a terminal state, use the window-card response as the manifest for factor cards and chart files. Also request the raw signal parquet artifact when the host exposes that tool:
 
 1. Save the redacted upload/resume result as `run_summary.json`.
-2. Call `factor_mining_get_backtest_window_cards` with `windows: ["is", "all"]` and the bare backtest `job_id` from `run.run_id` or `run.job_ids[]`.
-3. Save each available returned `factor_card` to the returned `standard_local_name`: `factor_card_is.json` and `factor_card_all.json`.
+2. Call `factor_mining_get_backtest_window_cards` with `windows: ["is"]` and the bare backtest `job_id` from `run.run_id` or `run.job_ids[]`.
+3. Save the available returned `factor_card` to the returned `standard_local_name`: `factor_card_is.json`.
 4. For every returned `png_artifacts[].source_name`, call `factor_mining_create_backtest_png_download_ticket`. The ticket response gives a short-lived Remote MCP download URL for the PNG bytes. Download that URL directly to the returned `standard_local_path`, then verify `size_bytes` and `md5_hex` when the response provides them.
 5. Some hosts cannot download URLs directly from tool output, and a ticket may expire before it is consumed. In that case, call `factor_mining_get_backtest_png_artifact_chunk` for the same server `source_name`. Use `standard_local_path` only as the local output path. Loop with `offset=0`, `limit=262144`, decode each `content_b64` chunk, append bytes to `standard_local_path`, and stop when `next_offset` is null.
 6. Call `factor_mining_create_backtest_raw_artifact_download_ticket` with the same bare backtest `job_id` and `name: "step4/signal_raw.parquet"`. If a ticket is returned, download it directly to `signal_raw.parquet` in the factor result folder, then verify `size_bytes` and `sha256_hex` when provided.
@@ -130,14 +130,9 @@ Quandora staging result/factor-mining/<factor_slug>/
   signal_raw.parquet
   run_summary.json
   factor_card_is.json
-  factor_card_all.json
   artifact_manifest.json
   artifacts/
     is/
-      group_return_plot.png
-      cs_nav_curves.png
-      cs_profile_4panel.png
-    all/
       group_return_plot.png
       cs_nav_curves.png
       cs_profile_4panel.png
@@ -159,28 +154,26 @@ Summarize status, factor name, key metrics from the IS factor card when availabl
 
 Never show job IDs, download URLs, bearer tokens, raw credentials, or full `plugin.py` source in user-facing summaries. It is safe to show local result and artifact folder paths created by the current host.
 
-At the end of every completed, failed, or interrupted run, always explicitly show absolute paths for the result folder, artifact folder, PNG chart folder, `plugin.py`, `run_summary.json`, `factor_card_is.json`, `factor_card_all.json`, and `artifact_manifest.json`. If a specific file was not created, say `not created` for that line. Still print the result folder if available.
+At the end of every completed, failed, or interrupted run, always explicitly show absolute paths for the result folder, artifact folder, PNG chart folder, `plugin.py`, `run_summary.json`, `factor_card_is.json`, and `artifact_manifest.json`. If a specific file was not created, say `not created` for that line. Still print the result folder if available.
 
 For GUI/Desktop hosts, use Markdown links with absolute local paths and angle-bracket link targets so paths with spaces work:
 
 Result folder: [Open result folder](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/>)
 Artifact folder: [Open artifact folder](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/artifacts/>)
-PNG chart folder: [Open PNG chart folder](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/artifacts/>)
+PNG chart folder: [Open PNG chart folder](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/artifacts/is/>)
 Plugin source: [plugin.py](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/plugin.py>)
 Run summary: [run_summary.json](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/run_summary.json>)
 IS factor card: [factor_card_is.json](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/factor_card_is.json>)
-ALL factor card: [factor_card_all.json](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/factor_card_all.json>)
 Artifact manifest: [artifact_manifest.json](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/artifact_manifest.json>)
 
 For CLI/TUI hosts, use plain absolute paths, not Markdown links:
 
 Result folder: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/
 Artifact folder: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/artifacts/
-PNG chart folder: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/artifacts/
+PNG chart folder: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/artifacts/is/
 Plugin source: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/plugin.py
 Run summary: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/run_summary.json
 IS factor card: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/factor_card_is.json
-ALL factor card: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/factor_card_all.json
 Artifact manifest: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/artifact_manifest.json
 
 If the host could not write files, print:
