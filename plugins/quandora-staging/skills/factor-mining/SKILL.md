@@ -48,7 +48,7 @@ Before writing `plugin.py`, call `factor_mining_get_plugin_contract` and use the
 - For a public task, pass either the selected `task_id` before session creation or the created `session_id` after `factor_mining_create_task_session`.
 - For a custom idea, pass the full custom `task_payload` before session creation or the created `session_id` after `factor_mining_create_custom_session`.
 - Use `plugin_contract.allowed_data` to decide which input columns the factor may use.
-- Use `plugin_contract.fwd_period` unless the user explicitly asked for another supported horizon.
+- Use `plugin_contract.fwd_period` after the contract is returned. For custom ideas, set `task_payload.fwd_period` to `7` unless the user explicitly asks for another supported horizon.
 - Use `plugin_contract.data_columns[].python_kwarg` for `build_signal` parameters.
 - For every C# runtime queue/buffer enqueue and every numeric C# runtime expression, use the matching `plugin_contract.data_columns[].csharp_double_expression`.
 - Follow `plugin_contract.runtime_rules` for required globals, `FACTOR_SECTIONS`, runtime variant, leak rules, extra-buffer rules, and reserved identifiers.
@@ -62,7 +62,7 @@ Start with `factor_mining_status`. If authorization is missing or the tools are 
 Determine whether the user wants a public task or a custom idea:
 
 - For public tasks, call `factor_mining_list_public_tasks`, show concise choices, and ask the user to pick one unless they explicitly ask the agent to choose. Then call `factor_mining_get_plugin_contract` with the selected `task_id` or create the session with `factor_mining_create_task_session` and call `factor_mining_get_plugin_contract` with the returned `session_id`.
-- For a custom idea, prepare a clear title, category, description, non-empty `allowed_data`, and `fwd_period`. Include every input column the generated factor needs, such as `close`, `volume`, `funding_rate_close`, or `open_interest_close`. Call `factor_mining_get_plugin_contract` with that `task_payload` before session creation, or create the session with `factor_mining_create_custom_session` and call `factor_mining_get_plugin_contract` with the returned `session_id`.
+- For a custom idea, prepare a clear title, category, description, non-empty `allowed_data`, and `fwd_period`. Use `fwd_period: 7` unless the user explicitly asks for another supported horizon. Include every input column the generated factor needs, such as `close`, `volume`, `funding_rate_close`, or `open_interest_close`. Call `factor_mining_get_plugin_contract` with that `task_payload` before session creation, or create the session with `factor_mining_create_custom_session` and call `factor_mining_get_plugin_contract` with the returned `session_id`.
 
 Do not write `plugin.py` until the plugin construction contract has been returned. If the contract cannot be fetched, stop and report that plugin authoring is blocked by missing contract metadata.
 
@@ -101,7 +101,7 @@ After drafting `plugin.py` and before validation or upload, call `factor_mining_
 }
 ```
 
-Use this second result as draft-factor duplicate-risk guidance. If the response includes `draft_duplicate_risk`, use that field as the main decision signal. If the response includes `duplicate_risk`, use it as draft-level guidance because this call includes the full draft source. Revise the candidate before upload when the draft risk is `medium` or `high` and the nearest factors share the same mechanism, formula family, or allowed-data pattern. Empty `similar_factors` means no close match was returned; it is not a guarantee of acceptance, so continue with validation and backtesting.
+Use this second result as draft-factor memory context. If it reports nearby factors, avoid copying the same mechanism, formula family, and allowed-data pattern, but do not keep rewriting solely because the current service reports high similarity. Continue to validation and backtesting once the candidate has a distinct economic thesis and follows the plugin construction contract. Empty `similar_factors` means no close match was returned; it is not a guarantee of acceptance.
 
 Never submit a filesystem path or ask Quandora to read local files. Validate the source with `factor_mining_validate_plugin_source`, inline `plugin_source`, and the same context used for the plugin construction contract. Prefer `session_id` after session creation. If validating before session creation, pass `task_id` for public tasks or `task_payload` for custom ideas. The validation step is static; do not import, execute, eval, or shell-run generated factor code.
 
@@ -113,7 +113,7 @@ Use `factor_mining_resume_run` when a prior run was interrupted.
 
 ### Waiting Policy
 
-If `upload_backtest_wait` returns `running`, call `factor_mining_resume_run` at most 6 times in the current request. If the run is still `running`, stop waiting, keep the saved files, and tell the user the run is still in progress. Always print the result folder path.
+If `upload_backtest_wait` returns `running`, call `factor_mining_resume_run` at most 3 times in the current request. If the run is still `running`, stop waiting, keep the saved files, and tell the user the run is still in progress. Always print the result folder path.
 
 ### Artifact Handling
 
