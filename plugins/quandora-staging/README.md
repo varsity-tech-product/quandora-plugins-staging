@@ -1,6 +1,6 @@
 # Quandora Staging
 
-Quandora Staging is the public staging plugin package for pre-release Quandora agent workflow testing. It points to staging services and is not the production plugin.
+Quandora Staging is the public staging plugin package for pre-release Quandora agent workflow testing. It includes Factor Mining and Strategy skills, points to staging services, and is not the production plugin.
 
 ## What Factor Mining Does
 
@@ -28,4 +28,5 @@ The archive is named from the factor slug, preferably the generated `FACTOR_TYPE
 ```text
 skills/
   factor-mining/
+  strategy/
 ```

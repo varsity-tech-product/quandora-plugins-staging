@@ -12,7 +12,7 @@ If the Strategy tools are visible, continue. Otherwise, use the host's normal Qu
 - Codex CLI/TUI: run `codex mcp login quandora-staging`.
 - Codex Desktop: authorize the plugin-provided Quandora Staging connector if prompted, then start a new chat. If the tools are still missing, fully quit and reopen Codex Desktop.
 - Claude Code: open `/mcp`, authenticate `quandora-staging`, then start a new chat.
-- Claude Desktop: open Settings -> Connectors, add a Connector named `quandora-staging` with URL `https://mcp-staging.varsity.lol/quant`, click Connect, authorize Quandora Staging in the browser, then start a new chat. Existing authorization for the old staging `/factor-mining` audience is not reused for `/quant`.
+- Claude Desktop: open Settings -> Connectors, add a Connector named `quandora-staging` with URL `https://mcp-staging.varsity.lol/quant`, click Connect, authorize Quandora Staging in the browser, then start a new chat.
 - OpenClaw: run `openclaw mcp login quandora-staging`, complete the printed authorization flow, then start a new chat.
 
 Never ask for or accept API keys, access tokens, bearer tokens, service tokens, auth files, or credentials. Do not use raw HTTP, local helper scripts, direct internal-service calls, or credential-paste flows.
