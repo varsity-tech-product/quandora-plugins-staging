@@ -1,7 +1,7 @@
 {
   "name": "quandora-staging",
-  "version": "1.0.8-staging.11",
-  "description": "Staging Quandora plugin for pre-release agent workflow testing.",
+  "version": "1.0.8-staging.13",
+  "description": "Staging Quandora plugin with Factor Mining and Strategy skills for pre-release workflow testing.",
   "author": {
     "name": "Varsity Tech Product",
     "url": "https://github.com/varsity-tech-product"
@@ -13,6 +13,7 @@
     "quandora",
     "factor-mining",
     "backtesting",
+    "strategy",
     "quant"
   ],
   "skills": "./skills/",
@@ -20,7 +21,7 @@
   "interface": {
     "displayName": "Quandora Staging",
     "shortDescription": "Use staging Quandora services from your agent.",
-    "longDescription": "Quandora Staging packages pre-release service skills in one plugin. Factor Mining is the first skill and helps agents test staging tasks, sessions, factor source submission, backtests, artifact retrieval, and result summaries.",
+    "longDescription": "Quandora Staging packages Factor Mining and Strategy skills in one plugin. Factor Mining supports staging tasks, sessions, factor source submission, backtests, artifact retrieval, and result summaries; Strategy composes and resumes cross-sectional runs from existing factors.",
     "developerName": "Varsity Tech Product",
     "category": "Productivity",
     "capabilities": [
@@ -31,7 +32,8 @@
     "defaultPrompt": [
       "Use Quandora Staging Factor Mining to show public tasks.",
       "Use Quandora Staging Factor Mining with my custom factor idea.",
-      "Use Quandora Staging Factor Mining to resume a run and summarize results."
+      "Use Quandora Staging Factor Mining to resume a run and summarize results.",
+      "Use Quandora Staging Strategy to combine existing factors into a cross-sectional strategy."
     ],
     "brandColor": "#0F766E"
   }

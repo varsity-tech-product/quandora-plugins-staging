@@ -1,0 +1,13 @@
+interface:
+  display_name: "Strategy Staging"
+  short_description: "Compose and backtest staging strategies"
+  default_prompt: "Use $strategy to combine existing Quandora factors into a cross-sectional strategy."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "quandora-staging"
+      description: "Quandora Staging Strategy connection"
+      transport: "streamable_http"
+      url: "https://mcp-staging.varsity.lol/quant"
+      oauth_resource: "https://mcp-staging.varsity.lol/quant"

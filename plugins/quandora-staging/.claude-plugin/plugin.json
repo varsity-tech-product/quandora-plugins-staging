@@ -1,7 +1,7 @@
 {
   "name": "quandora-staging",
-  "version": "1.0.8-staging.11",
-  "description": "Staging Quandora plugin for pre-release agent workflow testing.",
+  "version": "1.0.8-staging.13",
+  "description": "Staging Quandora plugin with Factor Mining and Strategy skills for pre-release workflow testing.",
   "author": {
     "name": "Varsity Tech Product",
     "url": "https://github.com/varsity-tech-product"
@@ -13,7 +13,7 @@
   "mcpServers": {
     "quandora-staging": {
       "type": "http",
-      "url": "https://mcp-staging.varsity.lol/factor-mining"
+      "url": "https://mcp-staging.varsity.lol/quant"
     }
   }
 }

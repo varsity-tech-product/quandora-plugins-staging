@@ -1,7 +1,7 @@
 {
   "quandora-staging": {
-    "url": "https://mcp-staging.varsity.lol/factor-mining",
-    "oauth_resource": "https://mcp-staging.varsity.lol/factor-mining",
+    "url": "https://mcp-staging.varsity.lol/quant",
+    "oauth_resource": "https://mcp-staging.varsity.lol/quant",
     "startup_timeout_sec": 20,
     "tool_timeout_sec": 600
   }

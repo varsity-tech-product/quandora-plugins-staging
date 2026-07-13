@@ -152,7 +152,7 @@ Claude Desktop requires both the Quandora Staging plugin and the Quandora Stagin
 
 ```text
 Name: quandora-staging
-URL: https://mcp-staging.varsity.lol/factor-mining
+URL: https://mcp-staging.varsity.lol/quant
 ```
 
 Use Settings -> Connectors, add the Connector above, click Connect, authorize Quandora Staging in the browser, then start a new chat.
