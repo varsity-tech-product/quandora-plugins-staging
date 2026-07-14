@@ -34,7 +34,7 @@ Some hosts prefix action names with the server name, such as `quandora_staging__
 2. While the main run is not terminal, use `strategy_resume_run` with that same `run_id` to continue observing it.
 3. Once the main run is terminal, do not resubmit it to retrieve results.
 
-The main run status remains separate from artifact availability. A pending artifact is not a failed Strategy run, and an unavailable optional artifact does not change a completed main-run status.
+The main run status remains separate from artifact availability, including after the main run is terminal. For `{"status":"pending","artifact_status":"pending"}` (or the legacy status-only pending response), record the artifact as pending and allow a later resume or check. For `{"status":"not_available","artifact_status":"failed"}` or `{"status":"not_available","artifact_status":"unavailable"}`, record the artifact as unavailable, do not continue polling it as pending, do not create its local artifact file, and report that the main-run status is unchanged.
 
 ## Read Safe Result Artifacts
 
