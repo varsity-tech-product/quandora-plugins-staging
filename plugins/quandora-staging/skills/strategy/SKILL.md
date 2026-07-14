@@ -1,59 +1,101 @@
 ---
 name: strategy
-description: Use when an agent should compose, submit, inspect, or resume a cross-sectional Quandora Staging strategy from existing factors.
+description: Use when an agent should compose, submit, inspect, or archive a cross-sectional Quandora Staging strategy from eligible factors.
 ---
 
 # Quandora Staging Strategy
 
-Use this skill through the authenticated Quandora Staging connection exposed by the host as `quandora-staging`. It composes cross-sectional strategies from existing factor ids; use Factor Mining to create new factor source.
+Use this skill through the authenticated Quandora Staging connection exposed by the host as `quandora-staging`. It composes cross-sectional strategies from eligible factor ids and retrieves the service-provided safe Strategy result artifacts.
 
-If the Strategy tools are visible, continue. Otherwise, use the host's normal Quandora Staging OAuth connection path:
+## Connection and Tools
 
-- Codex CLI/TUI: run `codex mcp login quandora-staging`.
-- Codex Desktop: authorize the plugin-provided Quandora Staging connector if prompted, then start a new chat. If the tools are still missing, fully quit and reopen Codex Desktop.
-- Claude Code: open `/mcp`, authenticate `quandora-staging`, then start a new chat.
-- Claude Desktop: open Settings -> Connectors, add a Connector named `quandora-staging` with URL `https://mcp-staging.varsity.lol/quant`, click Connect, authorize Quandora Staging in the browser, then start a new chat.
-- OpenClaw: run `openclaw mcp login quandora-staging`, complete the printed authorization flow, then start a new chat.
-
-Never ask for or accept API keys, access tokens, bearer tokens, service tokens, auth files, or credentials. Do not use raw HTTP, local helper scripts, direct internal-service calls, or credential-paste flows.
-
-## Supported Workflow
-
-Use only these Strategy actions in the normal workflow:
+Before starting, confirm that the Quandora Staging connection is authenticated and that these five Strategy actions are visible:
 
 1. `strategy_list_eligible_factors`
 2. `strategy_submit_run`
 3. `strategy_get_run`
 4. `strategy_resume_run`
+5. `strategy_get_artifact`
 
-Some hosts prefix the action names with the server name, such as `quandora_staging__strategy_submit_run`; treat those as the same actions.
+Some hosts prefix action names with the server name, such as `quandora_staging__strategy_submit_run`; treat those as the same actions. If the connection or actions are unavailable, use the host's normal Quandora Staging connection flow, then start a new chat before continuing.
 
-## Scope and Submission Rules
+## Submit One Cross-Sectional Run
 
-- Cross-sectional strategies only. Do not send `ts` or `time_series`.
-- Use factors returned by `strategy_list_eligible_factors` or exact factor ids supplied by the user.
-- Supply exactly one selection form:
-  - `factor_ids`: 1–20 factor ids.
-  - `factor_weights`: 1–20 objects of the form `{ "factor_id": "<id>", "weight": <positive number> }`. Factor ids must be unique and weights must be positive.
-- Supply `ranking` as `{ "mode": "N", "value": <positive integer> }` or `{ "mode": "percent", "value": <number in (0, 50]> }`.
-- Supply `strategy_type` as `long_only`, `short_only`, or `neutral`.
-- Optional supported submission fields are `start_date`, `end_date`, `initial_cash`, `taker_fee_rate`, `maker_fee_rate`, `rebalance_bars`, and `attribution`.
-- `attribution` is an opaque optional boolean. Send `attribution: true` for a normal run unless the user explicitly requests otherwise.
+1. Call `strategy_list_eligible_factors` and use its returned eligible cross-sectional factors.
+2. If the user has not supplied factor ids or weighted factors, ask them to choose from those returned factors. Confirm optional weights when the user wants a weighted selection.
+3. Call `strategy_submit_run` once with exactly one selection form:
+   - `factor_ids`: 1–20 returned factor ids; or
+   - `factor_weights`: 1–20 `{ "factor_id": "<id>", "weight": <positive number> }` objects.
+4. Include a valid ranking rule and strategy type. Use `attribution: true` unless the user explicitly requests otherwise, and record whether it was enabled for this submission.
 
-## Run Workflow
+## Observe the Main Run
 
-1. Call `strategy_list_eligible_factors` to find eligible cross-sectional factors. Use its supported filters and pagination fields only when needed.
-2. Choose factors with the user unless exact factors were supplied or the user explicitly asks the agent to choose.
-3. Call `strategy_submit_run` with exactly one selection form, a ranking rule, a strategy type, and `attribution: true` unless the user requests otherwise.
-4. Call `strategy_get_run` with `{"run_id":"<run_id>"}` to fetch the latest returned snapshot.
-5. Call `strategy_resume_run` only with `{"run_id":"<run_id>"}` when resuming a run. Send no other fields.
+1. Call `strategy_get_run` with `{"run_id":"<strategy-run-id>"}` for the latest main-run snapshot.
+2. While the main run is not terminal, use `strategy_resume_run` with that same `run_id` to continue observing it.
+3. Once the main run is terminal, do not resubmit it to retrieve results.
 
-## Final Response
+The main run status remains separate from artifact availability. A pending artifact is not a failed Strategy run, and an unavailable optional artifact does not change a completed main-run status.
 
-Report only facts returned by `strategy_get_run` or `strategy_resume_run`:
+## Read Safe Result Artifacts
 
-- run status;
-- selected factors and selection method;
-- ranking and strategy type;
-- safe summary fields, when present;
-- that result artifacts are not yet available when the server does not provide them.
+After the main run reaches its terminal state, read `summary` first with:
+
+```json
+{"run_id":"<strategy-run-id>","artifact":"summary"}
+```
+
+When the user asks for the completed result archive, then read these safe artifacts as available:
+
+1. `charts`
+2. `equity_curve`
+3. `drawdown_curve`
+4. `turnover_curve`
+5. `exposure_curve`
+
+Read `trades` only when the user requests trade-level detail.
+
+Read `attribution` and `signal_return_curves` only when attribution was enabled for this submission and the returned archive reports those artifacts ready. Describe attribution only as the safe Strategy attribution artifact returned by the service; do not describe it as PnL contribution analysis.
+
+Each `strategy_get_artifact` call requires both `run_id` and one of these safe artifact names:
+
+```text
+summary
+charts
+equity_curve
+drawdown_curve
+turnover_curve
+exposure_curve
+trades
+attribution
+signal_return_curves
+```
+
+## Local Result Archive
+
+When the host can write local files, save only safe returned content under this deterministic layout:
+
+```text
+Quandora staging result/
+  strategy/
+    <strategy-run-id>/
+      run_summary.json
+      artifacts/
+        summary.json
+        charts.json
+        equity_curve.json
+        drawdown_curve.json
+        turnover_curve.json
+        exposure_curve.json
+        trades.json
+        attribution.json
+        signal_return_curves.json
+      artifact_manifest.json
+```
+
+- Save `run_summary.json` from the final safe main-run snapshot.
+- Create an artifact JSON file only when the corresponding safe artifact body is available.
+- Create `artifact_manifest.json` with the run id, main-run status, each artifact's local state, and a relative filename only for saved artifacts.
+- For every artifact, record exactly one local state: `ready`, `pending`, `unavailable`, or `not_requested`.
+- Keep the manifest limited to those local archive facts and the returned safe content needed for the saved files.
+
+In the final response, report the main-run status, which safe artifacts were ready or unavailable, and the local archive folder when files were written.
