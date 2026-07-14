@@ -6,8 +6,8 @@ description: Use when an agent should compose, submit, inspect, or archive a cro
 # Quandora Staging Strategy
 
 Use this skill through the authenticated Quandora Staging connection exposed by the host as
-`quandora-staging`. It composes cross-sectional strategies from eligible factor ids and reads the
-Factor Mining-owned Strategy archive contract.
+`quandora-staging`. It composes cross-sectional strategies from eligible factor ids and includes
+the complete Strategy archive workflow.
 
 ## Connection and Tools
 
@@ -21,20 +21,46 @@ Strategy actions are visible:
 5. `strategy_get_artifact`
 
 Some hosts prefix action names with the server name, such as
-`quandora_staging__strategy_submit_run`; treat those as the same actions. If the connection or
-actions are unavailable, use the host's normal Quandora Staging connection flow, then start a new
-chat before continuing.
+`quandora_staging__strategy_submit_run`; treat those as the same actions.
+
+If the connection or actions are unavailable, use the host-specific OAuth flow, then start a new
+chat before continuing:
+
+- Codex CLI/TUI: run `codex mcp login quandora-staging`.
+- Codex Desktop: authorize the plugin-provided connector, start a new chat, and fully quit and
+  reopen Codex Desktop if the tools remain unavailable.
+- Claude Code: open `/mcp`, authenticate `quandora-staging`, then start a new chat.
+- Claude Desktop: add a connector named `quandora-staging` with URL
+  `https://mcp-staging.varsity.lol/quant`, click Connect, complete browser authorization, then
+  start a new chat.
+- OpenClaw: run `openclaw mcp login quandora-staging`, complete authorization, then start a new
+  chat.
+
+The normal workflow uses only these five exposed Strategy MCP actions. Never ask for or accept API
+keys, access tokens, bearer tokens, service tokens, auth files, or credentials. Do not use raw
+HTTP, local helper scripts, direct internal-service calls, or credential-paste flows as a fallback.
 
 ## Submit One Cross-Sectional Run
 
-1. Call `strategy_list_eligible_factors` and use its returned eligible cross-sectional factors.
-2. If the user has not supplied factor ids or weighted factors, ask them to choose from those
-   returned factors. Confirm optional weights when the user wants a weighted selection.
-3. Call `strategy_submit_run` once with exactly one selection form:
-   - `factor_ids`: 1–20 returned factor ids; or
-   - `factor_weights`: 1–20 `{ "factor_id": "<id>", "weight": <positive number> }` objects.
-4. Include a valid ranking rule and strategy type. Use `attribution: true` unless the user
-   explicitly requests otherwise, and record whether it was enabled for this submission.
+- Cross-sectional strategies only; never send `ts` or `time_series`.
+- Use factors returned by `strategy_list_eligible_factors`, or exact factor ids or weights supplied
+  by the user.
+- Use exactly one selection form:
+  - `factor_ids`: 1–20 unique factor ids.
+  - `factor_weights`: 1–20 unique `{ "factor_id": "...", "weight": <positive number> }` objects.
+- `ranking` must be `{ "mode": "N", "value": <positive integer> }` or
+  `{ "mode": "percent", "value": <number in (0, 50]> }`.
+- `strategy_type` must be `long_only`, `short_only`, or `neutral`.
+- Supported optional fields are `start_date`, `end_date`, `initial_cash`, `taker_fee_rate`,
+  `maker_fee_rate`, `rebalance_bars`, and `attribution`.
+- Use `attribution: true` unless the user explicitly requests otherwise.
+
+1. Call `strategy_list_eligible_factors` to discover eligible cross-sectional factors when needed.
+2. If the user explicitly asks the agent to choose factors, select eligible returned factors and
+   continue. Ask the user to choose only when they supplied neither factors nor weights and did not
+   authorize the agent to choose.
+3. Call `strategy_submit_run` once with a valid selection, ranking, strategy type, and normal
+   attribution default.
 
 ## Observe the Main Run
 
