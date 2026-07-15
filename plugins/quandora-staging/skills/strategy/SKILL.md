@@ -40,7 +40,9 @@ The normal workflow uses only these five exposed Strategy MCP actions. Never ask
 keys, access tokens, bearer tokens, service tokens, auth files, or credentials. Do not use raw
 HTTP, local helper scripts, direct internal-service calls, or credential-paste flows as a fallback.
 
-## Submit One Cross-Sectional Run
+## Workflow
+
+### 1. Prepare a Valid Submission
 
 - Cross-sectional strategies only; never send `ts` or `time_series`.
 - Use factors returned by `strategy_list_eligible_factors`, or exact factor ids or weights supplied
@@ -55,24 +57,25 @@ HTTP, local helper scripts, direct internal-service calls, or credential-paste f
   `maker_fee_rate`, `rebalance_bars`, and `attribution`.
 - Use `attribution: true` unless the user explicitly requests otherwise.
 
-1. Call `strategy_list_eligible_factors` to discover eligible cross-sectional factors when needed.
-2. If the user explicitly asks the agent to choose factors, select eligible returned factors and
-   continue. Ask the user to choose only when they supplied neither factors nor weights and did not
-   authorize the agent to choose.
-3. Call `strategy_submit_run` once with a valid selection, ranking, strategy type, and normal
-   attribution default.
+Call `strategy_list_eligible_factors` to discover eligible cross-sectional factors when needed. If
+the user explicitly asks the agent to choose factors, select eligible returned factors and
+continue. Ask the user to choose only when they supplied neither factors nor weights and did not
+authorize the agent to choose.
 
-## Observe the Main Run
+Call `strategy_submit_run` once with a valid selection, ranking, strategy type, and normal
+attribution default. Never send `name` or `strategy_name` to `strategy_submit_run`; its schema
+has `additionalProperties: false`.
 
-1. Call `strategy_get_run` with `{"run_id":"<strategy-run-id>"}` for the latest main-run snapshot.
-2. While the main run is not terminal, use `strategy_resume_run` with that same `run_id` to continue
-   observing it.
-3. Once the main run is terminal, do not resubmit it to retrieve results.
+### 2. Observe the Main Run
+
+Call `strategy_get_run` with `{"run_id":"<strategy-run-id>"}` for the latest main-run snapshot.
+While the main run is not terminal, use `strategy_resume_run` with that same `run_id` to continue
+observing it. Once the main run is terminal, do not resubmit it to retrieve results.
 
 The main-run status is separate from archive artifact availability. Use each artifact's returned
 manifest as authoritative; never invent a replacement artifact state.
 
-## Read Strategy Archive Artifacts
+### 3. Read Requested Archive Artifacts
 
 Each `strategy_get_artifact` call requires both `run_id` and exactly one of these Factor Mining
 archive names:
@@ -119,12 +122,24 @@ invent a download URL.
 
 ## Local Result Archive
 
-When the host can write local files, save returned content under this deterministic layout:
+When the host can write local files, create one deterministic local archive for the strategy.
+Choose its local-only `<strategy_slug>` before submitting the run:
+
+- If the user supplied a strategy name, lowercase it, replace each run of non-`[a-z0-9]` characters
+  with one underscore, and trim leading and trailing underscores. This is the strategy slug.
+- If the user did not supply a name, use
+  `<strategy_type>_<ranking_mode>_<ranking_value>_strategy`, with each component normalized to the
+  same lowercase safe snake_case form.
+- If a supplied name normalizes to an empty slug, use the generated form.
+
+The slug is a local archive label only. Do not send it, `name`, or `strategy_name` in an action
+request. Use it only in the local archive folder and the user-facing local paths. The latest run
+for the same slug updates that strategy folder.
 
 ```text
 Quandora staging result/
   strategy/
-    <strategy-run-id>/
+    <strategy_slug>/
       run_summary.json
       artifacts/
         <artifact>.json
@@ -133,14 +148,55 @@ Quandora staging result/
       artifact_manifest.json
 ```
 
-- Save `run_summary.json` from the final main-run snapshot.
-- Save a JSON artifact as `artifacts/<artifact>.json` only when its manifest permits its body.
-- Save text artifacts as `artifacts/logs.txt` and `artifacts/code.txt` only when their manifests
-  permit their text.
-- Create `artifact_manifest.json` with the run id, main-run status, and the returned four-field
-  manifest for every requested artifact. Include a relative filename only for content that was
-  saved.
-- Record `pending` and `failed` exactly as returned. Do not create placeholder body files.
+Save `run_summary.json` from the final main-run snapshot. Save a JSON artifact as
+`artifacts/<artifact>.json` only when its manifest permits its body. Save text artifacts as
+`artifacts/logs.txt` and `artifacts/code.txt` only when their manifests permit their text.
 
-In the final response, report the main-run status, manifests and saved artifacts requested by the
-user, and the local archive folder when files were written.
+Create `artifact_manifest.json` with the run id, main-run status, and the returned four-field
+manifest for every requested artifact. Include a relative filename only for content that was saved.
+Keep run ids only in `run_summary.json` and `artifact_manifest.json` when traceability requires
+them; never use a run id in a directory name or user-facing summary.
+
+For each requested artifact, update its local file with the latest returned body when its manifest
+permits it. For `pending` or `failed`, record its manifest exactly as returned. Do not create a
+placeholder body file, or delete or overwrite any existing local body file.
+
+## Final Response
+
+State the strategy name when the user supplied one; otherwise say that no strategy name was
+supplied. State the main-run status, each requested artifact that is available, and safe diagnostics.
+For requested artifacts without a local body file, state `not created` and its returned availability
+or sync status. Do not print large artifact bodies.
+
+Never show run ids, download URLs, credentials, secret material, or internal service metadata in a
+user-facing summary.
+
+At the end of every completed, failed, or interrupted run, show the result folder, artifact folder,
+`run_summary.json`, and `artifact_manifest.json`. If a specific file was not created, say
+`not created` for that line.
+
+For Desktop or GUI hosts, use Markdown links with absolute local paths and angle-bracket link
+targets so paths with spaces work:
+
+```text
+Result folder: [Open result folder](</absolute/path/to/Quandora staging result/strategy/<strategy_slug>/>)
+Artifact folder: [Open artifact folder](</absolute/path/to/Quandora staging result/strategy/<strategy_slug>/artifacts/>)
+Run summary: [run_summary.json](</absolute/path/to/Quandora staging result/strategy/<strategy_slug>/run_summary.json>)
+Artifact manifest: [artifact_manifest.json](</absolute/path/to/Quandora staging result/strategy/<strategy_slug>/artifact_manifest.json>)
+```
+
+For CLI or TUI hosts, use the same absolute paths as plain text, not Markdown links:
+
+```text
+Result folder: /absolute/path/to/Quandora staging result/strategy/<strategy_slug>/
+Artifact folder: /absolute/path/to/Quandora staging result/strategy/<strategy_slug>/artifacts/
+Run summary: /absolute/path/to/Quandora staging result/strategy/<strategy_slug>/run_summary.json
+Artifact manifest: /absolute/path/to/Quandora staging result/strategy/<strategy_slug>/artifact_manifest.json
+```
+
+If the host cannot write files, state:
+
+```text
+Result folder: unavailable in this host
+Artifact folder: unavailable in this host
+```
