@@ -101,7 +101,7 @@ After a concrete `plugin.py` exists and before validation or upload, call `facto
 }
 ```
 
-Use `draft_duplicate_risk` as the only duplicate-risk verdict. If medium or high draft risk identifies a concrete core-mechanism overlap, revise once and check the revised draft. If the revised factor remains meaningfully distinct, or no concrete overlap is identified, validate and upload. Treat `similar_factors` as context, not a hard-failure gate, and do not loop indefinitely.
+Use `draft_duplicate_risk` as the only duplicate-risk verdict. When it identifies a concrete overlap with an existing factor's core mechanism, revise the candidate so its economic hypothesis, inputs, or formula family are materially different, then check the revised draft again. A medium or high score is not a hard gate only when the candidate is already economically meaningful and materially distinct, and the returned similar factors do not establish a concrete core-mechanism overlap. Otherwise resolve the overlap before validation and upload. Treat `similar_factors` as evidence for this comparison, not as a hard-failure gate.
 
 Never submit a filesystem path or ask Quandora to read local files. Validate the source with `factor_mining_validate_plugin_source`, inline `plugin_source`, and the same context used for the plugin construction contract. Prefer `session_id` after session creation. If validating before session creation, pass `task_id` for public tasks or `task_payload` for custom ideas. The validation step is static; do not import, execute, eval, or shell-run generated factor code.
 
@@ -169,7 +169,7 @@ When interpreting a result:
 - Use in-sample IC / Rank IC sign to understand the factor's natural direction. Do not decide to invert a factor only because the realized backtest was poor.
 - Diagnose the economic mechanism first, then the implementation. Consider IC level and stability, ICIR, autocorrelation, group monotonicity, long-short behavior, long-only and short-only legs, drawdown, turnover, and whether the signal decay matches the requested horizon.
 - If optimizing, propose a new hypothesis within the same task or user idea. Avoid merely changing window lengths, renaming the factor, or making a post-hoc sign flip.
-- Use task-memory context to choose a fresher research hypothesis. Use draft duplicate risk only to decide whether one targeted revision is needed before upload.
+- Use task-memory context to choose a fresher research hypothesis. Before upload, use draft duplicate risk to resolve any concrete overlap with an existing factor; do not reject an economically meaningful, materially distinct candidate solely because its similarity score is high.
 - If the host has general web or research tools and the user asks for broader insight, use them only for public background research. Do not send private factor source, run IDs, credentials, or artifact contents to external tools.
 
 ## Final Response
