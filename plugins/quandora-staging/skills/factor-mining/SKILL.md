@@ -75,7 +75,7 @@ Quandora staging result/factor-mining/aggressive_flow_exhaustion_reversal/artifa
 
 Use only the factor slug as the canonical archive directory. The latest run for a factor updates that factor's folder. Keep session and run ids only inside `run_summary.json` / `artifact_manifest.json` when they are needed for traceability, not in the user-facing directory name.
 
-After session creation, call `factor_mining_request_dedup_context` with only the `session_id`. Treat the result as task-level memory for choosing a distinct direction, not as a draft-level rejection. If the response includes `task_memory_pressure`, use it to understand crowded or previously failed regions. If the response includes `duplicate_risk` at this stage, read it as task-context pressure.
+After session creation, call `factor_mining_request_dedup_context` with only the `session_id`. Use `query_mode`, `scope`, `memory_stats`, `similar_factors`, and `task_memory_pressure` only to select a fresher research hypothesis. A high `task_memory_pressure` must never stop the workflow, reject a draft, or trigger repeated rewrites.
 
 Before drafting, form a concise research thesis. For public tasks, stay inside the task's economic direction and allowed data. For custom ideas, stay inside the user's stated idea. Consider two or three plausible mechanisms, then choose the one with the clearest economic rationale, the best fit to the plugin contract, and the least overlap with the returned task memory. Prefer genuinely different mechanisms over parameter variants of the same formula.
 
@@ -88,7 +88,7 @@ Create or locate one `plugin.py` source:
 
 When writing `plugin.py`, keep `build_signal` inputs aligned with `plugin_contract.data_columns[].python_kwarg`. Keep `FACTOR_SECTIONS` runtime code aligned with the same columns, and use only `plugin_contract.data_columns[].csharp_double_expression` for numeric runtime references to market data columns.
 
-After drafting `plugin.py` and before validation or upload, call `factor_mining_request_dedup_context` again with:
+After a concrete `plugin.py` exists and before validation or upload, call `factor_mining_request_dedup_context` again with the `session_id`, source, and concise factor metadata:
 
 ```json
 {
@@ -101,7 +101,7 @@ After drafting `plugin.py` and before validation or upload, call `factor_mining_
 }
 ```
 
-Use this second result as draft-factor memory context. If it reports nearby factors, avoid copying the same mechanism, formula family, and allowed-data pattern, but do not keep rewriting solely because the current service reports high similarity. Continue to validation and backtesting once the candidate has a distinct economic thesis and follows the plugin construction contract. Empty `similar_factors` means no close match was returned; it is not a guarantee of acceptance.
+Use `draft_duplicate_risk` as the only duplicate-risk verdict. If medium or high draft risk identifies a concrete core-mechanism overlap, revise once and check the revised draft. If the revised factor remains meaningfully distinct, or no concrete overlap is identified, validate and upload. Treat `similar_factors` as context, not a hard-failure gate, and do not loop indefinitely.
 
 Never submit a filesystem path or ask Quandora to read local files. Validate the source with `factor_mining_validate_plugin_source`, inline `plugin_source`, and the same context used for the plugin construction contract. Prefer `session_id` after session creation. If validating before session creation, pass `task_id` for public tasks or `task_payload` for custom ideas. The validation step is static; do not import, execute, eval, or shell-run generated factor code.
 
@@ -169,7 +169,7 @@ When interpreting a result:
 - Use in-sample IC / Rank IC sign to understand the factor's natural direction. Do not decide to invert a factor only because the realized backtest was poor.
 - Diagnose the economic mechanism first, then the implementation. Consider IC level and stability, ICIR, autocorrelation, group monotonicity, long-short behavior, long-only and short-only legs, drawdown, turnover, and whether the signal decay matches the requested horizon.
 - If optimizing, propose a new hypothesis within the same task or user idea. Avoid merely changing window lengths, renaming the factor, or making a post-hoc sign flip.
-- Use the first dedup result to avoid repeatedly exploring regions the user has already tried. Use the second dedup call on the revised draft before another upload.
+- Use task-memory context to choose a fresher research hypothesis. Use draft duplicate risk only to decide whether one targeted revision is needed before upload.
 - If the host has general web or research tools and the user asks for broader insight, use them only for public background research. Do not send private factor source, run IDs, credentials, or artifact contents to external tools.
 
 ## Final Response
