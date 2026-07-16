@@ -66,19 +66,31 @@ Call `strategy_submit_run` once with a valid selection, ranking, strategy type, 
 attribution default. Never send `name` or `strategy_name` to `strategy_submit_run`; its schema
 has `additionalProperties: false`.
 
+After a valid submit response, store `result.run.id` as the sole Strategy `run_id`. Pass that exact
+value to `strategy_get_run`, `strategy_resume_run`, and `strategy_get_artifact`. Treat
+`result.run.strategyId` only as the saved Quandora Strategy identity visible in the web UI; it is
+never a `run_id` and must never be used in a Strategy run action.
+
+If a submit result contains a valid `run.id`, do not submit a modified fallback payload because the
+run is `pending`, `running`, or `submit_unknown`; observe that existing run. Correct a payload only
+after an explicit pre-submission validation rejection that returned no run. If submission is
+ambiguous, or a bridge or transport error returns no run id, do not change factors, weights, or
+parameters and submit again in the same user request. Report that submission confirmation failed so
+duplicate strategy experiments are not created.
+
 ### 2. Observe the Main Run
 
-Call `strategy_get_run` with `{"run_id":"<strategy-run-id>"}` for the latest main-run snapshot.
-While the main run is not terminal, use `strategy_resume_run` with that same `run_id` to continue
-observing it. Once the main run is terminal, do not resubmit it to retrieve results.
+Call `strategy_get_run` with the stored `{"run_id":"<result.run.id>"}` for the latest main-run
+snapshot. While the main run is not terminal, use `strategy_resume_run` with that same `run_id` to
+continue observing it. Once the main run is terminal, do not resubmit it to retrieve results.
 
 The main-run status is separate from archive artifact availability. Use each artifact's returned
 manifest as authoritative; never invent a replacement artifact state.
 
 ### 3. Read Requested Archive Artifacts
 
-Each `strategy_get_artifact` call requires both `run_id` and exactly one of these Factor Mining
-archive names:
+Each `strategy_get_artifact` call requires the stored `result.run.id` as `run_id` and exactly one
+of these Factor Mining archive names:
 
 ```text
 status
