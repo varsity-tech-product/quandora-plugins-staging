@@ -87,6 +87,24 @@ continue observing it. Once the main run is terminal, do not resubmit it to retr
 The main-run status is separate from archive artifact availability. Use each artifact's returned
 manifest as authoritative; never invent a replacement artifact state.
 
+### Terminal Diagnostics and Saved Strategy
+
+An accepted Agent Strategy submission is saved as a normal Quandora Strategy and appears in the
+user's existing Strategy library. Do not expose internal identifiers in the user-facing summary.
+
+For a terminal failure, use only the safe `failureDiagnostics` envelope when it is returned:
+
+- When `failureDiagnostics.diagnosticStatus` is `ready`, summarize the available
+  `errorCode`, `errorMessage`, `failureStage`, and `retryable` values. If its nested `failure`
+  object is present, summarize only its provider, provider code, basename, line or column,
+  captured time, and at most one affected factor.
+- When it is `pending`, explain that safe diagnostic archival is incomplete. Do not fabricate a
+  cause.
+- When it is `unavailable`, or no `failureDiagnostics` envelope is returned, state that the
+  server supplied no safe terminal diagnostic.
+
+Do not infer a source-code repair from a diagnostic and do not automatically resubmit a failed run.
+
 ### 3. Read Requested Archive Artifacts
 
 Each `strategy_get_artifact` call requires the stored `result.run.id` as `run_id` and exactly one
