@@ -75,6 +75,23 @@ observing it. Once the main run is terminal, do not resubmit it to retrieve resu
 The main-run status is separate from archive artifact availability. Use each artifact's returned
 manifest as authoritative; never invent a replacement artifact state.
 
+### Terminal Diagnostics and Saved Strategy
+
+A successful Agent Strategy submission is saved as a normal Quandora Strategy and can be viewed in
+the user's existing Strategy library. Do not expose internal identifiers in the user-facing
+summary.
+
+For a terminal failure, use only the safe diagnostic fields returned with the run:
+
+- When `diagnosticStatus` is `ready`, summarize the returned provider, provider code, basename,
+  line or column, captured time, and at most one confirmed affected factor when present. State
+  whether `fmRetryable` is `true`.
+- When `diagnosticStatus` is `pending`, explain that diagnostic archival is incomplete. Do not
+  fabricate a cause.
+- When `diagnosticStatus` is `unavailable`, state that the server supplied no safe diagnostic.
+
+Do not infer source-line repairs from a diagnostic and do not automatically resubmit a failed run.
+
 ### 3. Read Requested Archive Artifacts
 
 Each `strategy_get_artifact` call requires both `run_id` and exactly one of these Factor Mining
@@ -164,7 +181,8 @@ placeholder body file, or delete or overwrite any existing local body file.
 ## Final Response
 
 State the strategy name when the user supplied one; otherwise say that no strategy name was
-supplied. State the main-run status, each requested artifact that is available, and safe diagnostics.
+supplied. State the main-run status, each requested artifact that is available, and safe diagnostics
+according to the terminal-diagnostic rules above.
 For requested artifacts without a local body file, state `not created` and its returned availability
 or sync status. Do not print large artifact bodies.
 
