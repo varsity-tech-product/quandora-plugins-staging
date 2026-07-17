@@ -89,7 +89,7 @@ snapshot. While the main run is not terminal, use `strategy_resume_run` with tha
 continue observing it. Once the main run is terminal, do not resubmit it to retrieve results.
 
 The main-run status is separate from archive artifact availability. Use each artifact's returned
-manifest as authoritative; never invent a replacement artifact state.
+state as authoritative; never invent a replacement artifact state.
 
 ### Terminal Diagnostics and Saved Strategy
 
@@ -143,9 +143,11 @@ After the main run is terminal, retrieve selectively in this order:
 
 `attribution` describes predictive style exposure, not PnL contribution.
 
-For every artifact, retain only the returned manifest fields `name`, `content_type`, `available`,
-and `sync_status`. Persist body or text only when `available` is `true` and `sync_status` is
-`"synced"`. For `pending` or `failed`, record the manifest and do not create a local body file.
+For every artifact, use the returned `status` as authoritative. When it is `ready`, save the
+returned structured `body` or returned `text`. When it is `pending`, state that the artifact is
+not ready and do not claim that it was saved. When it is `too_large`, `sync_failed`,
+`integrity_failed`, or `not_available`, report that actual availability state and do not blindly
+retry.
 
 `logs` and `code` are text artifacts. All other names are JSON artifacts. Do not print large
 artifact bodies into chat.
@@ -182,25 +184,25 @@ Quandora staging result/
       artifact_manifest.json
 ```
 
-Save `run_summary.json` from the final main-run snapshot. Save a JSON artifact as
-`artifacts/<artifact>.json` only when its manifest permits its body. Save text artifacts as
-`artifacts/logs.txt` and `artifacts/code.txt` only when their manifests permit their text.
+Save `run_summary.json` from the final main-run snapshot. When an artifact response is `ready`,
+save its JSON body as `artifacts/<artifact>.json` or its text as `artifacts/logs.txt` or
+`artifacts/code.txt`.
 
-Create `artifact_manifest.json` with the run id, main-run status, and the returned four-field
-manifest for every requested artifact. Include a relative filename only for content that was saved.
+Create `artifact_manifest.json` with the run id, main-run status, and returned artifact state for
+every requested artifact. Include a relative filename only for content that was saved.
 Keep run ids only in `run_summary.json` and `artifact_manifest.json` when traceability requires
 them; never use a run id in a directory name or user-facing summary.
 
-For each requested artifact, update its local file with the latest returned body when its manifest
-permits it. For `pending` or `failed`, record its manifest exactly as returned. Do not create a
+For each requested artifact, update its local file with the latest returned body or text when its
+state is `ready`. For every non-ready state, record that state exactly as returned. Do not create a
 placeholder body file, or delete or overwrite any existing local body file.
 
 ## Final Response
 
 State the strategy name when the user supplied one; otherwise say that no strategy name was
-supplied. State the main-run status, each requested artifact that is available, and safe diagnostics.
-For requested artifacts without a local body file, state `not created` and its returned availability
-or sync status. Do not print large artifact bodies.
+supplied. State the main-run status, each requested artifact's returned state, and safe diagnostics.
+For requested artifacts without a local body file, state `not created` and its returned state. Do
+not print large artifact bodies.
 
 Never show run ids, download URLs, credentials, secret material, or internal service metadata in a
 user-facing summary.
