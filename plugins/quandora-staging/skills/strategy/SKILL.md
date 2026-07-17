@@ -49,10 +49,10 @@ HTTP, local helper scripts, direct internal-service calls, or credential-paste f
   by the user.
 - Use exactly one selection form:
   - `factor_ids`: 1–20 unique factor ids.
-  - `factor_weights`: 1–20 unique `{ "factor_id": "...", "weight": <positive number> }` objects.
+  - `factor_weights`: 1–20 unique `{ "factor_id": "...", "weight": <finite positive number> }` objects.
 - Unless the user explicitly requests custom allocations, prefer `factor_ids`; never invent custom
-  weights. If using `factor_weights`, normalize the numeric weights and verify their total satisfies
-  the server requirement before submitting.
+  weights. If using `factor_weights`, normalize the numeric weights before submission and verify
+  that their total is `1.0`.
 - `ranking` must be `{ "mode": "N", "value": <positive integer> }` or
   `{ "mode": "percent", "value": <number in (0, 50]> }`.
 - `strategy_type` must be `long_only`, `short_only`, or `neutral`.
