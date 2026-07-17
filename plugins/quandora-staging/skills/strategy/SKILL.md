@@ -50,6 +50,9 @@ HTTP, local helper scripts, direct internal-service calls, or credential-paste f
 - Use exactly one selection form:
   - `factor_ids`: 1–20 unique factor ids.
   - `factor_weights`: 1–20 unique `{ "factor_id": "...", "weight": <positive number> }` objects.
+- Unless the user explicitly requests custom allocations, prefer `factor_ids`; never invent custom
+  weights. If using `factor_weights`, normalize the numeric weights and verify their total satisfies
+  the server requirement before submitting.
 - `ranking` must be `{ "mode": "N", "value": <positive integer> }` or
   `{ "mode": "percent", "value": <number in (0, 50]> }`.
 - `strategy_type` must be `long_only`, `short_only`, or `neutral`.
@@ -72,11 +75,12 @@ value to `strategy_get_run`, `strategy_resume_run`, and `strategy_get_artifact`.
 never a `run_id` and must never be used in a Strategy run action.
 
 If a submit result contains a valid `run.id`, do not submit a modified fallback payload because the
-run is `pending`, `running`, or `submit_unknown`; observe that existing run. Correct a payload only
-after an explicit pre-submission validation rejection that returned no run. If submission is
-ambiguous, or a bridge or transport error returns no run id, do not change factors, weights, or
-parameters and submit again in the same user request. Report that submission confirmation failed so
-duplicate strategy experiments are not created.
+run is `pending`, `running`, or `submit_unknown`; observe that existing run. A submit error without
+`run.id` means that no trackable run identifier was returned; it does not prove that the server did
+not record a Strategy or StrategyRun. Do not automatically resubmit or mutate the payload after an
+ambiguous submit response, bridge error, or transport error. Correct and retry a weight-total error
+only when the tool explicitly returns the Product Backend preflight `invalid_payload` validation
+error; otherwise report that submission confirmation failed to avoid duplicate strategy experiments.
 
 ### 2. Observe the Main Run
 
