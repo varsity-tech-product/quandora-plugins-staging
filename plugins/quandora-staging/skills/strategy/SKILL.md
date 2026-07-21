@@ -48,8 +48,8 @@ or credential-paste flows.
 ### 1. Prepare a Valid Submission
 
 - Cross-sectional strategies only; never send `ts` or `time_series`.
-- Use factors returned by `strategy_list_eligible_factors`, or exact factor ids or weights supplied
-  by the user.
+- Submit only factors verified through `strategy_list_eligible_factors`, whether the agent selected
+  them or the user supplied exact factor ids or weights.
 - Use exactly one selection form:
   - `factor_ids`: 1–20 unique factor ids.
   - `factor_weights`: 1–20 unique `{ "factor_id": "...", "weight": <finite positive number> }` objects.
@@ -65,9 +65,16 @@ or credential-paste flows.
 
 Call `strategy_list_eligible_factors` to discover eligible cross-sectional factors and their
 returned display names before finalizing the factor selection or a local result folder. If the user
-explicitly asks the agent to choose factors, select eligible returned factors and continue. Ask the
-user to choose only when they supplied neither factors nor weights and did not authorize the agent
-to choose.
+explicitly asks the agent to choose factors, select eligible returned factors, retain the returned
+`display_name` for each selected `factor_id`, and continue. Ask the user to choose only when they
+supplied neither factors nor weights and did not authorize the agent to choose.
+
+When the user supplied `factor_ids` or `factor_weights`, extract the unique selected factor ids and
+call `strategy_list_eligible_factors` with `include_factor_ids` containing exactly those ids before
+submission or local-folder construction. Match the returned factors by `factor_id`, not by name or
+result order, and use only their returned `display_name` values. If any requested factor id is not
+returned, do not invent a display name and do not submit the strategy. Report that the selected
+factor could not be resolved as eligible for the current user.
 
 Call `strategy_submit_run` once with a valid selection, ranking, strategy type, and normal
 attribution default. Never send `name` or `strategy_name` to `strategy_submit_run`; its schema
@@ -217,10 +224,13 @@ Build its local-only `<strategy_slug>` only after the selected eligible factors 
 `strategy_submit_run` parameters are known. Use the actual display names returned for the selected
 eligible factors; never invent factor labels.
 
-Normalize each readable name to a safe lowercase filesystem slug by replacing each run of
-non-`[a-z0-9]` characters with one underscore and trimming leading and trailing underscores. Use
-one selected factor-name slug when one factor is submitted, or the first two selected factor-name
-slugs in final submission order when multiple factors are submitted.
+Normalize each readable name to a lowercase ASCII filesystem slug by replacing each run of
+non-`[a-z0-9]` characters with one underscore and trimming outer underscores. Truncate every
+readable slug segment to at most 48 characters after normalization. Use one selected factor-name
+slug when one factor is submitted, or the first two selected factor-name slugs in final submission
+order when multiple factors are submitted. If a selected factor display name normalizes to an empty
+slug, use `factor_1` or `factor_2` according to its displayed folder position. Never use a factor id
+as a readable slug or place one anywhere in the visible directory name.
 
 Create a canonical local fingerprint input from the complete final `strategy_submit_run` payload
 without changing that payload: recursively sort object keys, use a consistent numeric
@@ -239,10 +249,20 @@ Use one of these folder-name formats:
 <strategy_type>_<ranking_mode>_<ranking_value>__<factor_slug_1>__<factor_slug_2>__<fingerprint>
 ```
 
-Use the first format when a user-provided strategy name produces a slug; otherwise use the second.
-For a one-factor strategy, omit the `<factor_slug_2>` segment. The canonical fingerprint
-distinguishes factor sets, weights, ranking, strategy type, rebalance settings, date ranges, and
-all other submitted parameters. An exact repeat may reuse its existing deterministic directory.
+Use the first format when a user-provided strategy name normalizes to a non-empty slug, truncated to
+at most 48 characters. If the supplied name normalizes to an empty slug, use the generated
+`<strategy_type>_<ranking_mode>_<ranking_value>` prefix instead. Normalize that complete generated
+prefix by the same rule and truncate it to at most 48 characters. For a one-factor strategy, omit
+the `<factor_slug_2>` segment.
+
+Bound the complete `<strategy_slug>` directory component to at most 180 ASCII characters. If
+additional truncation is necessary after composing it, remove trailing characters from the leading
+strategy segment first, then `<factor_slug_2>`, then `<factor_slug_1>`, trimming any newly exposed
+outer underscores and preserving at least one character in each displayed segment. Preserve the
+complete final `__<fingerprint>` suffix unchanged. The canonical fingerprint includes all final
+submitted composition and parameters, including every factor id and weight, so different selections
+or submission parameters produce different fingerprints. An exact repeated submission may reuse
+its existing deterministic directory.
 
 The slug is a local archive label only. Do not send it, `name`, or `strategy_name` in an action
 request. Use it only in the local archive folder and the user-facing local paths.
