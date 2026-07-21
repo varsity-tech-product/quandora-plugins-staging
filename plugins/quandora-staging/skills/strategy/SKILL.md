@@ -112,7 +112,7 @@ and can be resumed later. Do not claim that results or artifacts are available.
 
 The main-run status is separate from archive completion. After the main run becomes terminal, use
 only the same stored `run_id` for archive observation. Before each of at most five
-`strategy_get_run` archive-status follow-ups, wait 15 seconds with a host-native wait or timer. That
+`strategy_get_run` archive-status follow-ups, wait 30 seconds with a host-native wait or timer. That
 delay is observation only: do not use raw HTTP, a local helper script, credentials, or direct backend
 access, and do not call `strategy_resume_run` or resubmit merely to wait for archiving.
 
