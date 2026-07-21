@@ -11,7 +11,7 @@ the complete Strategy archive workflow.
 
 ## Connection and Tools
 
-Before starting, confirm that the Quandora Staging connection is authenticated and that these five
+Before starting, confirm that the Quandora Staging connection is authenticated and that these six
 Strategy actions are visible:
 
 1. `strategy_list_eligible_factors`
@@ -19,6 +19,7 @@ Strategy actions are visible:
 3. `strategy_get_run`
 4. `strategy_resume_run`
 5. `strategy_get_artifact`
+6. `strategy_create_artifact_download_ticket`
 
 Some hosts prefix action names with the server name, such as
 `quandora_staging__strategy_submit_run`; treat those as the same actions.
@@ -36,9 +37,11 @@ chat before continuing:
 - OpenClaw: run `openclaw mcp login quandora-staging`, complete authorization, then start a new
   chat.
 
-The normal workflow uses only these five exposed Strategy MCP actions. Never ask for or accept API
-keys, access tokens, bearer tokens, service tokens, auth files, or credentials. Do not use raw
-HTTP, local helper scripts, direct internal-service calls, or credential-paste flows as a fallback.
+The normal workflow uses only these six exposed Strategy MCP actions. Never ask for or accept API
+keys, access tokens, bearer tokens, service tokens, auth files, or credentials. Use host-native HTTP
+only for the one opaque `download_url` returned by
+`strategy_create_artifact_download_ticket`; never use it for internal-service calls, raw storage,
+or credential-paste flows.
 
 ## Workflow
 
@@ -88,8 +91,18 @@ Call `strategy_get_run` with the stored `{"run_id":"<result.run.id>"}` for the l
 snapshot. While the main run is not terminal, use `strategy_resume_run` with that same `run_id` to
 continue observing it. Once the main run is terminal, do not resubmit it to retrieve results.
 
-The main-run status is separate from archive artifact availability. Use each artifact's returned
-state as authoritative; never invent a replacement artifact state.
+The main-run status is separate from archive completion. After the main run becomes terminal, use
+only the same stored `run_id` for archive observation. Before each of at most five
+`strategy_get_run` archive-status follow-ups, wait 15 seconds with a host-native wait or timer. That
+delay is observation only: do not use raw HTTP, a local helper script, credentials, or direct backend
+access, and do not call `strategy_resume_run` or resubmit merely to wait for archiving.
+
+If `archiveStatus` is `completed` or `partial` in the terminal snapshot or a follow-up, stop waiting
+and follow the matching retrieval procedure below. If it remains `pending` or `running` after the
+bounded wait, save the final observed run snapshot and an archive-level incomplete state only in
+`artifact_manifest.json`; do not manufacture per-artifact availability or claim a complete archive.
+For any other non-`completed` terminal archive status, likewise record only the archive-level state
+and safe diagnostics. The final observed main-run snapshot remains the source for `run_summary.json`.
 
 ### Terminal Diagnostics and Saved Strategy
 
@@ -132,29 +145,58 @@ logs
 code
 ```
 
-After the main run is terminal, retrieve selectively in this order:
+When `archiveStatus == completed`, perform one complete 15-artifact retrieval pass with the same
+`run_id`; visit every name above exactly once for its artifact-state retrieval. When
+`archiveStatus == partial`, perform one bounded artifact-state pass over those same fifteen names,
+also exactly once each. In either case, do not resubmit the Strategy run to retrieve the archive.
 
-1. `status`, `summary`, `performance`.
-2. `charts`, `equity_curve`, `drawdown_curve`, `turnover_curve`, `exposure_curve`.
-3. `attribution` and `signal_return_curves` only when attribution was enabled or the user requests
-   style exposure.
-4. `orders`, `trades`, `result`, `logs`, and `code` only when the user explicitly requests them or
-   they are required to investigate a failed or unfinished result.
+1. Use `strategy_get_artifact` first for concise artifacts: `status`, `summary`, `performance`,
+   `charts`, `equity_curve`, `drawdown_curve`, `turnover_curve`, `exposure_curve`, `attribution`,
+   and `signal_return_curves`.
+2. Use `strategy_create_artifact_download_ticket` first for `orders`, `trades`, `result`, `logs`,
+   and `code`.
+3. If a concise direct read returns `ready`, use it only as the state result: obtain one download
+   ticket for that same artifact and use the ticketed bytes for the local archive rather than saving
+   the unary body. If it returns `too_large`, request that one ticket as its download fallback. Do
+   not make another unary read for it.
 
 `attribution` describes predictive style exposure, not PnL contribution.
 
-For every artifact, use the returned `status` as authoritative. When it is `ready`, save the
-returned structured `body` or returned `text`. When it is `pending`, state that the artifact is
-not ready and do not claim that it was saved. When it is `too_large`, `sync_failed`,
-`integrity_failed`, or `not_available`, report that actual availability state and do not blindly
-retry.
+For every artifact, use its returned source state as authoritative. A complete ticket response with
+`download_url`, `local_name`, `size_bytes`, and `sha256_hex` is the ready/downloadable state. For
+`pending`, `not_available`, `sync_failed`, `integrity_failed`, or retryable backend errors, record
+that exact source state or a bounded safe failure class and do not claim that an artifact was saved.
+During a partial archive pass, download and save only ready/downloadable artifacts; do not blindly
+retry any non-ready artifact or create a placeholder content file.
 
 `logs` and `code` are text artifacts. All other names are JSON artifacts. Do not print large
 artifact bodies into chat.
 
-If `strategy_get_artifact` returns `RESOURCE_EXHAUSTED`, report that the requested archive exceeds
-the current 32 MiB unary Factor Mining artifact contract. Do not retry, truncate the artifact, or
-invent a download URL.
+If `strategy_get_artifact` returns `RESOURCE_EXHAUSTED`, treat it as `too_large` and use the
+single ticket fallback. Never invent a download URL.
+
+### Ticket Download Procedure
+
+For every initially ready artifact, use exactly one newly issued ticket: a ticket-first call is that
+issuance; a direct-read `ready` or `too_large` needs one call to
+`strategy_create_artifact_download_ticket` with the stored `run_id` and archive name. Then:
+
+1. Only when that ticket response contains complete download metadata (including its opaque
+   `download_url`), download it with host-native HTTP. Do not edit the URL, follow it to any other
+   host, print it, or store it in a local file.
+2. Write bytes to `artifacts/<local_name>.partial` beside the final file.
+3. Verify the `.partial` file's byte count and SHA-256 against `size_bytes` and `sha256_hex` from
+   the ticket response.
+4. Atomically rename the verified `.partial` file to `artifacts/<local_name>`. On any download,
+   size, or hash failure, delete the `.partial` file and record only a bounded safe failure class.
+5. Never reuse a ticket after any attempt. For one transient failure before a verified rename,
+   delete the `.partial` file, request one new ticket for that artifact, and make at most one bounded
+   download retry. A second failure, an integrity mismatch, or any non-transient failure is final for
+   this archive pass.
+
+The ticket is short-lived and single-use. Never place its value, `download_url`, internal host,
+storage details, or a credential in `artifact_manifest.json`, `run_summary.json`, chat output, or a
+user-facing summary.
 
 ## Local Result Archive
 
@@ -178,31 +220,55 @@ Quandora staging result/
     <strategy_slug>/
       run_summary.json
       artifacts/
-        <artifact>.json
+        status.json
+        summary.json
+        equity_curve.json
+        drawdown_curve.json
+        turnover_curve.json
+        exposure_curve.json
+        orders.json
+        charts.json
+        trades.json
+        performance.json
+        attribution.json
+        signal_return_curves.json
+        result.json
         logs.txt
         code.txt
       artifact_manifest.json
 ```
 
-Save `run_summary.json` from the final main-run snapshot. When an artifact response is `ready`,
-save its JSON body as `artifacts/<artifact>.json` or its text as `artifacts/logs.txt` or
-`artifacts/code.txt`.
+Save `run_summary.json` from the final main-run snapshot. Verified ticket downloads use the closed
+`local_name` returned by the ticket response.
 
-Create `artifact_manifest.json` with the run id, main-run status, and returned artifact state for
-every requested artifact. Include a relative filename only for content that was saved.
+After a completed archive retrieval pass, create `artifact_manifest.json` with the run id, main-run
+status, `archiveStatus: completed`, and exactly one entry for every archive name. Each entry contains
+only the artifact name, terminal/source state, relative local path when saved, content type, size,
+SHA-256, and a bounded safe failure class when needed. State that this archive pass completed; do not
+claim that every artifact contained data.
+
+After a partial archive pass, create the same fifteen per-artifact entries with
+`archiveStatus: partial`, preserving every returned state and the local path only for verified ready
+downloads. Clearly mark the archive as partial and never claim that the full archive was fetched.
+For a pending/running bounded-wait exhaustion or any other non-`completed` terminal archive state,
+record only the archive-level state and observed `archiveStatus` without manufacturing per-artifact
+`not_available` entries. Never include a ticket, download URL, internal URL, storage reference, or
+credential.
 Keep run ids only in `run_summary.json` and `artifact_manifest.json` when traceability requires
 them; never use a run id in a directory name or user-facing summary.
 
-For each requested artifact, update its local file with the latest returned body or text when its
-state is `ready`. For every non-ready state, record that state exactly as returned. Do not create a
-placeholder body file, or delete or overwrite any existing local body file.
+For each artifact attempted during a completed or partial archive pass, update its local file only
+after a verified ticket download. For every non-ready state, record that state exactly as returned.
+Do not create a placeholder body file, or delete or overwrite an existing final body file.
 
 ## Final Response
 
 State the strategy name when the user supplied one; otherwise say that no strategy name was
-supplied. State the main-run status, each requested artifact's returned state, and safe diagnostics.
-For requested artifacts without a local body file, state `not created` and its returned state. Do
-not print large artifact bodies.
+supplied. State the main-run status, archive status, and safe diagnostics. State all fifteen archive
+artifact states after a completed or partial archive pass; for a partial pass, clearly state that the
+archive is partial and that the full archive was not fetched. Otherwise clearly state that the archive
+is incomplete and that no full artifact retrieval was claimed. For artifacts without a local body
+file, state `not created` and its returned state. Do not print large artifact bodies.
 
 Never show run ids, download URLs, credentials, secret material, or internal service metadata in a
 user-facing summary.
