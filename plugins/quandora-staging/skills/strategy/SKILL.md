@@ -63,10 +63,11 @@ or credential-paste flows.
   `maker_fee_rate`, `rebalance_bars`, and `attribution`.
 - Use `attribution: true` unless the user explicitly requests otherwise.
 
-Call `strategy_list_eligible_factors` to discover eligible cross-sectional factors when needed. If
-the user explicitly asks the agent to choose factors, select eligible returned factors and
-continue. Ask the user to choose only when they supplied neither factors nor weights and did not
-authorize the agent to choose.
+Call `strategy_list_eligible_factors` to discover eligible cross-sectional factors and their
+returned display names before finalizing the factor selection or a local result folder. If the user
+explicitly asks the agent to choose factors, select eligible returned factors and continue. Ask the
+user to choose only when they supplied neither factors nor weights and did not authorize the agent
+to choose.
 
 Call `strategy_submit_run` once with a valid selection, ranking, strategy type, and normal
 attribution default. Never send `name` or `strategy_name` to `strategy_submit_run`; its schema
@@ -87,9 +88,20 @@ error; otherwise report that submission confirmation failed to avoid duplicate s
 
 ### 2. Observe the Main Run
 
-Call `strategy_get_run` with the stored `{"run_id":"<result.run.id>"}` for the latest main-run
-snapshot. While the main run is not terminal, use `strategy_resume_run` with that same `run_id` to
-continue observing it. Once the main run is terminal, do not resubmit it to retrieve results.
+The successful `strategy_submit_run` response is the initial main-run snapshot; it is not a
+follow-up poll. If that snapshot is terminal, immediately continue with the terminal result and
+archive workflow below. Once the main run is terminal, do not resubmit it to retrieve results.
+
+When the submitted run is non-terminal, make at most twelve main-run follow-up polls. Before each
+follow-up, wait 30 seconds with a host-native wait or timer, then call `strategy_resume_run` once
+with the stored `run_id`. Each resume response is the latest main-run snapshot. If any resume
+response is terminal, immediately continue with the terminal result and archive workflow below.
+Do not call `strategy_get_run` during these main-run follow-ups or between them.
+
+If the twelfth `strategy_resume_run` response is still non-terminal, do not submit the strategy
+again. Save that latest safe run snapshot as `run_summary.json`, do not begin terminal archive
+observation or artifact retrieval, and clearly report that the server-side run remains in progress
+and can be resumed later. Do not claim that results or artifacts are available.
 
 The main-run status is separate from archive completion. After the main run becomes terminal, use
 only the same stored `run_id` for archive observation. Before each of at most five
@@ -201,18 +213,39 @@ user-facing summary.
 ## Local Result Archive
 
 When the host can write local files, create one deterministic local archive for the strategy.
-Choose its local-only `<strategy_slug>` before submitting the run:
+Build its local-only `<strategy_slug>` only after the selected eligible factors and final
+`strategy_submit_run` parameters are known. Use the actual display names returned for the selected
+eligible factors; never invent factor labels.
 
-- If the user supplied a strategy name, lowercase it, replace each run of non-`[a-z0-9]` characters
-  with one underscore, and trim leading and trailing underscores. This is the strategy slug.
-- If the user did not supply a name, use
-  `<strategy_type>_<ranking_mode>_<ranking_value>_strategy`, with each component normalized to the
-  same lowercase safe snake_case form.
-- If a supplied name normalizes to an empty slug, use the generated form.
+Normalize each readable name to a safe lowercase filesystem slug by replacing each run of
+non-`[a-z0-9]` characters with one underscore and trimming leading and trailing underscores. Use
+one selected factor-name slug when one factor is submitted, or the first two selected factor-name
+slugs in final submission order when multiple factors are submitted.
+
+Create a canonical local fingerprint input from the complete final `strategy_submit_run` payload
+without changing that payload: recursively sort object keys, use a consistent numeric
+representation, and sort the factor selection in a canonical copy by factor id. Include every
+submitted selection, factor id, weight, ranking, strategy type, rebalance setting, date range, and
+other submitted parameter in that canonical input. Hash its canonical UTF-8 JSON with SHA-256 and
+use the first 16 lowercase hexadecimal characters as `<fingerprint>`. Factor ids are used only in
+this local fingerprint input; never place them in the folder name or a user-facing path.
+Do not include credentials, OAuth material, URLs, raw source, server filesystem paths, or any other
+internal id in the directory name or local fingerprint input.
+
+Use one of these folder-name formats:
+
+```text
+<strategy_name_slug>__<factor_slug_1>__<factor_slug_2>__<fingerprint>
+<strategy_type>_<ranking_mode>_<ranking_value>__<factor_slug_1>__<factor_slug_2>__<fingerprint>
+```
+
+Use the first format when a user-provided strategy name produces a slug; otherwise use the second.
+For a one-factor strategy, omit the `<factor_slug_2>` segment. The canonical fingerprint
+distinguishes factor sets, weights, ranking, strategy type, rebalance settings, date ranges, and
+all other submitted parameters. An exact repeat may reuse its existing deterministic directory.
 
 The slug is a local archive label only. Do not send it, `name`, or `strategy_name` in an action
-request. Use it only in the local archive folder and the user-facing local paths. The latest run
-for the same slug updates that strategy folder.
+request. Use it only in the local archive folder and the user-facing local paths.
 
 ```text
 Quandora staging result/
@@ -272,6 +305,11 @@ file, state `not created` and its returned state. Do not print large artifact bo
 
 Never show run ids, download URLs, credentials, secret material, or internal service metadata in a
 user-facing summary.
+
+For a main run that remains non-terminal after the twelfth follow-up, clearly state that the
+server-side run remains in progress and can be resumed later. State that terminal archive
+observation and artifact retrieval were not started, and do not state that results or artifacts are
+available.
 
 At the end of every completed, failed, or interrupted run, show the result folder, artifact folder,
 `run_summary.json`, and `artifact_manifest.json`. If a specific file was not created, say
