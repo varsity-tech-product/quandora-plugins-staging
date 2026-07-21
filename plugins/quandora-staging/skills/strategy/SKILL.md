@@ -92,16 +92,17 @@ snapshot. While the main run is not terminal, use `strategy_resume_run` with tha
 continue observing it. Once the main run is terminal, do not resubmit it to retrieve results.
 
 The main-run status is separate from archive completion. After the main run becomes terminal, use
-the same `run_id` for at most five bounded `strategy_get_run` status follow-ups only; do not call
-`strategy_resume_run` or resubmit merely to wait for archiving. Begin the archive retrieval pass
-only when the returned `archiveStatus` is exactly `completed`.
+only the same stored `run_id` for archive observation. Before each of at most five
+`strategy_get_run` archive-status follow-ups, wait 15 seconds with a host-native wait or timer. That
+delay is observation only: do not use raw HTTP, a local helper script, credentials, or direct backend
+access, and do not call `strategy_resume_run` or resubmit merely to wait for archiving.
 
-If that bounded wait ends while `archiveStatus` is `pending`, `running`, or `partial`, record the
-observed archive status as an incomplete archive state in `artifact_manifest.json`, do not start
-the fifteen-artifact pass, and do not claim that any artifact is permanently unavailable or that the
-full archive was fetched. Treat any other non-`completed` archive status the same way: report the
-safe observed status without inventing per-artifact availability. The final main-run snapshot remains
-the source for `run_summary.json`.
+If `archiveStatus` is `completed` or `partial` in the terminal snapshot or a follow-up, stop waiting
+and follow the matching retrieval procedure below. If it remains `pending` or `running` after the
+bounded wait, save the final observed run snapshot and an archive-level incomplete state only in
+`artifact_manifest.json`; do not manufacture per-artifact availability or claim a complete archive.
+For any other non-`completed` terminal archive status, likewise record only the archive-level state
+and safe diagnostics. The final observed main-run snapshot remains the source for `run_summary.json`.
 
 ### Terminal Diagnostics and Saved Strategy
 
@@ -144,9 +145,10 @@ logs
 code
 ```
 
-Only after `archiveStatus == completed`, perform one archive retrieval pass with the same `run_id`.
-Visit every one of the fifteen names above exactly once for its artifact-state retrieval. Do not
-resubmit the Strategy run to retrieve the archive.
+When `archiveStatus == completed`, perform one complete 15-artifact retrieval pass with the same
+`run_id`; visit every name above exactly once for its artifact-state retrieval. When
+`archiveStatus == partial`, perform one bounded artifact-state pass over those same fifteen names,
+also exactly once each. In either case, do not resubmit the Strategy run to retrieve the archive.
 
 1. Use `strategy_get_artifact` first for concise artifacts: `status`, `summary`, `performance`,
    `charts`, `equity_curve`, `drawdown_curve`, `turnover_curve`, `exposure_curve`, `attribution`,
@@ -164,7 +166,8 @@ For every artifact, use its returned source state as authoritative. A complete t
 `download_url`, `local_name`, `size_bytes`, and `sha256_hex` is the ready/downloadable state. For
 `pending`, `not_available`, `sync_failed`, `integrity_failed`, or retryable backend errors, record
 that exact source state or a bounded safe failure class and do not claim that an artifact was saved.
-Do not blindly retry state retrieval.
+During a partial archive pass, download and save only ready/downloadable artifacts; do not blindly
+retry any non-ready artifact or create a placeholder content file.
 
 `logs` and `code` are text artifacts. All other names are JSON artifacts. Do not print large
 artifact bodies into chat.
@@ -241,24 +244,31 @@ Save `run_summary.json` from the final main-run snapshot. Verified ticket downlo
 After a completed archive retrieval pass, create `artifact_manifest.json` with the run id, main-run
 status, `archiveStatus: completed`, and exactly one entry for every archive name. Each entry contains
 only the artifact name, terminal/source state, relative local path when saved, content type, size,
-SHA-256, and a bounded safe failure class when needed. For an incomplete archive wait, record the
-archive-level incomplete state and observed `archiveStatus` without manufacturing per-artifact
+SHA-256, and a bounded safe failure class when needed. State that this archive pass completed; do not
+claim that every artifact contained data.
+
+After a partial archive pass, create the same fifteen per-artifact entries with
+`archiveStatus: partial`, preserving every returned state and the local path only for verified ready
+downloads. Clearly mark the archive as partial and never claim that the full archive was fetched.
+For a pending/running bounded-wait exhaustion or any other non-`completed` terminal archive state,
+record only the archive-level state and observed `archiveStatus` without manufacturing per-artifact
 `not_available` entries. Never include a ticket, download URL, internal URL, storage reference, or
 credential.
 Keep run ids only in `run_summary.json` and `artifact_manifest.json` when traceability requires
 them; never use a run id in a directory name or user-facing summary.
 
-For each artifact attempted after archive completion, update its local file only after a verified
-ticket download. For every non-ready state, record that state exactly as returned. Do not create a
-placeholder body file, or delete or overwrite an existing final body file.
+For each artifact attempted during a completed or partial archive pass, update its local file only
+after a verified ticket download. For every non-ready state, record that state exactly as returned.
+Do not create a placeholder body file, or delete or overwrite an existing final body file.
 
 ## Final Response
 
 State the strategy name when the user supplied one; otherwise say that no strategy name was
 supplied. State the main-run status, archive status, and safe diagnostics. State all fifteen archive
-artifact states only after the completed archive pass; otherwise clearly state that the archive is
-incomplete and that no full artifact retrieval was claimed. For artifacts without a local body file,
-state `not created` and its returned state. Do not print large artifact bodies.
+artifact states after a completed or partial archive pass; for a partial pass, clearly state that the
+archive is partial and that the full archive was not fetched. Otherwise clearly state that the archive
+is incomplete and that no full artifact retrieval was claimed. For artifacts without a local body
+file, state `not created` and its returned state. Do not print large artifact bodies.
 
 Never show run ids, download URLs, credentials, secret material, or internal service metadata in a
 user-facing summary.
