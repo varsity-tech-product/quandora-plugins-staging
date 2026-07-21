@@ -5,12 +5,12 @@
     "url": "https://github.com/varsity-tech-product"
   },
   "description": "Quandora staging plugin marketplace for pre-release Factor Mining and Strategy testing.",
-  "version": "1.0.8-staging.23",
+  "version": "1.0.8-staging.22",
   "plugins": [
     {
       "name": "quandora-staging",
       "description": "Staging Quandora plugin with Factor Mining and Strategy skills for pre-release workflow testing.",
-      "version": "1.0.8-staging.23",
+      "version": "1.0.8-staging.22",
       "source": "./plugins/quandora-staging",
       "category": "Productivity",
       "tags": [
