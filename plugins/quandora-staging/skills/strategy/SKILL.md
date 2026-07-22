@@ -254,30 +254,88 @@ order when multiple factors are submitted. If a selected factor display name nor
 slug, use `factor_1` or `factor_2` according to its displayed folder position. Never use a factor id
 as a readable slug or place one anywhere in the visible directory name.
 
-Create a local-only canonical fingerprint descriptor containing:
+Create exactly this local-only fingerprint descriptor:
 
-- an exact copy of the final `strategy_submit_run` payload as sent;
-- the exact `contract.contract_revision` returned by this operation's single
-  `strategy_get_contract` call; and
-- the complete effective profile resolved locally for `weighting`, `ranking`, `strategy_type`,
-  `start_date`, `end_date`, `initial_cash`, `taker_fee_rate`, `maker_fee_rate`, `rebalance_bars`, and
-  `attribution`. For each field, use the validated explicit submit value when present and
-  `product_defaults` when omitted. With `factor_ids`, use the advertised equal-weighting default;
-  with `factor_weights`, use a custom-weighting value containing every exact factor id and weight.
+```json
+{
+  "submit_payload": <canonical semantic copy of the exact final strategy_submit_run payload>,
+  "contract_revision": "<exact contract.contract_revision>",
+  "effective_profile": {
+    "weighting": <canonical weighting object>,
+    "ranking": <resolved ranking object>,
+    "strategy_type": "<resolved value>",
+    "start_date": "<resolved value>",
+    "end_date": "<resolved value>",
+    "initial_cash": <resolved value>,
+    "taker_fee_rate": <resolved value>,
+    "maker_fee_rate": <resolved value>,
+    "rebalance_bars": <resolved value>,
+    "attribution": <resolved value>
+  }
+}
+```
 
-For canonical encoding, recursively sort object keys, use one consistent JSON numeric
-representation, and canonically sort each factor-selection copy by `factor_id`. Preserve every
-factor id and custom weight in the hashed descriptor. Hash the canonical UTF-8 JSON with SHA-256 and
-use the first 16 lowercase hexadecimal characters as `<fingerprint>`.
+`submit_payload` contains exactly the fields and semantic values sent to `strategy_submit_run`; it
+must not gain omitted Product defaults. Copy `contract_revision` exactly from the single
+`strategy_get_contract` response used for this operation. For every effective-profile field, use
+the validated explicit submit value when present and the corresponding `product_defaults` value
+when omitted.
 
-The descriptor, contract revision, resolved defaults, and assembled effective-profile object exist
-only for local fingerprinting. Never send any of them to `strategy_submit_run`, and never pass
-`contract_revision` as a tool argument. The submit payload continues to contain only supported
-options the user explicitly selected, so never copy an omitted default into it. Never expose the
-descriptor, contract revision, or factor ids in the directory name, a user-facing path, or a
-user-facing summary.
-Do not include credentials, OAuth material, URLs, raw source, server filesystem paths, or any other
-internal id in the directory name or local fingerprint input.
+When `factor_ids` is submitted, use exactly this effective weighting:
+
+```json
+{
+  "mode": "equal"
+}
+```
+
+When `factor_weights` is submitted, preserve every validated factor id and weight in exactly this
+effective weighting shape:
+
+```json
+{
+  "mode": "custom",
+  "factor_weights": [
+    {
+      "factor_id": "<exact factor id>",
+      "weight": <exact validated weight>
+    }
+  ]
+}
+```
+
+Canonicalize only a local hashing copy as follows; none of these operations may alter the payload
+sent to the MCP tool:
+
+- Recursively sort all JSON object keys lexicographically.
+- Sort `submit_payload.factor_ids` by the factor-id string in ascending lexical order.
+- Sort `submit_payload.factor_weights` by `item.factor_id` in ascending lexical order.
+- Sort `effective_profile.weighting.factor_weights` by `item.factor_id` in ascending lexical order.
+- Do not reorder unrelated arrays. Preserve strings and booleans exactly.
+- Reject non-finite numeric values before fingerprinting. Treat each finite numeric leaf as an exact
+  decimal value and encode it as a canonical plain-decimal JSON number: no leading plus sign; no
+  exponent notation; no redundant leading zeros; no redundant trailing fractional zeros. Normalize
+  an integral value such as `5.0` to `5`, and normalize negative zero to `0`.
+- Encode the canonical descriptor as compact UTF-8 JSON with no insignificant whitespace. Hash
+  those exact bytes with SHA-256 and use the first 16 lowercase hexadecimal characters as
+  `<fingerprint>`.
+
+The descriptor, effective profile, resolved Product defaults, and contract revision exist only for
+local fingerprinting. Never send them to `strategy_submit_run`, never pass `contract_revision` as a
+tool argument, and never add `weighting`, a resolved default, or `contract_revision` to the actual
+request. Factor ids remain in the hashed descriptor but never appear in the visible directory name,
+a user-facing path, or a user-facing summary. Beyond the required contract revision and selector
+factor ids, never include credentials, OAuth material, URLs, source code, internal filesystem paths,
+run ids, or other internal identifiers in the fingerprint descriptor.
+
+The same final payload, contract revision, and effective profile must produce the same fingerprint
+across agents and hosts. A changed factor selection, custom weight, explicit option, resolved
+Product default, or contract revision must change it. Reordering `factor_ids`, reordering either
+factor-weights array, changing JSON object-key order, or representing an integral number as `5`
+instead of `5.0` must not change it. Explicitly supplying a value and omitting it may produce
+different fingerprints even when both resolve to the same effective behavior because the exact
+final submit payload is part of the descriptor. These local rules do not change any server request
+or remote behavior.
 
 Use this folder-name format:
 
@@ -293,11 +351,8 @@ Bound the complete `<strategy_slug>` directory component to at most 180 ASCII ch
 additional truncation is necessary after composing it, remove trailing characters from the leading
 strategy segment first, then `<factor_slug_2>`, then `<factor_slug_1>`, trimming any newly exposed
 outer underscores and preserving at least one character in each displayed segment. Preserve the
-complete final `__<fingerprint>` suffix unchanged. The canonical fingerprint includes the final
-payload and its effective contract context, so different selections, submitted values, contract
-revisions, or resolved Product defaults produce different fingerprints. Reuse an existing
-deterministic directory only when both the final payload and effective contract context are
-unchanged.
+complete final `__<fingerprint>` suffix unchanged. Reuse an existing deterministic directory only
+when both the final payload and effective contract context are unchanged.
 
 The slug is a local archive label only. Do not send the slug in an action request. Use it only in
 the local archive folder and the user-facing local paths.
