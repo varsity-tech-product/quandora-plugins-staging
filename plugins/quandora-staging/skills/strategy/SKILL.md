@@ -11,15 +11,16 @@ the complete Strategy archive workflow.
 
 ## Connection and Tools
 
-Before starting, confirm that the Quandora Staging connection is authenticated and that these six
+Before starting, confirm that the Quandora Staging connection is authenticated and that these seven
 Strategy actions are visible:
 
-1. `strategy_list_eligible_factors`
-2. `strategy_submit_run`
-3. `strategy_get_run`
-4. `strategy_resume_run`
-5. `strategy_get_artifact`
-6. `strategy_create_artifact_download_ticket`
+1. `strategy_get_contract`
+2. `strategy_list_eligible_factors`
+3. `strategy_submit_run`
+4. `strategy_get_run`
+5. `strategy_resume_run`
+6. `strategy_get_artifact`
+7. `strategy_create_artifact_download_ticket`
 
 Some hosts prefix action names with the server name, such as
 `quandora_staging__strategy_submit_run`; treat those as the same actions.
@@ -37,9 +38,9 @@ chat before continuing:
 - OpenClaw: run `openclaw mcp login quandora-staging`, complete authorization, then start a new
   chat.
 
-The normal workflow uses only these six exposed Strategy MCP actions. Never ask for or accept API
-keys, access tokens, bearer tokens, service tokens, auth files, or credentials. Use host-native HTTP
-only for the one opaque `download_url` returned by
+The normal workflow uses only these seven exposed Strategy MCP actions. Never ask for or accept
+credentials or use an alternative service path. Use host-native HTTP only for the one opaque
+`download_url` returned by
 `strategy_create_artifact_download_ticket`; never use it for internal-service calls, raw storage,
 or credential-paste flows.
 
@@ -47,38 +48,59 @@ or credential-paste flows.
 
 ### 1. Prepare a Valid Submission
 
-- Cross-sectional strategies only; never send `ts` or `time_series`.
-- Submit only factors verified through `strategy_list_eligible_factors`, whether the agent selected
-  them or the user supplied exact factor ids or weights.
-- Use exactly one selection form:
-  - `factor_ids`: 1–20 unique factor ids.
-  - `factor_weights`: 1–20 unique `{ "factor_id": "...", "weight": <finite positive number> }` objects.
-- Unless the user explicitly requests custom allocations, prefer `factor_ids`; never invent custom
-  weights. If using `factor_weights`, normalize the numeric weights before submission and verify
-  that their total is `1.0`.
-- `ranking` must be `{ "mode": "N", "value": <positive integer> }` or
-  `{ "mode": "percent", "value": <number in (0, 50]> }`.
-- `strategy_type` must be `long_only`, `short_only`, or `neutral`.
-- Supported optional fields are `start_date`, `end_date`, `initial_cash`, `taker_fee_rate`,
-  `maker_fee_rate`, `rebalance_bars`, and `attribution`.
-- Use `attribution: true` unless the user explicitly requests otherwise.
+- Call `strategy_get_contract` exactly once at the start of each Strategy operation. Treat its
+  `contract` as the current capability boundary and its separately labeled `product_defaults` as
+  the effective defaults used when corresponding submit fields are omitted.
+- Submit only a strategy kind whose contract entry has `submit_supported: true`. The current
+  supported submission kind is cross-sectional Strategy; stop if the requested kind is unsupported.
+- Call `strategy_list_eligible_factors` for eligible cross-sectional factors. The public action is
+  already cross-sectional-scoped, so do not fabricate an unsupported kind field. Submit only
+  factors verified through that tool, whether the agent selected them or the user supplied exact
+  ids or weights.
+- Use the returned exact `factorId` as selector identity. A display `name` is descriptive only and
+  must never be substituted for an id.
+- Treat factor ratings as informational and independent of eligibility:
+  - `rated` has an observed grade and score; Grade F remains eligible when the factor is returned.
+  - `unrated` means no rating is present; do not infer a grade.
+  - `unavailable` means the rating cannot be supplied; do not infer a grade.
+  - An exact `factor_backtest_run_id` is rating provenance only, never factor identity or a Strategy
+    run id.
+- Use exactly one selection form and obey the current contract's factor-count bounds (currently
+  1–20):
+  - `factor_ids`: unique factor ids.
+  - `factor_weights`: unique `{ "factor_id": "...", "weight": <finite positive number> }` objects.
+- If the user does not choose custom allocations, send `factor_ids` and omit `factor_weights`; equal
+  weighting then comes from the advertised product behavior. If the user chooses custom weights,
+  preserve them after validating that ids are unique, every weight is finite and positive, and the
+  total is `1.0` within `1e-6`.
+- If the user does not choose direction, ranking, or attribution, omit `strategy_type`, `ranking`,
+  and `attribution` so the advertised product defaults apply. Do not copy those defaults into the
+  request merely because they were advertised.
+- Preserve every user-selected option exactly after validating it against the current contract.
+  Do not invent a date range, cash value, fee rate, or rebalance interval.
 
 Call `strategy_list_eligible_factors` to discover eligible cross-sectional factors and their
 returned display names before finalizing the factor selection or a local result folder. If the user
 explicitly asks the agent to choose factors, select eligible returned factors, retain the returned
-`display_name` for each selected `factor_id`, and continue. Ask the user to choose only when they
+`name` for each selected `factorId`, and continue. Ask the user to choose only when they
 supplied neither factors nor weights and did not authorize the agent to choose.
 
 When the user supplied `factor_ids` or `factor_weights`, extract the unique selected factor ids and
 call `strategy_list_eligible_factors` with `include_factor_ids` containing exactly those ids before
-submission or local-folder construction. Match the returned factors by `factor_id`, not by name or
-result order, and use only their returned `display_name` values. If any requested factor id is not
+submission or local-folder construction. Match the returned factors by exact `factorId`, not by name or
+result order, and use only their returned `name` values. If any requested factor id is not
 returned, do not invent a display name and do not submit the strategy. Report that the selected
 factor could not be resolved as eligible for the current user.
 
-Call `strategy_submit_run` once with a valid selection, ranking, strategy type, and normal
-attribution default. Never send `name` or `strategy_name` to `strategy_submit_run`; its schema
-has `additionalProperties: false`.
+Choose the submitted `name` before calling `strategy_submit_run`. Preserve a user-supplied name
+after validating it against the submit tool schema: trim it, require a non-empty result, and keep it
+within 255 characters. Otherwise derive a concise factor-aware name from the selected returned
+display names plus the effective profile: use explicit user-selected options where present and the
+advertised `product_defaults` only where omitted. Send it as `name`. Do not use a generic name that
+omits factor context.
+
+Call `strategy_submit_run` exactly once with the validated selection, generated or user-supplied
+`name`, and only the options the user selected. Then observe and archive only the returned run.
 
 After a valid submit response, store `result.run.id` as the sole Strategy `run_id`. Pass that exact
 value to `strategy_get_run`, `strategy_resume_run`, and `strategy_get_artifact`. Treat
@@ -90,7 +112,7 @@ run is `pending`, `running`, or `submit_unknown`; observe that existing run. A s
 `run.id` means that no trackable run identifier was returned; it does not prove that the server did
 not record a Strategy or StrategyRun. Do not automatically resubmit or mutate the payload after an
 ambiguous submit response, bridge error, or transport error. Correct and retry a weight-total error
-only when the tool explicitly returns the Product Backend preflight `invalid_payload` validation
+only when the tool explicitly returns the preflight `invalid_payload` validation
 error; otherwise report that submission confirmation failed to avoid duplicate strategy experiments.
 
 ### 2. Observe the Main Run
@@ -113,8 +135,8 @@ and can be resumed later. Do not claim that results or artifacts are available.
 The main-run status is separate from archive completion. After the main run becomes terminal, use
 only the same stored `run_id` for archive observation. Before each of at most five
 `strategy_get_run` archive-status follow-ups, wait 30 seconds with a host-native wait or timer. That
-delay is observation only: do not use raw HTTP, a local helper script, credentials, or direct backend
-access, and do not call `strategy_resume_run` or resubmit merely to wait for archiving.
+delay is observation only: do not use a local helper script, credentials, or an alternative service
+path, and do not call `strategy_resume_run` or resubmit merely to wait for archiving.
 
 If `archiveStatus` is `completed` or `partial` in the terminal snapshot or a follow-up, stop waiting
 and follow the matching retrieval procedure below. If it remains `pending` or `running` after the
@@ -242,18 +264,15 @@ this local fingerprint input; never place them in the folder name or a user-faci
 Do not include credentials, OAuth material, URLs, raw source, server filesystem paths, or any other
 internal id in the directory name or local fingerprint input.
 
-Use one of these folder-name formats:
+Use this folder-name format:
 
 ```text
 <strategy_name_slug>__<factor_slug_1>__<factor_slug_2>__<fingerprint>
-<strategy_type>_<ranking_mode>_<ranking_value>__<factor_slug_1>__<factor_slug_2>__<fingerprint>
 ```
 
-Use the first format when a user-provided strategy name normalizes to a non-empty slug, truncated to
-at most 48 characters. If the supplied name normalizes to an empty slug, use the generated
-`<strategy_type>_<ranking_mode>_<ranking_value>` prefix instead. Normalize that complete generated
-prefix by the same rule and truncate it to at most 48 characters. For a one-factor strategy, omit
-the `<factor_slug_2>` segment.
+Build `<strategy_name_slug>` from the final submitted `name`, whether user-supplied or generated,
+and truncate it to at most 48 characters. For a one-factor strategy, omit the `<factor_slug_2>`
+segment.
 
 Bound the complete `<strategy_slug>` directory component to at most 180 ASCII characters. If
 additional truncation is necessary after composing it, remove trailing characters from the leading
@@ -264,8 +283,8 @@ submitted composition and parameters, including every factor id and weight, so d
 or submission parameters produce different fingerprints. An exact repeated submission may reuse
 its existing deterministic directory.
 
-The slug is a local archive label only. Do not send it, `name`, or `strategy_name` in an action
-request. Use it only in the local archive folder and the user-facing local paths.
+The slug is a local archive label only. Do not send the slug in an action request. Use it only in
+the local archive folder and the user-facing local paths.
 
 ```text
 Quandora staging result/
@@ -316,8 +335,8 @@ Do not create a placeholder body file, or delete or overwrite an existing final 
 
 ## Final Response
 
-State the strategy name when the user supplied one; otherwise say that no strategy name was
-supplied. State the main-run status, archive status, and safe diagnostics. State all fifteen archive
+State the submitted strategy name and whether it was user-supplied or factor-aware generated. State
+the main-run status, archive status, and safe diagnostics. State all fifteen archive
 artifact states after a completed or partial archive pass; for a partial pass, clearly state that the
 archive is partial and that the full archive was not fetched. Otherwise clearly state that the archive
 is incomplete and that no full artifact retrieval was claimed. For artifacts without a local body
