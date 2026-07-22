@@ -254,13 +254,28 @@ order when multiple factors are submitted. If a selected factor display name nor
 slug, use `factor_1` or `factor_2` according to its displayed folder position. Never use a factor id
 as a readable slug or place one anywhere in the visible directory name.
 
-Create a canonical local fingerprint input from the complete final `strategy_submit_run` payload
-without changing that payload: recursively sort object keys, use a consistent numeric
-representation, and sort the factor selection in a canonical copy by factor id. Include every
-submitted selection, factor id, weight, ranking, strategy type, rebalance setting, date range, and
-other submitted parameter in that canonical input. Hash its canonical UTF-8 JSON with SHA-256 and
-use the first 16 lowercase hexadecimal characters as `<fingerprint>`. Factor ids are used only in
-this local fingerprint input; never place them in the folder name or a user-facing path.
+Create a local-only canonical fingerprint descriptor containing:
+
+- an exact copy of the final `strategy_submit_run` payload as sent;
+- the exact `contract.contract_revision` returned by this operation's single
+  `strategy_get_contract` call; and
+- the complete effective profile resolved locally for `weighting`, `ranking`, `strategy_type`,
+  `start_date`, `end_date`, `initial_cash`, `taker_fee_rate`, `maker_fee_rate`, `rebalance_bars`, and
+  `attribution`. For each field, use the validated explicit submit value when present and
+  `product_defaults` when omitted. With `factor_ids`, use the advertised equal-weighting default;
+  with `factor_weights`, use a custom-weighting value containing every exact factor id and weight.
+
+For canonical encoding, recursively sort object keys, use one consistent JSON numeric
+representation, and canonically sort each factor-selection copy by `factor_id`. Preserve every
+factor id and custom weight in the hashed descriptor. Hash the canonical UTF-8 JSON with SHA-256 and
+use the first 16 lowercase hexadecimal characters as `<fingerprint>`.
+
+The descriptor, contract revision, resolved defaults, and assembled effective-profile object exist
+only for local fingerprinting. Never send any of them to `strategy_submit_run`, and never pass
+`contract_revision` as a tool argument. The submit payload continues to contain only supported
+options the user explicitly selected, so never copy an omitted default into it. Never expose the
+descriptor, contract revision, or factor ids in the directory name, a user-facing path, or a
+user-facing summary.
 Do not include credentials, OAuth material, URLs, raw source, server filesystem paths, or any other
 internal id in the directory name or local fingerprint input.
 
@@ -278,10 +293,11 @@ Bound the complete `<strategy_slug>` directory component to at most 180 ASCII ch
 additional truncation is necessary after composing it, remove trailing characters from the leading
 strategy segment first, then `<factor_slug_2>`, then `<factor_slug_1>`, trimming any newly exposed
 outer underscores and preserving at least one character in each displayed segment. Preserve the
-complete final `__<fingerprint>` suffix unchanged. The canonical fingerprint includes all final
-submitted composition and parameters, including every factor id and weight, so different selections
-or submission parameters produce different fingerprints. An exact repeated submission may reuse
-its existing deterministic directory.
+complete final `__<fingerprint>` suffix unchanged. The canonical fingerprint includes the final
+payload and its effective contract context, so different selections, submitted values, contract
+revisions, or resolved Product defaults produce different fingerprints. Reuse an existing
+deterministic directory only when both the final payload and effective contract context are
+unchanged.
 
 The slug is a local archive label only. Do not send the slug in an action request. Use it only in
 the local archive folder and the user-facing local paths.
