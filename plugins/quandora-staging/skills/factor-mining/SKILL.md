@@ -1,6 +1,6 @@
 ---
 name: factor-mining
-description: Use when an agent should create or submit a Quandora Factor Mining plugin.py, run a user-scoped backtest, fetch safe artifacts, save local result files, summarize outcomes, or resume a run through Quandora.
+description: Use when an agent should inspect or reuse existing Quandora factors and history, create or submit a Factor Mining plugin.py, run a user-scoped backtest, fetch safe artifacts, save local result files, summarize outcomes, or resume a run.
 ---
 
 # Quandora Staging Factor Mining
@@ -24,6 +24,8 @@ Do not ask for Quandora API keys, `vt_` keys, bearer tokens, service tokens, or 
 Use only the Factor Mining actions exposed by `quandora-staging`:
 
 - `factor_mining_status`
+- `factor_mining_list_factors`
+- `factor_mining_get_factor_history`
 - `factor_mining_list_public_tasks`
 - `factor_mining_get_plugin_contract`
 - `factor_mining_create_task_session`
@@ -36,8 +38,7 @@ Use only the Factor Mining actions exposed by `quandora-staging`:
 - `factor_mining_create_backtest_png_download_ticket`
 - `factor_mining_create_backtest_raw_artifact_download_ticket`
 - `factor_mining_get_backtest_png_artifact_chunk`
-
-When the host exposes `factor_mining_explain_result_fields`, use it only for user-requested result insight, metric explanation, diagnosis, or optimization. Default mining requests can proceed without it.
+- `quandora_get_guidance`
 
 Some hosts may prefix action names with the server name, such as `quandora_staging__factor_mining_status`. Treat those as the same actions.
 
@@ -58,6 +59,48 @@ Never infer C# bar fields, field types, decimal/double casts, runtime buffer exp
 ## Workflow
 
 Start with `factor_mining_status`. If authorization is missing or the tools are not exposed, use the host's Quandora Staging connection path: desktop hosts use their Connector settings, while CLI/TUI hosts use their MCP login command. Do not ask the user for direct keys.
+
+Before routing to factor creation, recognize intentional reuse and history intent. If the user asks
+about existing factors, stable versions, prior successful factors, factor evolution, or past runs,
+follow the reuse workflow below. Otherwise keep the existing creation workflow unchanged.
+
+### Approved Guidance
+
+Use `quandora_get_guidance` only when approved product semantics are needed. It accepts only a
+known `guide_id`; request only relevant `sections`, pass `if_guide_revision` when revalidating a
+previous response, and honor a not-modified response without fabricating content. The known ids for
+this release are:
+
+- `operation.factor.history.read`
+- `operation.result.read`
+- `metric.backtest.grade`
+
+Use each guide only for its named factor-history, result, or grade operation. Do not browse for
+Guidance or invent a guide id.
+
+### Intentional Reuse and History
+
+1. Call `factor_mining_list_factors` first and show compact caller-owned factor-family rows. Use
+   bounded pagination; do not hydrate or fetch history for every row.
+2. Ask the user to select an exact returned `factor_id` unless they already supplied one that was
+   returned by the list. Only after that explicit selection call
+   `factor_mining_get_factor_history`.
+3. Start with the default `summary` view. Request only the controlled `branches`, `versions`, or
+   `runs` view needed for the user's next decision. Use only these safe selector combinations:
+   - `summary`: do not send `branch_id`, `version_id`, or `page_token`.
+   - `branches`: may use `branch_id` plus `page_size` / `page_token`; do not send `version_id`.
+   - `versions`: may use `branch_id` or `version_id` plus `page_size` / `page_token`.
+   - `runs`: may use `version_id` plus `page_size` / `page_token`; do not send `branch_id`.
+4. Use only returned metadata and run summaries. Historical source reading and editing are not
+   exposed in this release. Do not read a local cache, call another service, or devise a workaround.
+
+When controlled history semantics are needed, call `quandora_get_guidance` with
+`operation.factor.history.read`, only the relevant `sections`, and `if_guide_revision` when
+revalidating a previous response. Honor a not-modified response without fetching unrelated
+Guidance.
+
+When the reuse request is complete, stop unless the user also asked to create or backtest a new
+factor. Never treat browsing history as permission to edit or resubmit historical source.
 
 Determine whether the user wants a public task or a custom idea:
 
@@ -162,7 +205,9 @@ Do not save bearer tokens, download URLs, raw service metadata, internal IDs, or
 
 Run this section only when the user asks for insight, diagnosis, explanation, or optimization. Do not add long reflection to ordinary mining requests.
 
-When `factor_mining_explain_result_fields` is visible, call it before explaining factor-card metrics, chart panels, or failure reasons. Request the relevant fields and chart names from the saved result, such as `rank_ic`, `rank_icir`, `cs_sharpe`, `factor_autocorr_lag1`, `group_return_plot.png`, `cs_nav_curves.png`, and `cs_profile_4panel.png`. Use the returned definitions as the authority for metric meaning.
+When result or grade semantics are needed for that request, follow the approved Guidance rules
+above and call `quandora_get_guidance` with `operation.result.read` or
+`metric.backtest.grade` as appropriate.
 
 When interpreting a result:
 
