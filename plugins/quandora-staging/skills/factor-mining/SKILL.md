@@ -74,11 +74,9 @@ this release are:
 - `operation.factor.history.read`
 - `operation.result.read`
 - `metric.backtest.grade`
-- `operation.strategy.factor.import`
-- `operation.strategy.factor.shared_admission`
 
-Use each guide only for its named history, result, grade, import, or shared-admission operation. Do
-not browse for Guidance or invent a guide id.
+Use each guide only for its named factor-history, result, or grade operation. Do not browse for
+Guidance or invent a guide id.
 
 ### Intentional Reuse and History
 
