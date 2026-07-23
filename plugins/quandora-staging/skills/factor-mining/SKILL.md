@@ -88,8 +88,11 @@ not browse for Guidance or invent a guide id.
    returned by the list. Only after that explicit selection call
    `factor_mining_get_factor_history`.
 3. Start with the default `summary` view. Request only the controlled `branches`, `versions`, or
-   `runs` view needed for the user's next decision, passing `branch_id`, `version_id`,
-   `page_size`, or `page_token` only where the exposed tool schema permits them.
+   `runs` view needed for the user's next decision. Use only these safe selector combinations:
+   - `summary`: do not send `branch_id`, `version_id`, or `page_token`.
+   - `branches`: may use `branch_id` plus `page_size` / `page_token`; do not send `version_id`.
+   - `versions`: may use `branch_id` or `version_id` plus `page_size` / `page_token`.
+   - `runs`: may use `version_id` plus `page_size` / `page_token`; do not send `branch_id`.
 4. Use only returned metadata and run summaries. Historical source reading and editing are not
    exposed in this release. Do not read a local cache, call another service, or devise a workaround.
 
