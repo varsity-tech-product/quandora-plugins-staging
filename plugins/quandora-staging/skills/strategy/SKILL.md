@@ -70,8 +70,8 @@ or credential-paste flows.
   - `rated` has an observed grade and score; Grade F remains eligible when the factor is returned.
   - `unrated` means no rating is present; do not infer a grade.
   - `unavailable` means the rating cannot be supplied; do not infer a grade.
-  - An exact `factor_backtest_run_id` is rating provenance only, never factor identity or a Strategy
-    run id.
+  - `rating.factor_backtest_run_id` is rating provenance only. It is never factor identity and
+    never a Strategy run id.
 - Use exactly one selection form and obey the current contract's factor-count bounds (currently
   1–20):
   - `factor_ids`: unique factor ids.
@@ -92,7 +92,7 @@ or credential-paste flows.
 
 Call `strategy_list_eligible_factors` with the requested filters and bounded pagination. Display a
 compact comparison table with only factor id, name, authoritative FM Task category, rating/grade
-status, in-sample cross-sectional Sharpe when available, cross-sectional/time-series capability
+status, Median Sharpe when available, cross-sectional/time-series capability
 flags, and eligibility status. Treat the returned category as authoritative and an unavailable
 category as unavailable; never infer it from name, type, or tags. Grade F remains selectable when
 the returned eligibility status says the factor is eligible.
@@ -110,9 +110,12 @@ manual selection wherever fields are available. If admission semantics are neede
 `operation.strategy.factor.shared_admission`, requesting only relevant sections and safely using
 `if_guide_revision` when revalidating a previous response.
 
-Before admission, show the candidate's exact `factor_version_id` and
-`factor_backtest_run_id`, then obtain explicit user confirmation for that exact pair. Only after
-that confirmation call `strategy_add_shared_factor_to_pool`. Verify the returned admission evidence,
+The root-level `factor_backtest_run_id` returned by
+`strategy_list_shared_factor_candidates`, together with the exact `factor_version_id`, is the
+evidence required for shared-factor admission. Do not substitute
+`rating.factor_backtest_run_id`. Before calling `strategy_add_shared_factor_to_pool`, show the user
+the exact candidate name, `factor_version_id`, and root-level `factor_backtest_run_id`, then obtain
+explicit confirmation for that exact candidate and pair. Verify the returned admission evidence,
 then call `strategy_list_eligible_factors` with `include_factor_ids` containing exactly the newly
 admitted `factor_id`. Do not submit a Strategy unless that exact id is returned as currently
 eligible.
