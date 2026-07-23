@@ -11,16 +11,23 @@ the complete Strategy archive workflow.
 
 ## Connection and Tools
 
-Before starting, confirm that the Quandora Staging connection is authenticated and that these seven
-Strategy actions are visible:
+Before starting, confirm that the Quandora Staging connection is authenticated and that the actions
+needed for the requested path are visible:
 
 1. `strategy_get_contract`
 2. `strategy_list_eligible_factors`
-3. `strategy_submit_run`
-4. `strategy_get_run`
-5. `strategy_resume_run`
-6. `strategy_get_artifact`
-7. `strategy_create_artifact_download_ticket`
+3. `strategy_get_eligible_factor_detail`
+4. `strategy_list_shared_factor_candidates`
+5. `strategy_add_shared_factor_to_pool`
+6. `strategy_import_factor`
+7. `strategy_submit_run`
+8. `strategy_get_run`
+9. `strategy_resume_run`
+10. `strategy_get_artifact`
+11. `strategy_create_artifact_download_ticket`
+12. `factor_mining_create_custom_session`
+13. `factor_mining_resume_run`
+14. `quandora_get_guidance`
 
 Some hosts prefix action names with the server name, such as
 `quandora_staging__strategy_submit_run`; treat those as the same actions.
@@ -38,8 +45,8 @@ chat before continuing:
 - OpenClaw: run `openclaw mcp login quandora-staging`, complete authorization, then start a new
   chat.
 
-The normal workflow uses only these seven exposed Strategy MCP actions. Never ask for or accept
-credentials or use an alternative service path. Use host-native HTTP only for the one opaque
+The normal workflow uses only the exposed MCP actions above. Never ask for or accept credentials or
+use an alternative service path. Use host-native HTTP only for the one opaque
 `download_url` returned by
 `strategy_create_artifact_download_ticket`; never use it for internal-service calls, raw storage,
 or credential-paste flows.
@@ -57,7 +64,7 @@ or credential-paste flows.
   already cross-sectional-scoped, so do not fabricate an unsupported kind field. Submit only
   factors verified through that tool, whether the agent selected them or the user supplied exact
   ids or weights.
-- Use the returned exact `factorId` as selector identity. A display `name` is descriptive only and
+- Use the returned exact `factor_id` as selector identity. A display `name` is descriptive only and
   must never be substituted for an id.
 - Treat factor ratings as informational and independent of eligibility:
   - `rated` has an observed grade and score; Grade F remains eligible when the factor is returned.
@@ -69,38 +76,90 @@ or credential-paste flows.
   1–20):
   - `factor_ids`: unique factor ids.
   - `factor_weights`: unique `{ "factor_id": "...", "weight": <finite positive number> }` objects.
-- If the user does not choose custom allocations, send `factor_ids` and omit `factor_weights`; equal
-  weighting then comes from the advertised product behavior. If the user chooses custom weights,
-  preserve them after validating that ids are unique, every weight is finite and positive, and the
-  total is `1.0` within `1e-6`.
-- If the user does not choose direction, ranking, or attribution, omit `strategy_type`, `ranking`,
-  and `attribution` so the advertised product defaults apply. Do not copy those defaults into the
-  request merely because they were advertised.
+- When configuration is omitted, apply the contract's current representation of the Product
+  defaults: equal weights using the `factor_ids` selection form, long-short neutral, and top/bottom
+  count 5. Read the exact field names, value shapes, and omission semantics from the single returned
+  contract, its `product_defaults`, and the exposed submit schema; never invent a request field or
+  enum value.
+- A user-supplied weight, direction, top/bottom count, or top/bottom percentage overrides the
+  corresponding default. For custom weights, validate that ids are unique, every weight is finite
+  and positive, and the total is `1.0` within `1e-6`. Preserve every other explicit supported
+  option.
 - Preserve every user-selected option exactly after validating it against the current contract.
   Do not invent a date range, cash value, fee rate, or rebalance interval.
 
-Call `strategy_list_eligible_factors` to discover eligible cross-sectional factors and their
-returned display names before finalizing the factor selection or a local result folder. If the user
-explicitly asks the agent to choose factors, select eligible returned factors, retain the returned
-`name` for each selected `factorId`, and continue. Ask the user to choose only when they
-supplied neither factors nor weights and did not authorize the agent to choose.
+#### Manual Selection
+
+Call `strategy_list_eligible_factors` with the requested filters and bounded pagination. Display a
+compact comparison table with only factor id, name, authoritative FM Task category, rating/grade
+status, in-sample cross-sectional Sharpe when available, cross-sectional/time-series capability
+flags, and eligibility status. Treat the returned category as authoritative and an unavailable
+category as unavailable; never infer it from name, type, or tags. Grade F remains selectable when
+the returned eligibility status says the factor is eligible.
+
+Call `strategy_get_eligible_factor_detail` only for an exact factor id the user requests or for a
+small, stated shortlist. Do not fetch detail for every list row. If the user supplied neither
+factors nor weights and did not explicitly ask the agent to choose, show the compact choices and ask
+the user to select.
+
+#### Shared Selection
+
+Call `strategy_list_shared_factor_candidates` and show the same compact comparison columns used for
+manual selection wherever fields are available. If admission semantics are needed, call
+`quandora_get_guidance` with the known guide id
+`operation.strategy.factor.shared_admission`, requesting only relevant sections and safely using
+`if_guide_revision` when revalidating a previous response.
+
+Before admission, show the candidate's exact `factor_version_id` and
+`factor_backtest_run_id`, then obtain explicit user confirmation for that exact pair. Only after
+that confirmation call `strategy_add_shared_factor_to_pool`. Verify the returned admission evidence,
+then call `strategy_list_eligible_factors` with `include_factor_ids` containing exactly the newly
+admitted `factor_id`. Do not submit a Strategy unless that exact id is returned as currently
+eligible.
+
+#### Import
+
+Import only complete inline `plugin.py` source. Reuse a real existing Factor Mining `session_id`, or
+create the appropriate custom session with `factor_mining_create_custom_session` using its exposed
+schema. Call `strategy_import_factor` with only schema-declared arguments. If import semantics are
+needed, call `quandora_get_guidance` with the known guide id
+`operation.strategy.factor.import`, relevant sections, and an available prior revision.
+
+Use only real lifecycle identifiers returned by `strategy_import_factor`. If `next_action` requires
+resume, require the canonical returned `run_id` for `factor_mining_resume_run` and follow the Factor
+Mining bounded policy of at most four resumes in the current request. Treat a returned
+`backtest_job_id` as lifecycle evidence only; if `run_id` is absent, stop rather than substitute or
+map that value. Do not invent an id mapping or add an import-status poller. Whether the factor was
+newly verified or reused, call `strategy_list_eligible_factors` with
+`include_factor_ids` containing exactly its returned factor id. Never submit a Strategy until that
+exact id appears in the current eligible list.
+
+#### Agent Selection
+
+Automatically choose factors only when the user explicitly asks the agent to choose. Retain each
+selected row's returned `name`; before submission, state the rationale and the exact factor ids.
+Otherwise ask the user to select from the manual, shared, or import path.
 
 When the user supplied `factor_ids` or `factor_weights`, extract the unique selected factor ids and
 call `strategy_list_eligible_factors` with `include_factor_ids` containing exactly those ids before
-submission or local-folder construction. Match the returned factors by exact `factorId`, not by name or
+submission or local-folder construction. Match the returned factors by exact `factor_id`, not by name or
 result order, and use only their returned `name` values. If any requested factor id is not
 returned, do not invent a display name and do not submit the strategy. Report that the selected
 factor could not be resolved as eligible for the current user.
 
 Choose the submitted `name` before calling `strategy_submit_run`. Preserve a user-supplied name
 after validating it against the submit tool schema: trim it, require a non-empty result, and keep it
-within 255 characters. Otherwise derive a concise factor-aware name from the selected returned
-display names plus the effective profile: use explicit user-selected options where present and the
-advertised `product_defaults` only where omitted. Send it as `name`. Do not use a generic name that
-omits factor context.
+within 255 characters. Otherwise derive a concise, distinguishable name from themes present in the
+selected returned display names plus the actual effective configuration: use explicit user-selected
+options where present and the advertised `product_defaults` only where omitted. For example,
+`liquidation_continuation_ls_neutral_tb5` represents returned liquidation/continuation themes,
+long-short neutral direction, and top/bottom count 5. Never invent a factor label or use a generic
+name such as `agent_neutral_percent_N_strategy`. Send the generated name as `name` and use the same
+name in the existing local archive logic.
 
 Call `strategy_submit_run` exactly once with the validated selection, generated or user-supplied
-`name`, and only the options the user selected. Then observe and archive only the returned run.
+`name`, every explicit user option, and only the omitted-field default representation required by
+the returned contract and submit schema. Then observe and archive only the returned run.
 
 After a valid submit response, store `result.run.id` as the sole Strategy `run_id`. Pass that exact
 value to `strategy_get_run`, `strategy_resume_run`, and `strategy_get_artifact`. Treat
