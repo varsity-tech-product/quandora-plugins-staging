@@ -64,6 +64,22 @@ Before routing to factor creation, recognize intentional reuse and history inten
 about existing factors, stable versions, prior successful factors, factor evolution, or past runs,
 follow the reuse workflow below. Otherwise keep the existing creation workflow unchanged.
 
+### Approved Guidance
+
+Use `quandora_get_guidance` only when approved product semantics are needed. It accepts only a
+known `guide_id`; request only relevant `sections`, pass `if_guide_revision` when revalidating a
+previous response, and honor a not-modified response without fabricating content. The known ids for
+this release are:
+
+- `operation.factor.history.read`
+- `operation.result.read`
+- `metric.backtest.grade`
+- `operation.strategy.factor.import`
+- `operation.strategy.factor.shared_admission`
+
+Use each guide only for its named history, result, grade, import, or shared-admission operation. Do
+not browse for Guidance or invent a guide id.
+
 ### Intentional Reuse and History
 
 1. Call `factor_mining_list_factors` first and show compact caller-owned factor-family rows. Use
@@ -76,6 +92,11 @@ follow the reuse workflow below. Otherwise keep the existing creation workflow u
    `page_size`, or `page_token` only where the exposed tool schema permits them.
 4. Use only returned metadata and run summaries. Historical source reading and editing are not
    exposed in this release. Do not read a local cache, call another service, or devise a workaround.
+
+When controlled history semantics are needed, call `quandora_get_guidance` with
+`operation.factor.history.read`, only the relevant `sections`, and `if_guide_revision` when
+revalidating a previous response. Honor a not-modified response without fetching unrelated
+Guidance.
 
 When the reuse request is complete, stop unless the user also asked to create or backtest a new
 factor. Never treat browsing history as permission to edit or resubmit historical source.
@@ -183,20 +204,9 @@ Do not save bearer tokens, download URLs, raw service metadata, internal IDs, or
 
 Run this section only when the user asks for insight, diagnosis, explanation, or optimization. Do not add long reflection to ordinary mining requests.
 
-Use `quandora_get_guidance` only when approved product semantics are needed. It accepts only a
-known `guide_id`; request only relevant `sections`, pass `if_guide_revision` when revalidating a
-previous response, and honor a not-modified response without fabricating content. The known ids for
-this release are:
-
-- `operation.factor.history.read`
-- `operation.result.read`
-- `metric.backtest.grade`
-- `operation.strategy.factor.import`
-- `operation.strategy.factor.shared_admission`
-
-Use the history guide for controlled history semantics, the result or grade guide before explaining
-those meanings, and the import or shared-admission guide only when that operation's semantics are
-needed. Do not browse for Guidance or invent a guide id.
+When result or grade semantics are needed for that request, follow the approved Guidance rules
+above and call `quandora_get_guidance` with `operation.result.read` or
+`metric.backtest.grade` as appropriate.
 
 When interpreting a result:
 
