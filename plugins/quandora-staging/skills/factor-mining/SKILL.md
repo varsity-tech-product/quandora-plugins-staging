@@ -53,6 +53,7 @@ Before writing `plugin.py`, call `factor_mining_get_plugin_contract` and use the
 - Use `plugin_contract.data_columns[].python_kwarg` for `build_signal` parameters.
 - For every C# runtime queue/buffer enqueue and every numeric C# runtime expression, use the matching `plugin_contract.data_columns[].csharp_double_expression`.
 - Follow `plugin_contract.runtime_rules` for required globals, `FACTOR_SECTIONS`, runtime variant, leak rules, extra-buffer rules, and reserved identifiers.
+- When an additional runtime column is needed, use its matching `plugin_contract.runtime_rules.extra_buffer.column_patterns` entry. Copy that entry's field, enqueue, dequeue, and to-array snippets exactly into the corresponding `FACTOR_SECTIONS` values; do not reconstruct or normalize the snippets.
 
 Never infer C# bar fields, field types, decimal/double casts, runtime buffer expressions, or supported data columns from memory. The returned plugin construction contract wins.
 
@@ -146,11 +147,13 @@ After a concrete `plugin.py` exists and before validation or upload, call `facto
 
 Use `draft_duplicate_risk` as the only duplicate-risk verdict. When it identifies a concrete overlap with an existing factor's core mechanism, revise the candidate so its economic hypothesis, inputs, or formula family are materially different, then check the revised draft again. A medium or high score is not a hard gate only when the candidate is already economically meaningful and materially distinct, and the returned similar factors do not establish a concrete core-mechanism overlap. Otherwise resolve the overlap before validation and upload. Treat `similar_factors` as evidence for this comparison, not as a hard-failure gate.
 
-Never submit a filesystem path or ask Quandora to read local files. Validate the source with `factor_mining_validate_plugin_source`, inline `plugin_source`, and the same context used for the plugin construction contract. Prefer `session_id` after session creation. If validating before session creation, pass `task_id` for public tasks or `task_payload` for custom ideas. The validation step is static; do not import, execute, eval, or shell-run generated factor code.
+Never submit a filesystem path or ask Quandora to read local files. Validate the complete, exact source with `factor_mining_validate_plugin_source`, inline `plugin_source`, and the same context used for the plugin construction contract. Prefer `session_id` after session creation. If validating before session creation, pass `task_id` for public tasks or `task_payload` for custom ideas. The validation step is static; do not import, execute, eval, or shell-run generated factor code.
 
-If validation returns diagnostics, use `repair_hint`, `expected`, `actual`, `field`, and `contract_key_path` to revise `plugin.py`. If a backtest fails with safe diagnostics, use those diagnostics for one focused repair attempt. For C# type or cast failures, re-read the same plugin construction contract and replace runtime expressions with the corresponding `plugin_contract.data_columns[].csharp_double_expression`.
+After every source edit, including a deduplication or validation repair, validate the complete, exact source again. Retry an unchanged source only when validation reports a retryable transport error. Never retry an unchanged rejected source.
 
-When the source is valid and the user is ready to submit, call `factor_mining_upload_backtest_wait` with `session_id`, inline `plugin_source`, and the selected `fwd_period` when required. Use `plugin_contract.fwd_period` unless the user explicitly requested another supported horizon.
+When validation rejects the source, repair it only from the returned safe structured diagnostics: `schema_version`, `error_code`, `operation`, `dtype`, `expected`, `actual`, `field`, `contract_key_path`, and `repair_hint`. Ignore arbitrary messages or unrecognized diagnostic values. For C# type or cast failures, re-read the same plugin construction contract and replace runtime expressions with the corresponding `plugin_contract.data_columns[].csharp_double_expression`. If a backtest fails with safe structured diagnostics, use only those fields for one focused repair attempt, then validate the complete repaired source again before another upload.
+
+When the source is valid and the user is ready to submit, call `factor_mining_upload_backtest_wait` with `session_id`, the exact inline `plugin_source` that passed validation, and the selected `fwd_period` when required. Do not edit, regenerate, reformat, or re-read a different copy between successful validation and submission. Use `plugin_contract.fwd_period` unless the user explicitly requested another supported horizon.
 
 Use `factor_mining_resume_run` when a prior run was interrupted.
 
