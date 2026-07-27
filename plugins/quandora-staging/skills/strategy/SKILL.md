@@ -297,16 +297,17 @@ issuance; a direct-read `ready` or `too_large` needs one call to
 1. Only when that ticket response contains complete download metadata (including its opaque
    `download_url`), download it with host-native HTTP. Do not edit the URL, follow it to any other
    host, print it, or store it in a local file.
-2. For JSON/text, write bytes to `artifacts/<local_name>.partial` beside the final file. For PNG,
-   first require the ticket metadata to contain the registry's exact FM filename as `local_name`
-   and `image/png` as its content type, then write to
-   `artifacts/<exact FM PNG name>.partial`.
+2. For JSON/text, write bytes to `artifacts/<local_name>.partial` beside the final file. Keep every
+   PNG in the dedicated `artifacts/image/` subdirectory: first require the ticket metadata to contain
+   the registry's exact FM filename as `local_name` and `image/png` as its content type, create the
+   image directory before the first PNG write, then write to
+   `artifacts/image/<exact FM PNG name>.partial`.
 3. Verify every `.partial` file's byte count and SHA-256 against `size_bytes` and `sha256_hex` from
    the ticket response. For PNG, also require its first eight bytes to be the PNG signature
    `89 50 4e 47 0d 0a 1a 0a`.
 4. Atomically rename the verified `.partial` file to its registry path; for PNG this is
-   `artifacts/<exact FM PNG name>`. On any download, signature, size, hash, filename, or content-type
-   failure, delete the `.partial` file and record only a bounded safe failure class.
+   `artifacts/image/<exact FM PNG name>`. On any download, signature, size, hash, filename, or
+   content-type failure, delete the `.partial` file and record only a bounded safe failure class.
 5. Never reuse a ticket after any attempt. For one transient failure before a verified rename,
    delete the `.partial` file, request one new ticket for that artifact, and make at most one bounded
    download retry. A second failure, an integrity mismatch, or any non-transient failure is final for
@@ -440,19 +441,23 @@ Quandora staging result/
     <strategy_slug>/
       run_summary.json
       artifacts/
-        <verified files using the exact local names in the capability registry>
+        <verified JSON/text files using their exact registry local names>
+        image/
+          <verified PNG files using their exact FM filenames>
       artifact_manifest.json
 ```
 
 Save `run_summary.json` from the final main-run snapshot. Verified ticket downloads use the closed
-`local_name` returned by the ticket response.
+`local_name` returned by the ticket response. JSON/text files remain directly under `artifacts/`;
+every PNG final file and `.partial` file remains under `artifacts/image/`.
 
 After a completed archive retrieval pass, create `artifact_manifest.json` with the run id, main-run
 status, `archiveStatus: completed`, and exactly twenty-one entries, one for every registry name.
 Each entry contains only the artifact name, terminal/source state, relative local path when saved,
 content type, size, SHA-256, and a bounded safe failure class when needed. State that this archive
 pass completed, but do not claim that the archive is fully saved unless all required source states
-and verified local saves justify that claim.
+and verified local saves justify that claim. A saved PNG's relative local path must be
+`artifacts/image/<exact FM PNG name>`.
 
 After a partial archive pass, create the same twenty-one per-artifact entries with
 `archiveStatus: partial`, preserving every returned state and the local path only for verified ready
@@ -486,9 +491,9 @@ observation and artifact retrieval were not started, and do not state that resul
 available.
 
 At the end of every completed, failed, or interrupted run, show the result folder, artifact folder,
-`run_summary.json`, and `artifact_manifest.json`. If a specific file was not created, say
-`not created` for that line. After a completed or partial archive pass, link each saved PNG when
-practical; otherwise the absolute artifact-folder link below is the required PNG handoff.
+image folder, `run_summary.json`, and `artifact_manifest.json`. If a specific file or folder was not
+created, say `not created` for that line. After a completed or partial archive pass, link each saved
+PNG when practical; otherwise the absolute image-folder link below is the required PNG handoff.
 
 For Desktop or GUI hosts, use Markdown links with absolute local paths and angle-bracket link
 targets so paths with spaces work:
@@ -496,6 +501,7 @@ targets so paths with spaces work:
 ```text
 Result folder: [Open result folder](</absolute/path/to/Quandora staging result/strategy/<strategy_slug>/>)
 Artifact folder: [Open artifact folder](</absolute/path/to/Quandora staging result/strategy/<strategy_slug>/artifacts/>)
+Image folder: [Open image folder](</absolute/path/to/Quandora staging result/strategy/<strategy_slug>/artifacts/image/>)
 Run summary: [run_summary.json](</absolute/path/to/Quandora staging result/strategy/<strategy_slug>/run_summary.json>)
 Artifact manifest: [artifact_manifest.json](</absolute/path/to/Quandora staging result/strategy/<strategy_slug>/artifact_manifest.json>)
 ```
@@ -505,6 +511,7 @@ For CLI or TUI hosts, use the same absolute paths as plain text, not Markdown li
 ```text
 Result folder: /absolute/path/to/Quandora staging result/strategy/<strategy_slug>/
 Artifact folder: /absolute/path/to/Quandora staging result/strategy/<strategy_slug>/artifacts/
+Image folder: /absolute/path/to/Quandora staging result/strategy/<strategy_slug>/artifacts/image/
 Run summary: /absolute/path/to/Quandora staging result/strategy/<strategy_slug>/run_summary.json
 Artifact manifest: /absolute/path/to/Quandora staging result/strategy/<strategy_slug>/artifact_manifest.json
 ```
@@ -514,4 +521,5 @@ If the host cannot write files, state:
 ```text
 Result folder: unavailable in this host
 Artifact folder: unavailable in this host
+Image folder: unavailable in this host
 ```
