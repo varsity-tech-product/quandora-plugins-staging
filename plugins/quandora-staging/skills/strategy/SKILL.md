@@ -1,6 +1,6 @@
 ---
 name: strategy
-description: Use to list available, eligible, or selectable Strategy factors, including the bare Chinese request “列出可用因子”, or to compose, submit, inspect, or archive a cross-sectional Quandora Staging strategy from eligible factors.
+description: Use when the user asks to list available, eligible, or selectable Strategy factors, including the bare Chinese request “列出可用因子”, or asks to compose, submit, inspect, or archive a cross-sectional Quandora Staging strategy.
 ---
 
 # Quandora Staging Strategy

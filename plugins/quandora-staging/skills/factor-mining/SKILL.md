@@ -1,6 +1,6 @@
 ---
 name: factor-mining
-description: Use for caller-owned or reusable Factor Mining factor families, Factor Mining history, plugin.py construction and submission, backtests, resume, and artifacts. Do not use for bare Strategy available, eligible, or selectable-factor requests; “列出可用因子” defaults to Strategy and must not trigger the Factor Mining list workflow.
+description: Use when the user explicitly asks about caller-owned or reusable Factor Mining factor families or history, or asks to construct, submit, backtest, resume, or retrieve artifacts for a Factor Mining plugin.
 ---
 
 # Quandora Staging Factor Mining
