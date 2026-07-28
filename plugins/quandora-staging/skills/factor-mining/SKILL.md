@@ -1,6 +1,6 @@
 ---
 name: factor-mining
-description: Use when an agent should inspect or reuse existing Quandora factors and history, create or submit a Factor Mining plugin.py, run a user-scoped backtest, fetch safe artifacts, save local result files, summarize outcomes, or resume a run.
+description: Use for caller-owned or reusable Factor Mining factor families, Factor Mining history, plugin.py construction and submission, backtests, resume, and artifacts. Do not use for bare Strategy available, eligible, or selectable-factor requests; “列出可用因子” defaults to Strategy and must not trigger the Factor Mining list workflow.
 ---
 
 # Quandora Staging Factor Mining
@@ -21,7 +21,7 @@ Do not ask for Quandora API keys, `vt_` keys, bearer tokens, service tokens, or 
 
 ## Available Actions
 
-Use only the Factor Mining actions exposed by `quandora-staging`:
+After routing has confirmed Factor Mining scope, use only the Factor Mining actions exposed by `quandora-staging`:
 
 - `factor_mining_status`
 - `factor_mining_list_factors`
@@ -46,7 +46,6 @@ Some hosts may prefix action names with the server name, such as `quandora_stagi
 
 Before writing `plugin.py`, call `factor_mining_get_plugin_contract` and use the returned `plugin_contract` as the source of truth for Python inputs, C# runtime expressions, runtime globals, and horizon defaults.
 
-- For a public task, pass either the selected `task_id` before session creation or the created `session_id` after `factor_mining_create_task_session`.
 - Use `plugin_contract.allowed_data` to decide which input columns the factor may use.
 - Use `plugin_contract.fwd_period` after the contract is returned. For custom ideas, set `task_payload.fwd_period` to `7` unless the user explicitly asks for another supported horizon.
 - Use `plugin_contract.data_columns[].python_kwarg` for `build_signal` parameters.
@@ -54,24 +53,18 @@ Before writing `plugin.py`, call `factor_mining_get_plugin_contract` and use the
 - Follow `plugin_contract.runtime_rules` for required globals, `FACTOR_SECTIONS`, runtime variant, leak rules, extra-buffer rules, and reserved identifiers.
 - When an additional runtime column is needed, use its matching `plugin_contract.runtime_rules.extra_buffer.column_patterns` entry. Copy that entry's field, enqueue, dequeue, and to-array snippets exactly into the corresponding `FACTOR_SECTIONS` values; do not reconstruct or normalize the snippets.
 
-For the normal custom-factor path, use this exact bootstrap sequence:
-
-1. Call `factor_mining_status`.
-2. Call `factor_mining_get_plugin_contract` with an empty object (`{}`) to read the global construction and data-column contract.
-3. Select only exact data-column names returned by that global contract.
-4. Create the custom session through `factor_mining_create_custom_session`.
-5. Call `factor_mining_get_plugin_contract` again with only the returned `session_id`.
-6. Treat the scoped contract as authoritative when writing and validating `plugin.py`.
-
-Do not send a hand-built custom `task_payload` directly to `factor_mining_get_plugin_contract` in the normal custom workflow. Do not send multiple selectors in one plugin-contract call. Do not retry an identical non-retryable request. Do not silently change the user's research mechanism after a non-retryable validation error. Public-task behavior remains unchanged: use one exact `task_id` or the created task session's `session_id`.
+Do not send multiple selectors in one plugin-contract call. Do not retry an identical non-retryable request. Do not silently change the user's research mechanism after a non-retryable validation error.
 
 Never infer C# bar fields, field types, decimal/double casts, runtime buffer expressions, or supported data columns from memory. The returned plugin construction contract wins.
 
 ## Workflow
 
-Start with `factor_mining_status`. If authorization is missing or the tools are not exposed, use the host's Quandora Staging connection path: desktop hosts use their Connector settings, while CLI/TUI hosts use their MCP login command. Do not ask the user for direct keys.
+Before entering a Factor Mining workflow, route the request:
 
-Bare “列出可用因子”, “可用因子”, “available factors”, “eligible factors”, “selectable factors”, “可用于策略的因子”, and requests for the Strategy factor pool route to `strategy_list_eligible_factors`; they do not route to `factor_mining_list_factors`. Do not call both lists for a bare Strategy-availability request and do not ask a clarification question for “列出可用因子”. Requests explicitly about “我的 Factor Mining 因子”, caller-owned or reusable factor families, stable factor history, branches, versions, or previous factor runs route to `factor_mining_list_factors`.
+- Bare “列出可用因子”, “可用因子”, “available factors”, “eligible factors”, “selectable factors”, “可用于策略的因子”, and requests for the Strategy factor pool exit this skill and hand off to the Strategy skill. That skill calls only `strategy_list_eligible_factors` for the request. Do not first call `factor_mining_status` or `factor_mining_list_factors`, do not call both lists, and do not ask a clarification question for a bare request.
+- Requests explicitly about “我的 Factor Mining 因子”, caller-owned or reusable Factor Mining factor families, factor history, branches, versions, or previous Factor Mining runs remain in this skill and route to `factor_mining_list_factors`.
+
+After routing has confirmed Factor Mining scope, call `factor_mining_status` exactly once at the start of the normal Factor Mining workflow. If authorization is missing or the tools are not exposed, use the host's Quandora Staging connection path: desktop hosts use their Connector settings, while CLI/TUI hosts use their MCP login command. Do not ask the user for direct keys.
 
 Before routing to factor creation, recognize intentional reuse and history intent. If the user asks
 about existing factors, stable versions, prior successful factors, factor evolution, or past runs,
@@ -124,8 +117,10 @@ factor. Never treat browsing history as permission to edit or resubmit historica
 
 Determine whether the user wants a public task or a custom idea:
 
-- For public tasks, call `factor_mining_list_public_tasks`, show concise choices, and ask the user to pick one unless they explicitly ask the agent to choose. Then call `factor_mining_get_plugin_contract` with the selected `task_id` or create the session with `factor_mining_create_task_session` and call `factor_mining_get_plugin_contract` with the returned `session_id`.
-- For a custom idea, follow the exact normal custom-factor bootstrap sequence above. Prepare a clear title, category, description, non-empty `allowed_data`, and `fwd_period` for `factor_mining_create_custom_session`. Use only exact `allowed_data` names returned by the global contract, including `close`, `volume`, `funding_rate_close`, or `open_interest_close` only when returned. Use `fwd_period: 7` unless the user explicitly asks for another supported horizon. After session creation, fetch the scoped contract with only its returned `session_id`.
+- For a public task: call `factor_mining_list_public_tasks`, show concise choices, and select one exact public `task_id`, asking the user to pick unless they explicitly ask the agent to choose. Either call `factor_mining_get_plugin_contract` with only that exact `task_id` before creating the task session and then create the session for that same task, or create the session first with `factor_mining_create_task_session` and call `factor_mining_get_plugin_contract` with only the returned `session_id`.
+- For a custom idea: before creating a session, call `factor_mining_get_plugin_contract({})` exactly once to read the global construction and data-column contract. Prepare a clear title, category, description, non-empty `allowed_data`, and `fwd_period` for `factor_mining_create_custom_session`, using only exact column names returned by the global contract's `plugin_contract.allowed_data`, including `close`, `volume`, `funding_rate_close`, or `open_interest_close` only when returned. Use `fwd_period: 7` unless the user explicitly asks for another supported horizon. Create the custom session, then call `factor_mining_get_plugin_contract` with only the returned `session_id`; treat that scoped contract as authoritative for writing and validating `plugin.py`. Never send a hand-built custom `task_payload` to `factor_mining_get_plugin_contract`.
+
+After either branch returns its scoped contract, continue through the single shared plugin.py writing, deduplication, validation, upload, resume/polling, and artifact/archive workflow below.
 
 Do not write `plugin.py` until the plugin construction contract has been returned. If the contract cannot be fetched, stop and report that plugin authoring is blocked by missing contract metadata.
 
