@@ -13,7 +13,7 @@ If the required Quandora Staging tools are visible, continue automatically. If t
 
 - Codex CLI/TUI: run `codex mcp login quandora-staging`. Wait for the user to complete the browser authorization flow, then check again for `factor_mining_status`.
 - Codex Desktop: the plugin provides the Quandora Staging connector. If the first use opens the authorization flow, wait for the user to authorize Quandora Staging in the browser, then continue in a new chat. If the tools still are not visible, tell the user to fully quit and reopen Codex Desktop.
-- Kimi Code: run `/mcp-config login quandora-staging`, complete the browser authorization flow, then start a new chat and check `/mcp`.
+- Kimi Code: run `/mcp-config login plugin-quandora-staging:quandora-staging`, complete the browser authorization flow, then start a new chat and check `/mcp`.
 - Claude Code: open `/mcp`, authenticate `quandora-staging`, then start a new chat.
 - Claude Desktop: the plugin alone is not enough. Tell the user to open Settings -> Connectors, add a Connector named `quandora-staging` with URL `https://mcp-staging.varsity.lol/quant`, click Connect, authorize Quandora Staging in the browser, then start a new chat.
 - OpenClaw: run `openclaw mcp login quandora-staging`, complete the printed authorization flow, then start a new chat.

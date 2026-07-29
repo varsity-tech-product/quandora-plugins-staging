@@ -38,7 +38,7 @@ chat before continuing:
 - Codex CLI/TUI: run `codex mcp login quandora-staging`.
 - Codex Desktop: authorize the plugin-provided connector, start a new chat, and fully quit and
   reopen Codex Desktop if the tools remain unavailable.
-- Kimi Code: run `/mcp-config login quandora-staging`, complete browser authorization, then start
+- Kimi Code: run `/mcp-config login plugin-quandora-staging:quandora-staging`, complete browser authorization, then start
   a new chat and check `/mcp`.
 - Claude Code: open `/mcp`, authenticate `quandora-staging`, then start a new chat.
 - Claude Desktop: add a connector named `quandora-staging` with URL
