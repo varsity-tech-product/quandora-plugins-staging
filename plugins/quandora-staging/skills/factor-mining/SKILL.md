@@ -13,6 +13,7 @@ If the required Quandora Staging tools are visible, continue automatically. If t
 
 - Codex CLI/TUI: run `codex mcp login quandora-staging`. Wait for the user to complete the browser authorization flow, then check again for `factor_mining_status`.
 - Codex Desktop: the plugin provides the Quandora Staging connector. If the first use opens the authorization flow, wait for the user to authorize Quandora Staging in the browser, then continue in a new chat. If the tools still are not visible, tell the user to fully quit and reopen Codex Desktop.
+- Kimi Code: run `/mcp-config login quandora-staging`, complete the browser authorization flow, then start a new chat and check `/mcp`.
 - Claude Code: open `/mcp`, authenticate `quandora-staging`, then start a new chat.
 - Claude Desktop: the plugin alone is not enough. Tell the user to open Settings -> Connectors, add a Connector named `quandora-staging` with URL `https://mcp-staging.varsity.lol/quant`, click Connect, authorize Quandora Staging in the browser, then start a new chat.
 - OpenClaw: run `openclaw mcp login quandora-staging`, complete the printed authorization flow, then start a new chat.
@@ -61,7 +62,7 @@ Never infer C# bar fields, field types, decimal/double casts, runtime buffer exp
 
 Before entering a Factor Mining workflow, route the request:
 
-- Bare “列出可用因子”, “可用因子”, “available factors”, “eligible factors”, “selectable factors”, “可用于策略的因子”, and requests for the Strategy factor pool exit this skill and hand off to the Strategy skill. That skill calls only `strategy_list_eligible_factors` for the request. Do not first call `factor_mining_status` or `factor_mining_list_factors`, do not call both lists, and do not ask a clarification question for a bare request.
+- Bare “列出可用因子”, “可用因子”, “available factors”, “eligible factors”, “selectable factors”, “可用于策略的因子”, and requests for the Strategy factor pool exit this skill and hand off to the Strategy Building skill. That skill calls only `strategy_list_eligible_factors` for the request. Do not first call `factor_mining_status` or `factor_mining_list_factors`, do not call both lists, and do not ask a clarification question for a bare request.
 - Requests explicitly about “我的 Factor Mining 因子”, caller-owned or reusable Factor Mining factor families, factor history, branches, versions, or previous Factor Mining runs remain in this skill and route to `factor_mining_list_factors`.
 
 After routing has confirmed Factor Mining scope, call `factor_mining_status` exactly once at the start of the normal Factor Mining workflow. If authorization is missing or the tools are not exposed, use the host's Quandora Staging connection path: desktop hosts use their Connector settings, while CLI/TUI hosts use their MCP login command. Do not ask the user for direct keys.
