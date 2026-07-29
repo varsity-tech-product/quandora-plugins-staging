@@ -55,13 +55,14 @@ or credential-paste flows.
 
 ## Workflow
 
-Bare “列出可用因子”, “可用因子”, “available factors”, “eligible factors”, “selectable factors”, “可用于策略的因子”, and requests for the Strategy factor pool route to `strategy_list_eligible_factors` by default. This action lists currently eligible/selectable cross-sectional Strategy factors. Do not ask a clarification question for those bare requests. Do not call both lists. Requests explicitly about “我的 Factor Mining 因子”, caller-owned or reusable Factor Mining factor families, stable factor history, branches, versions, or previous factor runs route to `factor_mining_list_factors` through the Factor Mining skill; that list is not a substitute for Strategy eligibility.
+Bare “列出可用因子”, “可用因子”, “available factors”, “eligible factors”, “selectable factors”, “可用于策略的因子”, and requests for the Strategy factor pool call only `strategy_list_eligible_factors`. This action lists currently eligible/selectable cross-sectional Strategy factors. For those bare requests, do not ask a clarification question and do not call `strategy_get_contract`, `factor_mining_status`, `factor_mining_list_factors`, or any second list. Requests explicitly about “我的 Factor Mining 因子”, caller-owned or reusable Factor Mining factor families, stable factor history, branches, versions, or previous factor runs route to `factor_mining_list_factors` through the Factor Mining skill; that list is not a substitute for Strategy eligibility.
 
 ### 1. Prepare a Valid Submission
 
-- Call `strategy_get_contract` exactly once at the start of each Strategy operation. Treat its
+- For composition and submission operations, call `strategy_get_contract` exactly once. Treat its
   `contract` as the current capability boundary and its separately labeled `product_defaults` as
-  the effective defaults used when corresponding submit fields are omitted.
+  the effective defaults used when corresponding submit fields are omitted. A bare factor-list
+  request does not call this action.
 - Submit only a strategy kind whose contract entry has `submit_supported: true`. The current
   supported submission kind is cross-sectional Strategy; stop if the requested kind is unsupported.
 - Call `strategy_list_eligible_factors` for eligible cross-sectional factors. The public action is
