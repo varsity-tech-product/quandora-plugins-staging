@@ -181,7 +181,7 @@ Confirm that you trust the third-party source, then inspect the installation and
 Start a new session, authorize the plugin-provided staging MCP server, and verify its connection:
 
 ```text
-/mcp-config login quandora-staging
+/mcp-config login plugin-quandora-staging:quandora-staging
 /mcp
 ```
 
