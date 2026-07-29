@@ -1,7 +1,7 @@
 {
   "name": "quandora-staging",
-  "version": "1.0.8-staging.28",
-  "description": "Staging Quandora plugin with Factor Mining and Strategy skills for pre-release workflow testing.",
+  "version": "1.0.8-staging.29",
+  "description": "Staging Quandora plugin with Factor Mining and Strategy Building skills for pre-release workflow testing.",
   "author": {
     "name": "Varsity Tech Product",
     "url": "https://github.com/varsity-tech-product"

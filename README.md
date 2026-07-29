@@ -163,6 +163,30 @@ Claude Desktop can use the connected Quandora Staging tools in chat, but local r
 
 Factor Mining chart downloads use returned server `source_name` values for API calls and save local PNGs to returned `standard_local_path` values.
 
+### Kimi Code
+
+In Kimi Code, install the staging plugin directly from GitHub:
+
+```text
+/plugins install https://github.com/varsity-tech-product/quandora-plugins-staging
+```
+
+Confirm that you trust the third-party source, then inspect the installation and reload plugins:
+
+```text
+/plugins info quandora-staging
+/plugins reload
+```
+
+Start a new session, authorize the plugin-provided staging MCP server, and verify its connection:
+
+```text
+/mcp-config login quandora-staging
+/mcp
+```
+
+Complete Quandora Staging authorization in the browser when prompted. After authorization, start a new session before invoking the Factor Mining or Strategy Building skill.
+
 ### OpenClaw
 
 ```bash

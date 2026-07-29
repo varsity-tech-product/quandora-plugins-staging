@@ -1,9 +1,9 @@
 ---
-name: strategy
+name: strategy-building
 description: Use when the user asks to list available, eligible, or selectable Strategy factors, including the bare Chinese request “列出可用因子”, or asks to compose, submit, inspect, or archive a cross-sectional Quandora Staging strategy.
 ---
 
-# Quandora Staging Strategy
+# Quandora Staging Strategy Building
 
 Use this skill through the authenticated Quandora Staging connection exposed by the host as
 `quandora-staging`. It composes cross-sectional strategies from eligible factor ids and includes
@@ -38,6 +38,8 @@ chat before continuing:
 - Codex CLI/TUI: run `codex mcp login quandora-staging`.
 - Codex Desktop: authorize the plugin-provided connector, start a new chat, and fully quit and
   reopen Codex Desktop if the tools remain unavailable.
+- Kimi Code: run `/mcp-config login quandora-staging`, complete browser authorization, then start
+  a new chat and check `/mcp`.
 - Claude Code: open `/mcp`, authenticate `quandora-staging`, then start a new chat.
 - Claude Desktop: add a connector named `quandora-staging` with URL
   `https://mcp-staging.varsity.lol/quant`, click Connect, complete browser authorization, then
@@ -233,7 +235,7 @@ Use this single archive capability registry. `strategy_get_artifact` accepts onl
 JSON/text names whose unary mode is `allowed`. The ticket action accepts all twenty-one names. The
 six PNG names are stream-only and ticket-only.
 
-| Artifact name | Format | Unary mode | Ticket local name |
+| Artifact name | Format | Unary mode | Local archive name |
 | --- | --- | --- | --- |
 | `status` | JSON | allowed | `status.json` |
 | `summary` | JSON | allowed | `summary.json` |
@@ -250,12 +252,12 @@ six PNG names are stream-only and ticket-only.
 | `result` | JSON | allowed | `result.json` |
 | `logs` | text | allowed | `logs.txt` |
 | `code` | text | allowed | `code.txt` |
-| `chart1_prediction_decile.png` | PNG | forbidden | `chart1_prediction_decile.png` |
-| `chart2_style_long_short.png` | PNG | forbidden | `chart2_style_long_short.png` |
-| `chart3_style_exposure.png` | PNG | forbidden | `chart3_style_exposure.png` |
-| `chart4_decile_autocorr.png` | PNG | forbidden | `chart4_decile_autocorr.png` |
-| `chart5_prediction_style_corr.png` | PNG | forbidden | `chart5_prediction_style_corr.png` |
-| `chart6_daily_turnover.png` | PNG | forbidden | `chart6_daily_turnover.png` |
+| `chart1_prediction_decile.png` | PNG | forbidden | `prediction_decile.png` |
+| `chart2_style_long_short.png` | PNG | forbidden | `style_long_short.png` |
+| `chart3_style_exposure.png` | PNG | forbidden | `style_exposure.png` |
+| `chart4_decile_autocorr.png` | PNG | forbidden | `decile_autocorr.png` |
+| `chart5_prediction_style_corr.png` | PNG | forbidden | `prediction_style_corr.png` |
+| `chart6_daily_turnover.png` | PNG | forbidden | `daily_turnover.png` |
 
 When `archiveStatus == completed`, perform one complete twenty-one-artifact retrieval pass with the
 same `run_id`; visit every registry name exactly once for its artifact-state retrieval. When
@@ -301,14 +303,16 @@ issuance; a direct-read `ready` or `too_large` needs one call to
    host, print it, or store it in a local file.
 2. For JSON/text, write bytes to `artifacts/<local_name>.partial` beside the final file. Keep every
    PNG in the dedicated `artifacts/image/` subdirectory: first require the ticket metadata to contain
-   the registry's exact FM filename as `local_name` and `image/png` as its content type, create the
-   image directory before the first PNG write, then write to
-   `artifacts/image/<exact FM PNG name>.partial`.
+   the registry's exact artifact name as `local_name` and `image/png` as its content type. Resolve
+   that artifact through the registry's explicit local archive name, create the image directory
+   before the first PNG write, then write to
+   `artifacts/image/<local archive name>.partial`. Do not derive a local filename from any
+   unrecognized server value.
 3. Verify every `.partial` file's byte count and SHA-256 against `size_bytes` and `sha256_hex` from
    the ticket response. For PNG, also require its first eight bytes to be the PNG signature
    `89 50 4e 47 0d 0a 1a 0a`.
 4. Atomically rename the verified `.partial` file to its registry path; for PNG this is
-   `artifacts/image/<exact FM PNG name>`. On any download, signature, size, hash, filename, or
+   `artifacts/image/<local archive name>`. On any download, signature, size, hash, filename, or
    content-type failure, delete the `.partial` file and record only a bounded safe failure class.
 5. Never reuse a ticket after any attempt. For one transient failure before a verified rename,
    delete the `.partial` file, request one new ticket for that artifact, and make at most one bounded
@@ -445,13 +449,15 @@ Quandora staging result/
       artifacts/
         <verified JSON/text files using their exact registry local names>
         image/
-          <verified PNG files using their exact FM filenames>
+          <verified PNG files using their registry local archive names>
       artifact_manifest.json
 ```
 
-Save `run_summary.json` from the final main-run snapshot. Verified ticket downloads use the closed
-`local_name` returned by the ticket response. JSON/text files remain directly under `artifacts/`;
-every PNG final file and `.partial` file remains under `artifacts/image/`.
+Save `run_summary.json` from the final main-run snapshot. Verified JSON/text ticket downloads use
+the `local_name` returned by the ticket response. For PNG, first verify that the returned
+`local_name` exactly matches the requested artifact name, then use the registry's local archive
+name. JSON/text files remain directly under `artifacts/`; every PNG final file and `.partial` file
+remains under `artifacts/image/`.
 
 After a completed archive retrieval pass, create `artifact_manifest.json` with the run id, main-run
 status, `archiveStatus: completed`, and exactly twenty-one entries, one for every registry name.
@@ -459,7 +465,7 @@ Each entry contains only the artifact name, terminal/source state, relative loca
 content type, size, SHA-256, and a bounded safe failure class when needed. State that this archive
 pass completed, but do not claim that the archive is fully saved unless all required source states
 and verified local saves justify that claim. A saved PNG's relative local path must be
-`artifacts/image/<exact FM PNG name>`.
+`artifacts/image/<local archive name>`.
 
 After a partial archive pass, create the same twenty-one per-artifact entries with
 `archiveStatus: partial`, preserving every returned state and the local path only for verified ready

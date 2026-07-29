@@ -1,7 +1,7 @@
 {
   "name": "quandora-staging",
-  "version": "1.0.8-staging.28",
-  "description": "Staging Quandora plugin with Factor Mining and Strategy skills for pre-release workflow testing.",
+  "version": "1.0.8-staging.29",
+  "description": "Staging Quandora plugin with Factor Mining and Strategy Building skills for pre-release workflow testing.",
   "author": {
     "name": "Varsity Tech Product",
     "url": "https://github.com/varsity-tech-product"
@@ -21,7 +21,7 @@
   "interface": {
     "displayName": "Quandora Staging",
     "shortDescription": "Use staging Quandora services from your agent.",
-    "longDescription": "Quandora Staging packages Factor Mining and Strategy skills in one plugin. Factor Mining supports staging tasks, sessions, factor source submission, backtests, artifact retrieval, and result summaries; Strategy composes and resumes cross-sectional runs from existing factors.",
+    "longDescription": "Quandora Staging packages Factor Mining and Strategy Building skills in one plugin. Factor Mining supports staging tasks, sessions, factor source submission, backtests, artifact retrieval, and result summaries; Strategy Building composes and resumes cross-sectional runs from existing factors.",
     "developerName": "Varsity Tech Product",
     "category": "Productivity",
     "capabilities": [
