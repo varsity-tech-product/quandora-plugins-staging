@@ -55,7 +55,26 @@ or credential-paste flows.
 
 ## Workflow
 
-Bare “列出可用因子”, “可用因子”, “available factors”, “eligible factors”, “selectable factors”, “可用于策略的因子”, and requests for the Strategy factor pool call only `strategy_list_eligible_factors`. This action lists currently eligible/selectable cross-sectional Strategy factors. For those bare requests, do not ask a clarification question and do not call `strategy_get_contract`, `factor_mining_status`, `factor_mining_list_factors`, or any second list. Requests explicitly about “我的 Factor Mining 因子”, caller-owned or reusable Factor Mining factor families, stable factor history, branches, versions, or previous factor runs route to `factor_mining_list_factors` through the Factor Mining skill; that list is not a substitute for Strategy eligibility.
+Bare “列出可用因子”, “可用因子”, “available factors”, “eligible factors”, “selectable
+factors”, “可用于策略的因子”, and equivalent Strategy factor-pool intent calls only
+`strategy_list_eligible_factors`. This action lists currently eligible/selectable cross-sectional
+Strategy factors.
+
+For that bare available/eligible/selectable intent:
+
+- When the user does not specify a count, make exactly one call with `page_size: 10` and display
+  only that returned page.
+- Honor an explicit valid `page_size` from 1 through 100 by making exactly one call with that value
+  and displaying only the returned page.
+- Only when `next_page_token` is non-empty, retain that opaque value byte-for-byte and tell the user
+  that more results can be requested. Do not use it unless the user later asks for another page.
+
+Do not auto-page. Do not call `strategy_get_contract`, do not call `factor_mining_status`, and do
+not call `factor_mining_list_factors`; do not make a second list call, and do not ask a
+clarification question for a bare request. Requests explicitly about “我的 Factor Mining 因子”,
+caller-owned or reusable Factor Mining factor families, stable factor history, branches, versions,
+or previous factor runs route to `factor_mining_list_factors` through the Factor Mining skill; that
+list is not a substitute for Strategy eligibility.
 
 ### 1. Prepare a Valid Submission
 

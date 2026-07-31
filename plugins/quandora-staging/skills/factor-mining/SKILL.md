@@ -164,13 +164,45 @@ Use `draft_duplicate_risk` as the only duplicate-risk verdict. When it identifie
 
 Never submit a filesystem path or ask Quandora to read local files. Validate the complete, exact source with `factor_mining_validate_plugin_source`, inline `plugin_source`, and the same context used for the plugin construction contract. Prefer `session_id` after session creation. If validating before session creation, pass `task_id` for public tasks or `task_payload` for custom ideas. The validation step is static; do not import, execute, eval, or shell-run generated factor code.
 
-After every source edit, including a deduplication or validation repair, validate the complete, exact source again. Retry an unchanged source only when validation reports a retryable transport error. Never retry an unchanged rejected source.
+After every source edit, including a deduplication or validation repair, validate the complete,
+exact source again. A retryable read, deduplication check, or validation transport failure may
+receive at most one identical bounded retry. Never retry an unchanged rejected source, and
+`invalid_backend_response` is not retried identically.
 
-When validation rejects the source, repair it only from the returned safe structured diagnostics: `schema_version`, `error_code`, `operation`, `dtype`, `expected`, `actual`, `field`, `contract_key_path`, and `repair_hint`. Ignore arbitrary messages or unrecognized diagnostic values. For C# type or cast failures, re-read the same plugin construction contract and replace runtime expressions with the corresponding `plugin_contract.data_columns[].csharp_double_expression`. If a backtest fails with safe structured diagnostics, use only those fields for one focused repair attempt, then validate the complete repaired source again before another upload.
+When validation rejects the source, repair it only from the returned safe structured diagnostics:
+`schema_version`, `error_code`, `operation`, `dtype`, `expected`, `actual`, `field`,
+`contract_key_path`, and `repair_hint`. Ignore arbitrary messages or unrecognized diagnostic
+values. For C# type or cast failures, re-read the same plugin construction contract and replace
+runtime expressions with the corresponding
+`plugin_contract.data_columns[].csharp_double_expression`. If upload or admission fails, use only
+the closed `recovery_action` policy below; never infer a mutation retry from `retryable`.
 
 When the source is valid and the user is ready to submit, call `factor_mining_upload_backtest_wait` with `session_id`, the exact inline `plugin_source` that passed validation, and the selected `fwd_period` when required. Do not edit, regenerate, reformat, or re-read a different copy between successful validation and submission. Use `plugin_contract.fwd_period` unless the user explicitly requested another supported horizon.
 
-Use `factor_mining_resume_run` when a prior run was interrupted.
+### Mutation Recovery Policy
+
+Read mutation-recovery fields only from the safe error `details`. `retryable` describes service
+availability, but `recovery_action` controls mutation behavior. Never use a generic retry rule to
+upload, Start, create a replacement session, or change bound input.
+
+- `repair_and_revalidate`: repair only allowlisted safe diagnostics and revalidate the complete
+  source in the same session. Do not upload until that repaired source passes validation.
+- `create_same_kind_session_after_input_change`: do not reuse the bound pending handle. Create the
+  same kind of session with a new invocation identity: public/task-backed stays public/task-backed
+  for the exact task, and custom stays custom.
+- `retry_same_pending_request`: make at most one bounded replay with the exact same pending handle,
+  exact bound request, persisted idempotency identity, and unchanged validated source. Never create
+  a session or alter the request.
+- `resume_known_run`: resume the exact returned known `run_id`; never upload or Start again.
+- `stop_and_report_trace`: stop and report the safe `trace_id`. Do not automatically retry, rewrite
+  source, create a session, or re-upload.
+- `repair_then_create_same_kind_session`: make one allowlisted diagnostics-led repair, revalidate
+  the complete repaired source, then create the same kind of session with a new invocation identity
+  before following the ordinary validated upload path once.
+
+Normal `running` with `next_action=resume` resumes only through `factor_mining_resume_run`; it never
+uploads or Starts again. Use `factor_mining_resume_run` when a prior known run was interrupted.
+These recovery actions do not add an automatic retry loop.
 
 ### Waiting Policy
 
