@@ -165,11 +165,12 @@ Factor Mining chart downloads use returned server `source_name` values for API c
 
 ### Cursor
 
-In a new Cursor Desktop Agent chat, enter the complete host command:
+Cursor does not accept a plugin name and GitHub repository as one sendable `/add-plugin` chat command. In a new local Cursor Desktop Agent chat:
 
-```text
-/add-plugin quandora-staging@https://github.com/varsity-tech-product/quandora-plugins-staging
-```
+1. Type `/add-plugin` by itself and select **Add a plugin to this agent**.
+2. Select **Browse Marketplace**.
+3. Paste only `https://github.com/varsity-tech-product/quandora-plugins-staging` into **Search or Paste Link**.
+4. Select **Quandora Staging** and click **Add 1 plugin**.
 
 After Cursor installs the plugin, authenticate the plugin-provided `quandora-staging` remote MCP server and complete Quandora Staging authorization in the browser. Then start a new Agent chat before invoking the Factor Mining or Strategy Building skill.
 
