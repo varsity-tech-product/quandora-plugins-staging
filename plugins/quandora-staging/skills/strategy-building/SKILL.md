@@ -116,10 +116,11 @@ list is not a substitute for Strategy eligibility.
 
 Call `strategy_list_eligible_factors` with the requested filters and bounded pagination. Display a
 compact comparison table with only factor id, name, authoritative FM Task category, rating/grade
-status, Median Sharpe when available, cross-sectional/time-series capability
-flags, and eligibility status. Treat the returned category as authoritative and an unavailable
-category as unavailable; never infer it from name, type, or tags. Grade F remains selectable when
-the returned eligibility status says the factor is eligible.
+status, and exact `cs_sharpe` labeled CS Sharpe when available. Do not include Median Sharpe,
+cross-sectional/time-series capability flags, or eligibility status in the default table, and never
+substitute `median_sharpe` for `cs_sharpe`. Treat the returned category as authoritative and an
+unavailable category as unavailable; never infer it from name, type, or tags. Grade F remains
+selectable when the returned eligibility status says the factor is eligible.
 
 Call `strategy_get_eligible_factor_detail` only for an exact factor id the user requests or for a
 small, stated shortlist. Do not fetch detail for every list row. If the user supplied neither
