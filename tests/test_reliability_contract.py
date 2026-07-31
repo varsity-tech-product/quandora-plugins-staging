@@ -14,7 +14,7 @@ VERSIONED_MANIFESTS = (
     ROOT / "plugins/quandora-staging/.codex-plugin/plugin.json",
     ROOT / "plugins/quandora-staging/.cursor-plugin/plugin.json",
 )
-EXPECTED_VERSION = "1.0.8-staging.32"
+EXPECTED_VERSION = "1.0.8-staging.33"
 RECOVERY_ACTIONS = {
     "repair_and_revalidate",
     "create_same_kind_session_after_input_change",
@@ -55,6 +55,24 @@ class ReliabilityContractTests(unittest.TestCase):
         self.assertIn("do not call `factor_mining_status`", bare_flat)
         self.assertIn("do not call `factor_mining_list_factors`", bare_flat)
         self.assertIn("do not make a second list call", bare_flat)
+
+    def test_strategy_default_table_uses_exact_cs_sharpe_only(self) -> None:
+        manual = self.strategy[
+            self.strategy.index("#### Manual Selection") :
+            self.strategy.index("#### Shared Selection")
+        ]
+        manual_flat = " ".join(manual.split())
+        self.assertIn(
+            "with only factor id, name, authoritative FM Task category, rating/grade "
+            "status, and exact `cs_sharpe` labeled CS Sharpe when available",
+            manual_flat,
+        )
+        self.assertIn(
+            "Do not include Median Sharpe, cross-sectional/time-series capability flags, "
+            "or eligibility status in the default table",
+            manual_flat,
+        )
+        self.assertIn("never substitute `median_sharpe`", manual_flat)
 
     def test_factor_skill_covers_every_closed_recovery_action(self) -> None:
         mentioned = {
