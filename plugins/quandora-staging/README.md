@@ -31,6 +31,10 @@ skills/
   strategy-building/
 ```
 
+## CodeBuddy
+
+The CodeBuddy plugin manifest registers both skills and the plugin-managed `quandora-staging` remote HTTP MCP server. CodeBuddy handles MCP connection and OAuth authorization natively. The package does not require a local MCP process, Python, Node.js, or an API key.
+
 ## Claude Desktop Code OAuth launchers
 
 Claude Desktop Code Agents normally run commands with redirected input and output, while the official `claude mcp login` flow requires an interactive terminal. This plugin therefore ships two fixed-purpose launchers under `scripts/`:

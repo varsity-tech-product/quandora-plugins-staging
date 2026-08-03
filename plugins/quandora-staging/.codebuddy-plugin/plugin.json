@@ -1,0 +1,21 @@
+{
+  "name": "quandora-staging",
+  "version": "1.0.8-staging.35",
+  "description": "Quandora Staging plugin with Factor Mining and Strategy Building skills.",
+  "author": {
+    "name": "Varsity Tech Product",
+    "url": "https://github.com/varsity-tech-product"
+  },
+  "homepage": "https://github.com/varsity-tech-product/quandora-plugins-staging",
+  "repository": "https://github.com/varsity-tech-product/quandora-plugins-staging",
+  "license": "Apache-2.0",
+  "keywords": [
+    "quandora",
+    "factor-mining",
+    "backtesting",
+    "strategy-building",
+    "quant"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./mcp.json"
+}
