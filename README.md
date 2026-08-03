@@ -141,7 +141,15 @@ After installation or authorization, open a new chat. If Codex Desktop still doe
 
 ### Claude
 
-Claude Code:
+Claude Desktop Code supports an Agent-readable one-sentence installation guide. Publish and verify that guide before advertising its URL. The planned hosted request, once `https://quandora.ai/agent/claude` returns the reviewed plain text successfully, is:
+
+```text
+Read https://quandora.ai/agent/claude completely, then install and authorize Quandora Staging for me. I will complete the single browser Authenticate or Allow action when it opens.
+```
+
+The guide tells the Desktop Agent to install the exact staging marketplace/plugin and launch its remote MCP OAuth flow. The plugin includes narrowly scoped native launchers because Desktop Agent commands do not normally have an interactive TTY: macOS uses the built-in `/usr/bin/script`, while Windows uses Windows PowerShell 5.1 to create a native console. This is a Quandora compatibility bridge around the official Claude login command, not an Anthropic-guaranteed Desktop automation API. Neither path requires Python, Node.js, Homebrew, PowerShell 7, Windows Terminal, or a local MCP server. The user keeps control of browser sign-in, MFA, and consent; normal Claude permission prompts and enterprise policy still apply.
+
+Claude Code in an interactive terminal:
 
 ```bash
 claude plugin marketplace add varsity-tech-product/quandora-plugins-staging
@@ -149,9 +157,9 @@ claude plugin install quandora-staging@quandora-staging
 claude mcp login plugin:quandora-staging:quandora-staging
 ```
 
-Claude Code 2.1.186 or later can initiate the remote MCP OAuth flow directly with `claude mcp login`. The command opens the browser; complete the Quandora Staging login and consent there, then start a new Claude Code session.
+The bare `claude mcp login` command above is for a real interactive terminal/TUI. A Claude Desktop Code Agent must use the installed platform launcher described in the agent guide instead of running the bare command in its redirected command environment.
 
-Claude Desktop requires both the Quandora Staging plugin and the Quandora Staging connector. After installing the plugin, manually add and connect the Connector in Claude Desktop:
+Claude Desktop's normal Chat tab is a separate Connector workflow and cannot install or load this local Claude Code plugin. If you intentionally want the Chat-tab Connector instead, add and connect it manually:
 
 ```text
 Name: quandora-staging
@@ -160,7 +168,7 @@ URL: https://mcp-staging.varsity.lol/quant
 
 Use Settings -> Connectors, add the Connector above, click Connect, authorize Quandora Staging in the browser, then start a new chat.
 
-If an older Claude Code client does not provide `claude mcp login`, open `/mcp`, authenticate `plugin:quandora-staging:quandora-staging`, and then start a new chat.
+If an older Claude Code client does not provide `claude mcp login`, update Claude Desktop through its official updater. If the command remains unavailable, use the exact staging **Authenticate** control; do not install a second CLI or create a duplicate MCP entry.
 
 Claude Desktop can use the connected Quandora Staging tools in chat, but local result-folder archiving is only guaranteed in local agent environments such as Claude Code, Codex, and OpenClaw. Claude Desktop's built-in file creation uses Claude's sandbox and may provide downloadable files rather than writing directly to a chosen local folder.
 
