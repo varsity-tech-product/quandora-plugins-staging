@@ -14,7 +14,7 @@ VERSIONED_MANIFESTS = (
     ROOT / "plugins/quandora-staging/.codex-plugin/plugin.json",
     ROOT / "plugins/quandora-staging/.cursor-plugin/plugin.json",
 )
-EXPECTED_VERSION = "1.0.8-staging.33"
+EXPECTED_VERSION = "1.0.8-staging.34"
 RECOVERY_ACTIONS = {
     "repair_and_revalidate",
     "create_same_kind_session_after_input_change",

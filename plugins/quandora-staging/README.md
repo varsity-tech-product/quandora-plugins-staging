@@ -30,3 +30,17 @@ skills/
   factor-mining/
   strategy-building/
 ```
+
+## Claude Desktop Code OAuth launchers
+
+Claude Desktop Code Agents normally run commands with redirected input and output, while the official `claude mcp login` flow requires an interactive terminal. This plugin therefore ships two fixed-purpose launchers under `scripts/`:
+
+```text
+scripts/
+  claude-mcp-login-macos.sh
+  claude-mcp-login-windows.ps1
+```
+
+The macOS launcher uses the operating system's `/usr/bin/script` PTY. The Windows launcher uses Windows PowerShell 5.1 to start a native console. Both invoke only `plugin:quandora-staging:quandora-staging`, retain the remote MCP transport, avoid OAuth output logging, and require no Python, Node.js, or third-party terminal package. Browser identity and consent remain manual user actions.
+
+The Windows path is statically validated; smoke-test it on Windows 10/11 x64 and Windows 11 ARM64 before promotion outside staging.
