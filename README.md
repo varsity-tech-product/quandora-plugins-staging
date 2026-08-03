@@ -184,6 +184,34 @@ In a new Cursor Desktop Agent chat, enter the complete host command:
 
 After Cursor installs the plugin, authenticate the plugin-provided `quandora-staging` remote MCP server and complete Quandora Staging authorization in the browser. Then start a new Agent chat before invoking the Factor Mining or Strategy Building skill.
 
+### CodeBuddy
+
+CodeBuddy Agent can install and connect Quandora Staging through the official CodeBuddy Code CLI. The Agent first checks whether `codebuddy` is available and installs the official standalone CLI when it is absent.
+
+macOS and Linux:
+
+```bash
+curl -fsSL https://www.codebuddy.cn/cli/install.sh | bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+Windows PowerShell:
+
+```powershell
+irm https://www.codebuddy.cn/cli/install.ps1 | iex
+$env:Path = "$env:USERPROFILE\AppData\Local\codebuddy\bin;$env:Path"
+```
+
+The Agent then uses the non-interactive plugin manager:
+
+```bash
+codebuddy plugin marketplace add varsity-tech-product/quandora-plugins-staging --name quandora-staging
+codebuddy plugin install quandora-staging@quandora-staging --scope user
+codebuddy plugin list --json
+```
+
+Quandora Staging uses the plugin-provided remote HTTP MCP server. CodeBuddy opens its native authorization flow when the server connects; the user reviews the browser page and completes the **Authenticate**, **Authorize**, or **Allow** action. No Python, Node.js, local MCP server, or Quandora API key is required.
+
 ### Kimi Code
 
 In Kimi Code, install the staging plugin directly from GitHub:
