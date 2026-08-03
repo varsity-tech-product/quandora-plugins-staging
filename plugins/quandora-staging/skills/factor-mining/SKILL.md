@@ -18,11 +18,11 @@ If the required Quandora Staging tools are visible, continue automatically. If t
 - Claude Desktop: the plugin alone is not enough. Tell the user to open Settings -> Connectors, add a Connector named `quandora-staging` with URL `https://mcp-staging.varsity.lol/quant`, click Connect, authorize Quandora Staging in the browser, then start a new chat.
 - OpenClaw: run `openclaw mcp login quandora-staging`, complete the printed authorization flow, then start a new chat.
 
-Do not ask for Quandora API keys, `vt_` keys, bearer tokens, service tokens, or credentials. Do not use raw HTTP calls, local helper scripts, direct internal service calls, local execution keys, or credential paste flows.
+Do not ask for Quandora API keys, `vt_` keys, bearer tokens, service tokens, or credentials. Do not use raw HTTP calls, local helper scripts, direct internal service calls, local execution keys, or credential paste flows. The only permitted direct HTTP download is consuming a short-lived Remote MCP artifact URL returned by a Factor Mining download-ticket action; never construct, modify, reuse, or persist that URL.
 
 ## Available Actions
 
-After routing has confirmed Factor Mining scope, use only the Factor Mining actions exposed by `quandora-staging`:
+After routing has confirmed Factor Mining scope, use only the Factor Mining actions exposed by `quandora-staging`. The artifact-ticket download exception above is only for consuming returned artifact bytes; it is not permission to call a service API directly.
 
 - `factor_mining_status`
 - `factor_mining_list_factors`
@@ -48,11 +48,13 @@ Some hosts may prefix action names with the server name, such as `quandora_stagi
 Before writing `plugin.py`, call `factor_mining_get_plugin_contract` and use the returned `plugin_contract` as the source of truth for Python inputs, C# runtime expressions, runtime globals, and horizon defaults.
 
 - Use `plugin_contract.allowed_data` to decide which input columns the factor may use.
-- Use `plugin_contract.fwd_period` after the contract is returned. For custom ideas, set `task_payload.fwd_period` to `7` unless the user explicitly asks for another supported horizon.
+- Use `plugin_contract.fwd_period` after the contract is returned. For custom ideas, pass `fwd_period: 7` to `factor_mining_create_custom_session` unless the user explicitly asks for another supported horizon.
 - Use `plugin_contract.data_columns[].python_kwarg` for `build_signal` parameters.
-- For every C# runtime queue/buffer enqueue and every numeric C# runtime expression, use the matching `plugin_contract.data_columns[].csharp_double_expression`.
+- Whenever C# reads a market-data column from `bar`, including every extra-buffer enqueue, use the matching `plugin_contract.data_columns[].csharp_double_expression`. Do not use `bar` expressions inside `__FACTOR_COMPUTE_BODY__`; that section can use only the variables listed by its contract, normally `prices`, canonical extra-buffer arrays, `rawSignal`, and factor-owned fields.
 - Follow `plugin_contract.runtime_rules` for required globals, `FACTOR_SECTIONS`, runtime variant, leak rules, extra-buffer rules, and reserved identifiers.
 - When an additional runtime column is needed, use its matching `plugin_contract.runtime_rules.extra_buffer.column_patterns` entry. Copy that entry's field, enqueue, dequeue, and to-array snippets exactly into the corresponding `FACTOR_SECTIONS` values; do not reconstruct or normalize the snippets.
+
+When `plugin_contract.runtime_rules.factor_sections.all_values_must_be_string_literals` is true, every `FACTOR_SECTIONS` value must be a static string literal. In particular, write `"__FACTOR_TYPE__": "my_factor_type"`, not `"__FACTOR_TYPE__": FACTOR_TYPE`. Keep the top-level `FACTOR_TYPE` literal and the duplicated `__FACTOR_TYPE__` literal byte-for-byte identical. Name factor-owned C# identifiers with `plugin_contract.runtime_rules.csharp_runtime_rules.factor_owned_identifier_prefix` when that rule is returned.
 
 Do not send multiple selectors in one plugin-contract call. Do not retry an identical non-retryable request. Do not silently change the user's research mechanism after a non-retryable validation error.
 
@@ -132,7 +134,7 @@ Quandora staging result/factor-mining/aggressive_flow_exhaustion_reversal/
 Quandora staging result/factor-mining/aggressive_flow_exhaustion_reversal/artifacts/
 ```
 
-Use only the factor slug as the canonical archive directory. The latest run for a factor updates that factor's folder. Keep session and run ids only inside `run_summary.json` / `artifact_manifest.json` when they are needed for traceability, not in the user-facing directory name.
+Use only the factor slug as the canonical archive directory. The latest run for a factor updates that factor's folder. When traceability requires them, the current `session_id` and `run_id` are the only downstream IDs that may be saved, and only inside local `run_summary.json` / `artifact_manifest.json`; never put them in the user-facing directory name or response.
 
 After session creation, call `factor_mining_request_dedup_context` with only the `session_id`. Use `query_mode`, `scope`, `memory_stats`, `similar_factors`, and `task_memory_pressure` only to select a fresher research hypothesis. A high `task_memory_pressure` must never stop the workflow, reject a draft, or trigger repeated rewrites.
 
@@ -145,7 +147,7 @@ Create or locate one `plugin.py` source:
 - In local coding hosts with a writable workspace, save the submitted source as `plugin.py` inside the run archive. Read the file back and submit the full contents as inline `plugin_source`.
 - In chat-only hosts without file writes, keep the generated source in the conversation/tool-call context and submit it directly as inline `plugin_source`.
 
-When writing `plugin.py`, keep `build_signal` inputs aligned with `plugin_contract.data_columns[].python_kwarg`. Keep `FACTOR_SECTIONS` runtime code aligned with the same columns, and use only `plugin_contract.data_columns[].csharp_double_expression` for numeric runtime references to market data columns.
+When writing `plugin.py`, keep `build_signal` inputs aligned with `plugin_contract.data_columns[].python_kwarg`. Keep `FACTOR_SECTIONS` runtime code aligned with the same columns. Use each column's `csharp_double_expression` only at runtime sites where `bar` is visible, such as canonical extra-buffer enqueue snippets; inside `__FACTOR_COMPUTE_BODY__`, use `prices` and canonical extra-buffer arrays instead.
 
 After a concrete `plugin.py` exists and before validation or upload, call `factor_mining_request_dedup_context` again with the `session_id`, source, and concise factor metadata:
 
@@ -162,12 +164,16 @@ After a concrete `plugin.py` exists and before validation or upload, call `facto
 
 Use `draft_duplicate_risk` as the only duplicate-risk verdict. When it identifies a concrete overlap with an existing factor's core mechanism, revise the candidate so its economic hypothesis, inputs, or formula family are materially different, then check the revised draft again. A medium or high score is not a hard gate only when the candidate is already economically meaningful and materially distinct, and the returned similar factors do not establish a concrete core-mechanism overlap. Otherwise resolve the overlap before validation and upload. Treat `similar_factors` as evidence for this comparison, not as a hard-failure gate.
 
-Never submit a filesystem path or ask Quandora to read local files. Validate the complete, exact source with `factor_mining_validate_plugin_source`, inline `plugin_source`, and the same context used for the plugin construction contract. Prefer `session_id` after session creation. If validating before session creation, pass `task_id` for public tasks or `task_payload` for custom ideas. The validation step is static; do not import, execute, eval, or shell-run generated factor code.
+Never submit a filesystem path or ask Quandora to read local files. Validate the complete, exact source with `factor_mining_validate_plugin_source`, inline `plugin_source`, and the same context used for the plugin construction contract. Normal public and custom workflows validate with `session_id` only after the scoped contract has been returned; do not author or validate a custom plugin from a hand-built `task_payload`.
+
+The agent must not import, execute, eval, or shell-run generated factor code locally. The remote validator performs AST/static checks and may also execute `build_signal` with synthetic inputs in an isolated preflight, while leaving module-level code unexecuted. Therefore `build_signal` must satisfy the contract for both float inputs and numeric values stored with object dtype, must return an aligned float `DataFrame`, and must replace positive or negative infinity with `np.nan` or a finite fallback.
 
 After every source edit, including a deduplication or validation repair, validate the complete,
 exact source again. A retryable read, deduplication check, or validation transport failure may
 receive at most one identical bounded retry. Never retry an unchanged rejected source, and
 `invalid_backend_response` is not retried identically.
+
+Validation diagnostics are prioritized and may expose only the highest-priority failure. The absence of a diagnostic on one attempt does not prove that subsystem is valid; repair the reported issue and revalidate until `accepted` is true. A known compatibility case is `error_code=build_signal_preflight_unsafe`, `operation=build_signal.module`, and `actual=module-scope executable Assign`: before changing `build_signal`, audit top-level metadata and require every `FACTOR_SECTIONS` value to be a string literal, especially `__FACTOR_TYPE__`. This diagnostic can otherwise misattribute a non-literal `FACTOR_SECTIONS` assignment to `build_signal`.
 
 When validation rejects the source, repair it only from the returned safe structured diagnostics:
 `schema_version`, `error_code`, `operation`, `dtype`, `expected`, `actual`, `field`,
@@ -249,7 +255,7 @@ The raw signal save path is terminal run -> raw artifact download ticket -> `sig
 
 If a returned window card has `status` other than `available`, record the omitted or unavailable reason and continue. If a PNG download, chunk fetch, or raw signal download fails, record the failure in `artifact_manifest.json` without failing the completed run.
 
-Do not save bearer tokens, download URLs, raw service metadata, internal IDs, or credentials. If the host does not support file writes, continue the workflow and say local archiving is not available in that host.
+Do not save bearer tokens, download URLs, raw service metadata, artifact IDs, admission IDs, credentials, or any other downstream IDs. The only exception is the current `session_id` / `run_id` local-traceability allowlist described above. If the host does not support file writes, continue the workflow and say local archiving is not available in that host.
 
 ### Result Insight and Optimization
 
@@ -302,11 +308,12 @@ Artifact folder: not available in this host
 
 ## plugin.py Contract
 
-Use this minimum shape when the user has not supplied an existing plugin. The metadata values must be static top-level literals so Quandora can parse them without executing source code.
+Use this minimum shape when the user has not supplied an existing plugin. The metadata values must be static top-level literals so Quandora can parse them without executing module-level code. The current cross-sectional runtime requires `__FACTOR_LOG__` to exist but does not inject it; keep it only as compatible metadata and do not depend on it for runtime diagnostics.
 
-```text
+```python
 from typing import Any, Dict
 
+import numpy as np
 import pandas as pd
 
 FACTOR_TYPE = "snake_case_unique_factor_type"
@@ -316,21 +323,22 @@ FACTOR_DEFAULT_PARAMS = {"window": 7}
 FACTOR_SECTIONS = {
     "__FACTOR_DESCRIPTION__": "Trailing close-to-close momentum.",
     "__FACTOR_FORMULA__": "close / close[window bars ago] - 1",
-    "__FACTOR_TYPE__": FACTOR_TYPE,
-    "__FACTOR_PARAM_FIELDS__": "        private int _window;\n",
-    "__FACTOR_INIT__": '            _window = GetIntParameter("window", 7);\n',
-    "__FACTOR_LOG__": '            Log($"[INIT] window={_window}");\n',
-    "__PRICE_WINDOW_EXPR__": "_window + 1",
+    "__FACTOR_TYPE__": "snake_case_unique_factor_type",
+    "__FACTOR_PARAM_FIELDS__": "        private int _factorWindow;\n",
+    "__FACTOR_INIT__": '            _factorWindow = GetIntParameter("window", 7);\n',
+    "__FACTOR_LOG__": '            Log($"[INIT] window={_factorWindow}");\n',
+    "__PRICE_WINDOW_EXPR__": "_factorWindow + 1",
     "__EXTRA_BUF_FIELDS__": "",
     "__EXTRA_BUF_ENQUEUE__": "",
     "__EXTRA_BUF_DEQUEUE__": "",
     "__EXTRA_BUF_TOARRAY__": "",
     "__FACTOR_COMPUTE_BODY__": """
             var n = prices.Length;
-            if (n < _window + 1) return false;
-            var past = prices[n - _window - 1];
-            if (past == 0) return false;
+            if (_factorWindow < 1 || n < _factorWindow + 1) return false;
+            var past = prices[n - _factorWindow - 1];
+            if (Math.Abs(past) < 1e-12) return false;
             rawSignal = prices[n - 1] / past - 1.0;
+            if (double.IsNaN(rawSignal) || double.IsInfinity(rawSignal)) return false;
             return true;
 """,
 }
@@ -338,19 +346,23 @@ FACTOR_SECTIONS = {
 
 def build_signal(close: pd.DataFrame, params: Dict[str, Any], **data: Any) -> pd.DataFrame:
     window = int(params.get("window", FACTOR_DEFAULT_PARAMS["window"]))
-    signal = close.pct_change(window)
+    values = close.apply(pd.to_numeric, errors="coerce").astype(float)
+    if window < 1:
+        return (values * np.nan).reindex_like(close)
+    signal = values.pct_change(window)
+    signal = signal.replace([np.inf, -np.inf], np.nan).astype(float)
     return signal.reindex_like(close)
 ```
 
-Keep `build_signal` and `FACTOR_SECTIONS` compute logic aligned. Return a `pd.DataFrame` aligned with `close`, use only current and historical data, and keep all data columns within `plugin_contract.allowed_data`.
+Keep `build_signal` and `FACTOR_SECTIONS` compute logic aligned. Return a float `pd.DataFrame` aligned with `close`, use only current and historical data, and keep all data columns within `plugin_contract.allowed_data`. The duplicated `FACTOR_TYPE` and `__FACTOR_TYPE__` strings must match exactly; never replace the section value with a reference to the top-level variable.
 
 ## Security
 
-- Use only Quandora actions for formal product workflows.
+- Use only Quandora actions for formal product workflows, except for consuming a short-lived artifact URL returned by a Factor Mining download-ticket action exactly once.
 - Never ask for API keys, auth files, user credentials, local execution keys, `vt_` keys, bearer tokens, or service tokens.
 - Never print, persist in logs, or summarize full credential values.
 - Do not call hosted generation endpoints; the active agent generates factor source in its current host session.
-- Do not call internal service URLs or generic URL/API surfaces.
+- Do not call internal service URLs or generic URL/API surfaces, and never construct a download URL. The returned Remote MCP artifact-ticket URL is the sole direct-download exception.
 - Do not import, exec, eval, or otherwise execute generated `plugin.py`.
 - Do not submit filesystem paths instead of inline `plugin_source`.
 - Do not print generated `plugin.py` source in summaries.

@@ -14,7 +14,7 @@ VERSIONED_MANIFESTS = (
     ROOT / "plugins/quandora-staging/.codex-plugin/plugin.json",
     ROOT / "plugins/quandora-staging/.cursor-plugin/plugin.json",
 )
-EXPECTED_VERSION = "1.0.8-staging.34"
+EXPECTED_VERSION = "1.0.8-staging.35"
 RECOVERY_ACTIONS = {
     "repair_and_revalidate",
     "create_same_kind_session_after_input_change",
@@ -91,6 +91,43 @@ class ReliabilityContractTests(unittest.TestCase):
         )
         for phrase in required:
             self.assertIn(phrase.lower(), self.factor_flat.lower())
+
+    def test_factor_plugin_example_matches_runtime_contract(self) -> None:
+        contract = self.factor[
+            self.factor.index("## plugin.py Contract") :
+            self.factor.index("## Security")
+        ]
+        example_start = contract.index("```python") + len("```python")
+        example_end = contract.index("```", example_start)
+        example = contract[example_start:example_end]
+        required = (
+            '"__FACTOR_TYPE__": "snake_case_unique_factor_type"',
+            "private int _factorWindow;",
+            "if (_factorWindow < 1 || n < _factorWindow + 1) return false;",
+            "if (Math.Abs(past) < 1e-12) return false;",
+            "if (double.IsNaN(rawSignal) || double.IsInfinity(rawSignal)) return false;",
+            "close.apply(pd.to_numeric, errors=\"coerce\").astype(float)",
+            "signal.replace([np.inf, -np.inf], np.nan).astype(float)",
+        )
+        for phrase in required:
+            self.assertIn(phrase, example)
+        self.assertNotIn('"__FACTOR_TYPE__": FACTOR_TYPE', example)
+        self.assertNotIn("private int _window;", example)
+
+    def test_factor_skill_explains_validator_and_artifact_exceptions(self) -> None:
+        required = (
+            "pass `fwd_period: 7` to `factor_mining_create_custom_session`",
+            "Do not use `bar` expressions inside `__FACTOR_COMPUTE_BODY__`",
+            "The remote validator performs AST/static checks and may also execute `build_signal`",
+            "Validation diagnostics are prioritized",
+            "actual=module-scope executable Assign",
+            "The only permitted direct HTTP download",
+            "the current `session_id` and `run_id` are the only downstream IDs that may be saved",
+        )
+        for phrase in required:
+            self.assertIn(phrase.lower(), self.factor_flat.lower())
+        self.assertNotIn("task_payload.fwd_period", self.factor)
+        self.assertNotIn("The validation step is static", self.factor)
 
     def test_public_custom_decision_and_shared_tail_remain_ordered(self) -> None:
         public = self.factor.index("- For a public task:")
