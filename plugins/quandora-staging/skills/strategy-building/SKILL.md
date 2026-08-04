@@ -44,8 +44,6 @@ chat before continuing:
 - Claude Desktop: add a connector named `quandora-staging` with URL
   `https://mcp-staging.varsity.lol/quant`, click Connect, complete browser authorization, then
   start a new chat.
-- OpenClaw: run `openclaw mcp login quandora-staging`, complete authorization, then start a new
-  chat.
 
 The normal workflow uses only the exposed MCP actions above. Never ask for or accept credentials or
 use an alternative service path. Use host-native HTTP only for the one opaque

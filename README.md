@@ -15,7 +15,7 @@
 This repository is for staging validation only. It points to Quandora staging services and should not be used for production workflows. Production users should install `varsity-tech-product/quandora-plugins`.
 
 <table>
-<tr><td><b>AI-Native Research Workflow</b></td><td>Run the full quant research loop directly from CLI, Codex, Claude Code, or Cursor: autonomous research, backtesting, strategy creation, and deployment-ready workflow.</td></tr>
+<tr><td><b>AI-Native Research Workflow</b></td><td>Run the full quant research loop directly from CLI, Codex, Claude Code, or Cursor Desktop: autonomous research, backtesting, strategy creation, and deployment-ready workflow.</td></tr>
 <tr><td><b>Institutional Quant Infrastructure</b></td><td>Quandora provides end-to-end infrastructure for your agent: task cards, supported data, evaluation rails, and backtesting, while your agent focuses on writing Python factor logic.</td></tr>
 <tr><td><b>Real Performance Evidence with Explanations</b></td><td>Get structured Factor and Strategy Reports with verdicts, metrics, risks, assumptions, and plain-English explanations.</td></tr>
 <tr><td><b>Closed-Loop Learning</b></td><td>Agent-curated memory tracks iterations, failures, accepted factors, duplicates, and improvements to build a reusable factor library over time.</td></tr>
@@ -170,11 +170,11 @@ Use Settings -> Connectors, add the Connector above, click Connect, authorize Qu
 
 If an older Claude Code client does not provide `claude mcp login`, update Claude Desktop through its official updater. If the command remains unavailable, use the exact staging **Authenticate** control; do not install a second CLI or create a duplicate MCP entry.
 
-Claude Desktop can use the connected Quandora Staging tools in chat, but local result-folder archiving is only guaranteed in local agent environments such as Claude Code, Codex, and OpenClaw. Claude Desktop's built-in file creation uses Claude's sandbox and may provide downloadable files rather than writing directly to a chosen local folder.
+Claude Desktop can use the connected Quandora Staging tools in chat, but local result-folder archiving is only guaranteed in local agent environments such as Claude Code and Codex. Claude Desktop's built-in file creation uses Claude's sandbox and may provide downloadable files rather than writing directly to a chosen local folder.
 
 Factor Mining chart downloads use returned server `source_name` values for API calls and save local PNGs to returned `standard_local_path` values.
 
-### Cursor
+### Cursor Desktop
 
 In a new Cursor Desktop Agent chat, enter the complete host command:
 
@@ -182,11 +182,11 @@ In a new Cursor Desktop Agent chat, enter the complete host command:
 /add-plugin quandora-staging@https://github.com/varsity-tech-product/quandora-plugins-staging
 ```
 
-After Cursor installs the plugin, authenticate the plugin-provided `quandora-staging` remote MCP server and complete Quandora Staging authorization in the browser. Then start a new Agent chat before invoking the Factor Mining or Strategy Building skill.
+After Cursor Desktop installs the plugin, authenticate the plugin-provided `quandora-staging` remote MCP server and complete Quandora Staging authorization in the browser. Then start a new Agent chat before invoking the Factor Mining or Strategy Building skill.
 
-### CodeBuddy
+### CodeBuddy CLI
 
-CodeBuddy Agent can install and connect Quandora Staging through the official CodeBuddy Code CLI. The Agent first checks whether `codebuddy` is available and installs the official standalone CLI when it is absent.
+CodeBuddy CLI can install and connect Quandora Staging through its official plugin manager. First check whether `codebuddy` is available and install the official standalone CLI when it is absent.
 
 macOS and Linux:
 
@@ -210,11 +210,11 @@ codebuddy plugin install quandora-staging@quandora-staging --scope user
 codebuddy plugin list --json
 ```
 
-Quandora Staging uses the plugin-provided remote HTTP MCP server. CodeBuddy opens its native authorization flow when the server connects; the user reviews the browser page and completes the **Authenticate**, **Authorize**, or **Allow** action. No Python, Node.js, local MCP server, or Quandora API key is required.
+Quandora Staging uses the plugin-provided remote HTTP MCP server. CodeBuddy CLI opens its native authorization flow when the server connects; the user reviews the browser page and completes the **Authenticate**, **Authorize**, or **Allow** action. No Python, Node.js, local MCP server, or Quandora API key is required.
 
-### Kimi Code
+### Kimi Code CLI
 
-In Kimi Code, install the staging plugin directly from GitHub:
+In Kimi Code CLI, install the staging plugin directly from GitHub:
 
 ```text
 /plugins install https://github.com/varsity-tech-product/quandora-plugins-staging
@@ -236,26 +236,6 @@ Start a new session, authorize the plugin-provided staging MCP server, and verif
 
 Complete Quandora Staging authorization in the browser when prompted. After authorization, start a new session before invoking the Factor Mining or Strategy Building skill.
 
-### OpenClaw
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/varsity-tech-product/quandora-plugins-staging/HEAD/install-openclaw.sh | bash
-```
-
-Authorize Quandora Staging:
-
-```bash
-openclaw mcp login quandora-staging
-```
-
-Open the printed URL, approve access, then run the code command printed by OpenClaw:
-
-```bash
-openclaw mcp login quandora-staging --code <code>
-```
-
-Start a new OpenClaw chat after installation or authorization.
-
 ## Use Factor Mining
 
 Use the skill command when available:
@@ -267,9 +247,8 @@ Use the skill command when available:
 You can also ask naturally:
 
 ```text
-Use Quandora Staging Factor Mining to show public tasks.
-Use Quandora Staging Factor Mining with my custom factor idea.
-Use Quandora Staging Factor Mining to resume a run and summarize results.
+show public tasks.
+mine a factor with custom idea
 ```
 
 When the host supports local files, each run is saved under a stable folder named after the factor slug:
@@ -279,6 +258,22 @@ Quandora staging result/factor-mining/aggressive_flow_exhaustion_reversal/
 ```
 
 The run folder contains the submitted `plugin.py`, a redacted `run_summary.json`, `factor_card_is.json` when available, `artifact_manifest.json`, and PNG charts under `artifacts/is/`. The agent prints the result, artifact, and chart folder paths at the end of each run.
+
+## Use Strategy Building
+
+Use the skill command when available:
+
+```text
+/quandora-staging:strategy-building list available factors
+/quandora-staging:strategy-building help me build a strategy
+```
+
+You can also ask naturally:
+
+```text
+list available factors.
+help me build a strategy.
+```
 
 ## License
 
