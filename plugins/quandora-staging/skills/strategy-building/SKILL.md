@@ -14,23 +14,23 @@ the complete Strategy archive workflow.
 Before starting, confirm that the Quandora Staging connection is authenticated and that the actions
 needed for the requested path are visible:
 
-1. `strategy_get_contract`
-2. `strategy_list_eligible_factors`
-3. `strategy_get_eligible_factor_detail`
-4. `strategy_list_shared_factor_candidates`
-5. `strategy_add_shared_factor_to_pool`
-6. `strategy_import_factor`
-7. `strategy_submit_run`
-8. `strategy_get_run`
-9. `strategy_resume_run`
-10. `strategy_get_artifact`
-11. `strategy_create_artifact_download_ticket`
-12. `factor_mining_create_custom_session`
-13. `factor_mining_resume_run`
-14. `quandora_get_guidance`
+1. `sb_get_contract`
+2. `sb_list_eligible`
+3. `sb_factor_detail`
+4. `sb_shared_list`
+5. `sb_shared_add`
+6. `sb_import_factor`
+7. `sb_submit_run`
+8. `sb_get_run`
+9. `sb_resume_run`
+10. `sb_get_artifact`
+11. `sb_file_ticket`
+12. `fm_custom_sess`
+13. `fm_resume_run`
+14. `qd_get_guidance`
 
 Some hosts prefix action names with the server name, such as
-`quandora_staging__strategy_submit_run`; treat those as the same actions.
+`quandora_staging__sb_submit_run`; treat those as the same actions.
 
 If the connection or actions are unavailable, use the host-specific OAuth flow, then start a new
 chat before continuing:
@@ -44,20 +44,18 @@ chat before continuing:
 - Claude Desktop: add a connector named `quandora-staging` with URL
   `https://mcp-staging.varsity.lol/quant`, click Connect, complete browser authorization, then
   start a new chat.
-- OpenClaw: run `openclaw mcp login quandora-staging`, complete authorization, then start a new
-  chat.
 
 The normal workflow uses only the exposed MCP actions above. Never ask for or accept credentials or
 use an alternative service path. Use host-native HTTP only for the one opaque
 `download_url` returned by
-`strategy_create_artifact_download_ticket`; never use it for internal-service calls, raw storage,
+`sb_file_ticket`; never use it for internal-service calls, raw storage,
 or credential-paste flows.
 
 ## Workflow
 
 Bare “列出可用因子”, “可用因子”, “available factors”, “eligible factors”, “selectable
 factors”, “可用于策略的因子”, and equivalent Strategy factor-pool intent calls only
-`strategy_list_eligible_factors`. This action lists currently eligible/selectable cross-sectional
+`sb_list_eligible`. This action lists currently eligible/selectable cross-sectional
 Strategy factors.
 
 For that bare available/eligible/selectable intent:
@@ -69,22 +67,22 @@ For that bare available/eligible/selectable intent:
 - Only when `next_page_token` is non-empty, retain that opaque value byte-for-byte and tell the user
   that more results can be requested. Do not use it unless the user later asks for another page.
 
-Do not auto-page. Do not call `strategy_get_contract`, do not call `factor_mining_status`, and do
-not call `factor_mining_list_factors`; do not make a second list call, and do not ask a
+Do not auto-page. Do not call `sb_get_contract`, do not call `fm_status`, and do
+not call `fm_list_factors`; do not make a second list call, and do not ask a
 clarification question for a bare request. Requests explicitly about “我的 Factor Mining 因子”,
 caller-owned or reusable Factor Mining factor families, stable factor history, branches, versions,
-or previous factor runs route to `factor_mining_list_factors` through the Factor Mining skill; that
+or previous factor runs route to `fm_list_factors` through the Factor Mining skill; that
 list is not a substitute for Strategy eligibility.
 
 ### 1. Prepare a Valid Submission
 
-- For composition and submission operations, call `strategy_get_contract` exactly once. Treat its
+- For composition and submission operations, call `sb_get_contract` exactly once. Treat its
   `contract` as the current capability boundary and its separately labeled `product_defaults` as
   the effective defaults used when corresponding submit fields are omitted. A bare factor-list
   request does not call this action.
 - Submit only a strategy kind whose contract entry has `submit_supported: true`. The current
   supported submission kind is cross-sectional Strategy; stop if the requested kind is unsupported.
-- Call `strategy_list_eligible_factors` for eligible cross-sectional factors. The public action is
+- Call `sb_list_eligible` for eligible cross-sectional factors. The public action is
   already cross-sectional-scoped, so do not fabricate an unsupported kind field. Submit only
   factors verified through that tool, whether the agent selected them or the user supplied exact
   ids or weights.
@@ -114,7 +112,7 @@ list is not a substitute for Strategy eligibility.
 
 #### Manual Selection
 
-Call `strategy_list_eligible_factors` with the requested filters and bounded pagination. Display a
+Call `sb_list_eligible` with the requested filters and bounded pagination. Display a
 compact comparison table with only factor id, name, authoritative FM Task category, rating/grade
 status, and exact `cs_sharpe` labeled CS Sharpe when available. Do not include Median Sharpe,
 cross-sectional/time-series capability flags, or eligibility status in the default table, and never
@@ -122,43 +120,43 @@ substitute `median_sharpe` for `cs_sharpe`. Treat the returned category as autho
 unavailable category as unavailable; never infer it from name, type, or tags. Grade F remains
 selectable when the returned eligibility status says the factor is eligible.
 
-Call `strategy_get_eligible_factor_detail` only for an exact factor id the user requests or for a
+Call `sb_factor_detail` only for an exact factor id the user requests or for a
 small, stated shortlist. Do not fetch detail for every list row. If the user supplied neither
 factors nor weights and did not explicitly ask the agent to choose, show the compact choices and ask
 the user to select.
 
 #### Shared Selection
 
-Call `strategy_list_shared_factor_candidates` and show the same compact comparison columns used for
+Call `sb_shared_list` and show the same compact comparison columns used for
 manual selection wherever fields are available. If admission semantics are needed, call
-`quandora_get_guidance` with the known guide id
+`qd_get_guidance` with the known guide id
 `operation.strategy.factor.shared_admission`, requesting only relevant sections and safely using
 `if_guide_revision` when revalidating a previous response.
 
 The root-level `factor_backtest_run_id` returned by
-`strategy_list_shared_factor_candidates`, together with the exact `factor_version_id`, is the
+`sb_shared_list`, together with the exact `factor_version_id`, is the
 evidence required for shared-factor admission. Do not substitute
-`rating.factor_backtest_run_id`. Before calling `strategy_add_shared_factor_to_pool`, show the user
+`rating.factor_backtest_run_id`. Before calling `sb_shared_add`, show the user
 the exact candidate name, `factor_version_id`, and root-level `factor_backtest_run_id`, then obtain
 explicit confirmation for that exact candidate and pair. Verify the returned admission evidence,
-then call `strategy_list_eligible_factors` with `include_factor_ids` containing exactly the newly
+then call `sb_list_eligible` with `include_factor_ids` containing exactly the newly
 admitted `factor_id`. Do not submit a Strategy unless that exact id is returned as currently
 eligible.
 
 #### Import
 
 Import only complete inline `plugin.py` source. Reuse a real existing Factor Mining `session_id`, or
-create the appropriate custom session with `factor_mining_create_custom_session` using its exposed
-schema. Call `strategy_import_factor` with only schema-declared arguments. If import semantics are
-needed, call `quandora_get_guidance` with the known guide id
+create the appropriate custom session with `fm_custom_sess` using its exposed
+schema. Call `sb_import_factor` with only schema-declared arguments. If import semantics are
+needed, call `qd_get_guidance` with the known guide id
 `operation.strategy.factor.import`, relevant sections, and an available prior revision.
 
-Use only real lifecycle identifiers returned by `strategy_import_factor`. If `next_action` requires
-resume, require the canonical returned `run_id` for `factor_mining_resume_run` and follow the Factor
+Use only real lifecycle identifiers returned by `sb_import_factor`. If `next_action` requires
+resume, require the canonical returned `run_id` for `fm_resume_run` and follow the Factor
 Mining bounded policy of at most four resumes in the current request. Treat a returned
 `backtest_job_id` as lifecycle evidence only; if `run_id` is absent, stop rather than substitute or
 map that value. Do not invent an id mapping or add an import-status poller. Whether the factor was
-newly verified or reused, call `strategy_list_eligible_factors` with
+newly verified or reused, call `sb_list_eligible` with
 `include_factor_ids` containing exactly its returned factor id. Never submit a Strategy until that
 exact id appears in the current eligible list.
 
@@ -169,13 +167,13 @@ selected row's returned `name`; before submission, state the rationale and the e
 Otherwise ask the user to select from the manual, shared, or import path.
 
 When the user supplied `factor_ids` or `factor_weights`, extract the unique selected factor ids and
-call `strategy_list_eligible_factors` with `include_factor_ids` containing exactly those ids before
+call `sb_list_eligible` with `include_factor_ids` containing exactly those ids before
 submission or local-folder construction. Match the returned factors by exact `factor_id`, not by name or
 result order, and use only their returned `name` values. If any requested factor id is not
 returned, do not invent a display name and do not submit the strategy. Report that the selected
 factor could not be resolved as eligible for the current user.
 
-Choose the submitted `name` before calling `strategy_submit_run`. Preserve a user-supplied name
+Choose the submitted `name` before calling `sb_submit_run`. Preserve a user-supplied name
 after validating it against the submit tool schema: trim it, require a non-empty result, and keep it
 within 255 characters. Otherwise derive a concise, distinguishable name from themes present in the
 selected returned display names plus the actual effective configuration: use explicit user-selected
@@ -185,12 +183,12 @@ long-short neutral direction, and top/bottom count 5. Never invent a factor labe
 name such as `agent_neutral_percent_N_strategy`. Send the generated name as `name` and use the same
 name in the existing local archive logic.
 
-Call `strategy_submit_run` exactly once with the validated selection, generated or user-supplied
+Call `sb_submit_run` exactly once with the validated selection, generated or user-supplied
 `name`, every explicit user option, and only the omitted-field default representation required by
 the returned contract and submit schema. Then observe and archive only the returned run.
 
 After a valid submit response, store `result.run.id` as the sole Strategy `run_id`. Pass that exact
-value to `strategy_get_run`, `strategy_resume_run`, and `strategy_get_artifact`. Treat
+value to `sb_get_run`, `sb_resume_run`, and `sb_get_artifact`. Treat
 `result.run.strategyId` only as the saved Quandora Strategy identity visible in the web UI; it is
 never a `run_id` and must never be used in a Strategy run action.
 
@@ -204,26 +202,26 @@ error; otherwise report that submission confirmation failed to avoid duplicate s
 
 ### 2. Observe the Main Run
 
-The successful `strategy_submit_run` response is the initial main-run snapshot; it is not a
+The successful `sb_submit_run` response is the initial main-run snapshot; it is not a
 follow-up poll. If that snapshot is terminal, immediately continue with the terminal result and
 archive workflow below. Once the main run is terminal, do not resubmit it to retrieve results.
 
 When the submitted run is non-terminal, make at most twelve main-run follow-up polls. Before each
-follow-up, wait 30 seconds with a host-native wait or timer, then call `strategy_resume_run` once
+follow-up, wait 30 seconds with a host-native wait or timer, then call `sb_resume_run` once
 with the stored `run_id`. Each resume response is the latest main-run snapshot. If any resume
 response is terminal, immediately continue with the terminal result and archive workflow below.
-Do not call `strategy_get_run` during these main-run follow-ups or between them.
+Do not call `sb_get_run` during these main-run follow-ups or between them.
 
-If the twelfth `strategy_resume_run` response is still non-terminal, do not submit the strategy
+If the twelfth `sb_resume_run` response is still non-terminal, do not submit the strategy
 again. Save that latest safe run snapshot as `run_summary.json`, do not begin terminal archive
 observation or artifact retrieval, and clearly report that the server-side run remains in progress
 and can be resumed later. Do not claim that results or artifacts are available.
 
 The main-run status is separate from archive completion. After the main run becomes terminal, use
 only the same stored `run_id` for archive observation. Before each of at most five
-`strategy_get_run` archive-status follow-ups, wait 30 seconds with a host-native wait or timer. That
+`sb_get_run` archive-status follow-ups, wait 30 seconds with a host-native wait or timer. That
 delay is observation only: do not use a local helper script, credentials, or an alternative service
-path, and do not call `strategy_resume_run` or resubmit merely to wait for archiving.
+path, and do not call `sb_resume_run` or resubmit merely to wait for archiving.
 
 If `archiveStatus` is `completed` or `partial` in the terminal snapshot or a follow-up, stop waiting
 and follow the matching retrieval procedure below. If it remains `pending` or `running` after the
@@ -252,7 +250,7 @@ Do not infer a source-code repair from a diagnostic and do not automatically res
 
 ### 3. Read Requested Archive Artifacts
 
-Use this single archive capability registry. `strategy_get_artifact` accepts only the fifteen
+Use this single archive capability registry. `sb_get_artifact` accepts only the fifteen
 JSON/text names whose unary mode is `allowed`. The ticket action accepts all twenty-one names. The
 six PNG names are stream-only and ticket-only.
 
@@ -286,17 +284,17 @@ same `run_id`; visit every registry name exactly once for its artifact-state ret
 names, also exactly once each. In either case, do not resubmit the Strategy run to retrieve the
 archive.
 
-1. Use `strategy_get_artifact` first for concise artifacts: `status`, `summary`, `performance`,
+1. Use `sb_get_artifact` first for concise artifacts: `status`, `summary`, `performance`,
    `charts`, `equity_curve`, `drawdown_curve`, `turnover_curve`, `exposure_curve`, `attribution`,
    and `signal_return_curves`.
-2. Use `strategy_create_artifact_download_ticket` first for `orders`, `trades`, `result`, `logs`,
+2. Use `sb_file_ticket` first for `orders`, `trades`, `result`, `logs`,
    and `code`.
 3. If a concise direct read returns `ready`, use it only as the state result: obtain one download
    ticket for that same artifact and use the ticketed bytes for the local archive rather than saving
    the unary body. If it returns `too_large`, request that one ticket as its download fallback. Do
    not make another unary read for it.
-4. Use `strategy_create_artifact_download_ticket` first for every PNG. PNG artifacts must never use
-   `strategy_get_artifact`, including for state discovery or fallback.
+4. Use `sb_file_ticket` first for every PNG. PNG artifacts must never use
+   `sb_get_artifact`, including for state discovery or fallback.
 
 `attribution` describes predictive style exposure, not PnL contribution.
 
@@ -310,14 +308,14 @@ retry any non-ready artifact or create a placeholder content file.
 `logs` and `code` are text artifacts, the six `.png` names are PNG artifacts, and the other names
 are JSON artifacts. Do not print large artifact bodies into chat.
 
-If `strategy_get_artifact` returns `RESOURCE_EXHAUSTED`, treat it as `too_large` and use the
+If `sb_get_artifact` returns `RESOURCE_EXHAUSTED`, treat it as `too_large` and use the
 single ticket fallback. Never invent a download URL.
 
 ### Ticket Download Procedure
 
 For every initially ready artifact, use exactly one newly issued ticket: a ticket-first call is that
 issuance; a direct-read `ready` or `too_large` needs one call to
-`strategy_create_artifact_download_ticket` with the stored `run_id` and archive name. Then:
+`sb_file_ticket` with the stored `run_id` and archive name. Then:
 
 1. Only when that ticket response contains complete download metadata (including its opaque
    `download_url`), download it with host-native HTTP. Do not edit the URL, follow it to any other
@@ -348,7 +346,7 @@ user-facing summary.
 
 When the host can write local files, create one deterministic local archive for the strategy.
 Build its local-only `<strategy_slug>` only after the selected eligible factors and final
-`strategy_submit_run` parameters are known. Use the actual display names returned for the selected
+`sb_submit_run` parameters are known. Use the actual display names returned for the selected
 eligible factors; never invent factor labels.
 
 Normalize each readable name to a lowercase ASCII filesystem slug by replacing each run of
@@ -363,7 +361,7 @@ Create exactly this local-only fingerprint descriptor:
 
 ```json
 {
-  "submit_payload": <canonical semantic copy of the exact final strategy_submit_run payload>,
+  "submit_payload": <canonical semantic copy of the exact final sb_submit_run payload>,
   "contract_revision": "<exact contract.contract_revision>",
   "effective_profile": {
     "weighting": <canonical weighting object>,
@@ -380,9 +378,9 @@ Create exactly this local-only fingerprint descriptor:
 }
 ```
 
-`submit_payload` contains exactly the fields and semantic values sent to `strategy_submit_run`; it
+`submit_payload` contains exactly the fields and semantic values sent to `sb_submit_run`; it
 must not gain omitted Product defaults. Copy `contract_revision` exactly from the single
-`strategy_get_contract` response used for this operation. For every effective-profile field, use
+`sb_get_contract` response used for this operation. For every effective-profile field, use
 the validated explicit submit value when present and the corresponding `product_defaults` value
 when omitted.
 
@@ -426,7 +424,7 @@ sent to the MCP tool:
   `<fingerprint>`.
 
 The descriptor, effective profile, resolved Product defaults, and contract revision exist only for
-local fingerprinting. Never send them to `strategy_submit_run`, never pass `contract_revision` as a
+local fingerprinting. Never send them to `sb_submit_run`, never pass `contract_revision` as a
 tool argument, and never add `weighting`, a resolved default, or `contract_revision` to the actual
 request. Factor ids remain in the hashed descriptor but never appear in the visible directory name,
 a user-facing path, or a user-facing summary. Beyond the required contract revision and selector
