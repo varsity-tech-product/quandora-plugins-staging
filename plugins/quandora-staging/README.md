@@ -2,6 +2,16 @@
 
 Quandora Staging is the public staging plugin package for pre-release Quandora agent workflow testing. It includes Factor Mining and Strategy Building skills, points to staging services, and is not the production plugin.
 
+## 1.0.8-staging.36 Release Notes
+
+This staging-only release replaces the 27 public Remote MCP tool names with the short `fm_`,
+`sb_`, and `qd_` names used by the bundled skills. To receive the complete cutover:
+
+1. Update the staging plugin.
+2. Close the old chat/session.
+3. Start a new chat/session so the host performs a fresh `tools/list`.
+4. No credential paste, connection recreation, or OAuth re-login is expected.
+
 ## What Factor Mining Does
 
 Quandora Staging Factor Mining helps an agent:
