@@ -139,6 +139,8 @@ codex mcp login quandora-staging
 
 After installation or authorization, open a new chat. If Codex Desktop still does not expose Quandora Staging tools, fully quit and reopen Codex Desktop.
 
+When a Quandora Staging connection is unavailable, update or reinstall the staging plugin, reconnect the `quandora-staging` Remote MCP server, and complete the host-native browser authorization flow again. OAuth and credentials remain host-managed: agents must never request API keys, bearer tokens, authorization codes, access tokens, refresh tokens, PKCE verifiers, or pasted credentials.
+
 ### Claude
 
 Claude Desktop Code supports an Agent-readable one-sentence installation guide. Publish and verify that guide before advertising its URL. The planned hosted request, once `https://quandora.ai/agent/claude` returns the reviewed plain text successfully, is:
@@ -211,6 +213,10 @@ codebuddy plugin list --json
 ```
 
 Quandora Staging uses the plugin-provided remote HTTP MCP server. CodeBuddy CLI opens its native authorization flow when the server connects; the user reviews the browser page and completes the **Authenticate**, **Authorize**, or **Allow** action. No Python, Node.js, local MCP server, or Quandora API key is required.
+
+### WorkBuddy China edition
+
+The WorkBuddy China edition consumes the CodeBuddy-compatible marketplace and plugin manifests together with the plugin-managed `quandora-staging` remote HTTP MCP declaration. Install or update the staging plugin through its plugin or custom-MCP interface, reconnect it, complete the host-native browser authorization flow, and start a new chat. Do not create a local MCP server or paste credentials.
 
 ### Kimi Code CLI
 

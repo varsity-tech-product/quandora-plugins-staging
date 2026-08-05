@@ -31,9 +31,9 @@ skills/
   strategy-building/
 ```
 
-## CodeBuddy
+## CodeBuddy and the WorkBuddy China edition
 
-The CodeBuddy plugin manifest registers both skills and the plugin-managed `quandora-staging` remote HTTP MCP server. CodeBuddy handles MCP connection and OAuth authorization natively. The package does not require a local MCP process, Python, Node.js, or an API key.
+The CodeBuddy-compatible plugin manifest registers both skills and the plugin-managed `quandora-staging` remote HTTP MCP server. CodeBuddy and the WorkBuddy China edition handle the MCP connection and browser OAuth authorization natively. The package requires no local MCP process, Python, Node.js, API key, or credential-paste flow.
 
 ## Claude Desktop Code OAuth launchers
 
@@ -48,3 +48,7 @@ scripts/
 The macOS launcher uses the operating system's `/usr/bin/script` PTY. The Windows launcher uses Windows PowerShell 5.1 to start a native console. Both invoke only `plugin:quandora-staging:quandora-staging`, retain the remote MCP transport, avoid OAuth output logging, and require no Python, Node.js, or third-party terminal package. Browser identity and consent remain manual user actions.
 
 The Windows path is statically validated; smoke-test it on Windows 10/11 x64 and Windows 11 ARM64 before promotion outside staging.
+
+## Connection Recovery
+
+If the `quandora-staging` connection is unavailable, update or reinstall the staging plugin, reconnect the plugin-managed Remote MCP server, and complete the host-native browser authorization flow again. The host owns OAuth and credentials; agents never request API keys, bearer tokens, authorization codes, access tokens, refresh tokens, PKCE verifiers, or pasted credentials.
