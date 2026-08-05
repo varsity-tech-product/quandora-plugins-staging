@@ -9,6 +9,8 @@ Use this skill through the authenticated Quandora Staging connection exposed by 
 `quandora-staging`. It composes cross-sectional strategies from eligible factor ids and includes
 the complete Strategy archive workflow.
 
+OAuth and all credentials are handled by the host. Quandora access tokens expire after one hour, and the host MCP client should use its stored rotating refresh token automatically. Never inspect, print, copy, store, or ask the user to paste API keys, bearer tokens, authorization codes, access tokens, refresh tokens, PKCE verifiers, service tokens, or other credentials.
+
 ## Connection and Tools
 
 Before starting, confirm that the Quandora Staging connection is authenticated and that the actions
@@ -32,8 +34,9 @@ needed for the requested path are visible:
 Some hosts prefix action names with the server name, such as
 `quandora_staging__sb_submit_run`; treat those as the same actions.
 
-If the connection or actions are unavailable, use the host-specific OAuth flow, then start a new
-chat before continuing:
+If the connection or actions are unavailable, tell the user to update or reinstall the current
+staging plugin, use the host-specific reconnect and browser OAuth flow, then start a new chat
+before continuing:
 
 - Codex CLI/TUI: run `codex mcp login quandora-staging`.
 - Codex Desktop: authorize the plugin-provided connector, start a new chat, and fully quit and
@@ -44,8 +47,17 @@ chat before continuing:
 - Claude Desktop: add a connector named `quandora-staging` with URL
   `https://mcp-staging.varsity.lol/quant`, click Connect, complete browser authorization, then
   start a new chat.
+- CodeBuddy and the WorkBuddy China edition: update or reinstall the `quandora-staging` plugin, reconnect its plugin-managed
+  Remote MCP server, complete the host-native browser authorization flow, then start a new chat.
 
-The normal workflow uses only the exposed MCP actions above. Never ask for or accept credentials or
+Do not start a new authorization flow merely because an access token reached its one-hour lifetime
+or because of a single authorization response while the host is refreshing. Reauthorize only when
+the host reports a terminal authorization failure or still requires authorization after refresh
+handling.
+
+The normal workflow uses only the exposed MCP actions above. Never ask for or accept API keys,
+bearer tokens, authorization codes, access tokens, refresh tokens, PKCE verifiers, service tokens,
+or pasted credentials, and never
 use an alternative service path. Use host-native HTTP only for the one opaque
 `download_url` returned by
 `sb_file_ticket`; never use it for internal-service calls, raw storage,
