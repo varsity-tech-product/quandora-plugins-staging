@@ -358,7 +358,13 @@ def build_signal(close: pd.DataFrame, params: Dict[str, Any], **data: Any) -> pd
     return signal.reindex_like(close)
 ```
 
-Keep `build_signal` and `FACTOR_SECTIONS` compute logic aligned. Return a float `pd.DataFrame` aligned with `close`, use only current and historical data, and keep all data columns within `plugin_contract.allowed_data`. The duplicated `FACTOR_TYPE` and `__FACTOR_TYPE__` strings must match exactly; never replace the section value with a reference to the top-level variable.
+Keep `build_signal` and `FACTOR_SECTIONS` compute logic aligned:
+
+1. Defaults: each `GetIntParameter("k", N)` literal in `__FACTOR_INIT__` must equal the matching `FACTOR_DEFAULT_PARAMS` value. The composer inlines those literals, so a mismatch silently produces two different factors.
+2. Window: consume the same number of bars as the matching Python rolling window, slicing the required trailing bars from the end of the C# array. Never assume `prices.Length` equals the factor's own window.
+3. Missing data: Python must produce `NaN` under the same conditions in which C# returns `false`.
+
+Return a float `pd.DataFrame` aligned with `close`, use only current and historical data, and keep all data columns within `plugin_contract.allowed_data`. The duplicated `FACTOR_TYPE` and `__FACTOR_TYPE__` strings must match exactly; never replace the section value with a reference to the top-level variable.
 
 ## Security
 
