@@ -158,8 +158,8 @@ the user to select.
 Call `sb_shared_list` and show the same compact comparison columns used for
 manual selection wherever fields are available. If admission semantics are needed, call
 `qd_get_guidance` with the known guide id
-`operation.strategy.factor.shared_admission`, requesting only relevant sections and safely using
-`if_guide_revision` when revalidating a previous response.
+`operation.strategy.factor.shared_admission` without `sections`, and safely use
+`if_guide_revision` when revalidating a previous response. This is a capability-only guide.
 
 The root-level `factor_backtest_run_id` returned by
 `sb_shared_list`, together with the exact `factor_version_id`, is the
@@ -177,7 +177,8 @@ Import only complete inline `plugin.py` source. Reuse a real existing Factor Min
 create the appropriate custom session with `fm_custom_sess` using its exposed
 schema. Call `sb_import_factor` with only schema-declared arguments. If import semantics are
 needed, call `qd_get_guidance` with the known guide id
-`operation.strategy.factor.import`, relevant sections, and an available prior revision.
+`operation.strategy.factor.import` without `sections`, and include `if_guide_revision` only when
+revalidating an available prior revision. This is a capability-only guide.
 
 The minimum legal import request uses the Auth/PB defaults `filename="plugin.py"` and
 `params_json="{}"` by omitting those two optional fields:

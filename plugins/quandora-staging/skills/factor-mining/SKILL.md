@@ -86,9 +86,10 @@ follow the reuse workflow below. Otherwise keep the existing creation workflow u
 ### Approved Guidance
 
 Use `qd_get_guidance` only when approved product semantics are needed. It accepts only a
-known `guide_id`; request only relevant `sections`, pass `if_guide_revision` when revalidating a
-previous response, and honor a not-modified response without fabricating content. The known ids for
-this release are:
+known `guide_id`. Supply `sections` only for `operation.factor.history.read` or
+`operation.result.read`; omit `sections` for the capability-only `metric.backtest.grade` guide.
+Pass `if_guide_revision` when revalidating a previous response, and honor a not-modified response
+without fabricating content. The known ids for this release are:
 
 - `operation.factor.history.read`
 - `operation.result.read`
@@ -119,8 +120,10 @@ an MCP tool argument.
 3. Start with the default `summary` view. Request only the controlled `branches`, `versions`, or
    `runs` view needed for the user's next decision. Use only these safe selector combinations:
    - `summary`: do not send `branch_id`, `version_id`, `page_size`, or `page_token`.
-   - `branches`: may use `branch_id` plus `page_size` / `page_token`; do not send `version_id`.
-   - `versions`: may use `branch_id` or `version_id` plus `page_size` / `page_token`.
+   - `branches`: either list with optional `page_size` / `page_token`, or select one exact
+     `branch_id` without pagination; do not send `version_id`.
+   - `versions`: list all or one `branch_id` with optional pagination, or select one exact
+     `version_id` without `branch_id`, `page_size`, or `page_token`.
    - `runs`: may use `version_id` plus `page_size` / `page_token`; do not send `branch_id`.
 4. Use only returned metadata and run summaries. Historical source reading and editing are not
    exposed in this release. Do not read a local cache, call another service, or devise a workaround.
