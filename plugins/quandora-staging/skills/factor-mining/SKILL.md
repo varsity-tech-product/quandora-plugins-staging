@@ -58,6 +58,12 @@ Before writing `plugin.py`, call `fm_get_contract` and use the returned `plugin_
 - Follow `plugin_contract.runtime_rules` for required globals, `FACTOR_SECTIONS`, runtime variant, leak rules, extra-buffer rules, and reserved identifiers.
 - When an additional runtime column is needed, use its matching `plugin_contract.runtime_rules.extra_buffer.column_patterns` entry. Copy that entry's field, enqueue, dequeue, and to-array snippets exactly into the corresponding `FACTOR_SECTIONS` values; do not reconstruct or normalize the snippets.
 
+C# naming rules have this strict precedence:
+
+1. Copy every contract-generated field, enqueue, dequeue, and to-array snippet byte-for-byte. A general naming rule never rewrites an identifier inside a returned canonical snippet.
+2. Name factor-owned class fields with the contract's current `_factor...` prefix/style.
+3. Name compute-body locals created by the factor with a descriptive `factor...` prefix. Avoid broad names such as `n` or `past`, and avoid every returned reserved local or extra-array reserved identifier.
+
 When `plugin_contract.runtime_rules.factor_sections.all_values_must_be_string_literals` is true, every `FACTOR_SECTIONS` value must be a static string literal. In particular, write `"__FACTOR_TYPE__": "my_factor_type"`, not `"__FACTOR_TYPE__": FACTOR_TYPE`. Keep the top-level `FACTOR_TYPE` literal and the duplicated `__FACTOR_TYPE__` literal byte-for-byte identical. Name factor-owned C# identifiers with `plugin_contract.runtime_rules.csharp_runtime_rules.factor_owned_identifier_prefix` when that rule is returned.
 
 Do not send multiple selectors in one plugin-contract call. Do not retry an identical non-retryable request. Do not silently change the user's research mechanism after a non-retryable validation error.
@@ -89,7 +95,12 @@ this release are:
 - `metric.backtest.grade`
 
 Use each guide only for its named factor-history, result, or grade operation. Do not browse for
-Guidance or invent a guide id.
+Guidance or invent a guide id. Treat each returned
+`mcp_invocation.tools.<tool>.caller_supplied_fields` list as
+the only invocation boundary. Upstream sections marked semantic background may explain identity,
+verification, privacy, results, or grades, but they never create a mutation/retest tool or an input
+field. Service-level `Actor.idempotency_key` / `Idempotency-Key` is transport-managed and is never
+an MCP tool argument.
 
 ### Intentional Reuse and History
 
@@ -107,7 +118,7 @@ Guidance or invent a guide id.
    selector, Strategy admission ID, or any locally cached ID.
 3. Start with the default `summary` view. Request only the controlled `branches`, `versions`, or
    `runs` view needed for the user's next decision. Use only these safe selector combinations:
-   - `summary`: do not send `branch_id`, `version_id`, or `page_token`.
+   - `summary`: do not send `branch_id`, `version_id`, `page_size`, or `page_token`.
    - `branches`: may use `branch_id` plus `page_size` / `page_token`; do not send `version_id`.
    - `versions`: may use `branch_id` or `version_id` plus `page_size` / `page_token`.
    - `runs`: may use `version_id` plus `page_size` / `page_token`; do not send `branch_id`.
@@ -130,6 +141,20 @@ Determine whether the user wants a public task or a custom idea:
   Compare the user's thesis semantically with those returned research fields; never classify from task ID or title alone. Choose exactly the category returned by the matching public task reference when the economic mechanism honestly fits. If none of the eight references fits, use the explicit product fallback `Other`; `Other` has no public reference task and must not be fabricated as a ninth public row. The public list is only the custom branch's semantic reference: never copy a public `task_id` into a custom task/session and never turn this branch into `fm_task_session`.
 
   Separately, before creating the session, call `fm_get_contract({})` exactly once to read the global construction and data-column contract; the runtime classification read and this construction-contract read are both required. Validate the selected label against exactly `Microstructure`, `Volatility`, `Imbalance`, `Order Flow`, `Auction`, `Momentum`, `Volume`, `Liquidity`, or `Other`; this vocabulary validates the runtime result and never replaces the runtime reference read. Prepare a clear title, category, description, non-empty `allowed_data`, and `fwd_period` for `fm_custom_sess`, using only exact column names returned by the global contract's `plugin_contract.allowed_data`, including `close`, `volume`, `funding_rate_close`, or `open_interest_close` only when returned. Use `fwd_period: 7` unless the user explicitly asks for another supported horizon. Create the custom session, then call `fm_get_contract` with only the returned `session_id`; treat that scoped contract as authoritative for writing and validating `plugin.py`. Never send a hand-built custom `task_payload` to `fm_get_contract`.
+
+  `fm_custom_sess` has only the canonical flat shape below. This example is valid only when the immediately preceding global contract returned `close` exactly:
+
+  ```json
+  {
+    "title": "Funding-adjusted trend persistence",
+    "description": "Test whether recent close-price persistence survives funding pressure.",
+    "category": "Momentum",
+    "allowed_data": ["close"],
+    "fwd_period": 7
+  }
+  ```
+
+  Never send `name`, `idea`, `task_id`, or `task_payload` to `fm_custom_sess`.
 
 After either branch returns its scoped contract, continue through the single shared plugin.py writing, deduplication, validation, upload, resume/polling, and artifact/archive workflow below.
 
@@ -169,7 +194,6 @@ After a concrete `plugin.py` exists and before validation or upload, call `fm_de
   "source": "<full plugin.py source>",
   "description": "<short natural-language thesis>",
   "formula": "<short formula summary>",
-  "allowed_data": ["<used input column>"],
   "limit": 5
 }
 ```
@@ -195,7 +219,7 @@ runtime expressions with the corresponding
 `plugin_contract.data_columns[].csharp_double_expression`. If upload or admission fails, use only
 the closed `recovery_action` policy below; never infer a mutation retry from `retryable`.
 
-When the source is valid and the user is ready to submit, call `fm_run_backtest` with `session_id`, the exact inline `plugin_source` that passed validation, and the selected `fwd_period` when required. Do not edit, regenerate, reformat, or re-read a different copy between successful validation and submission. Use `plugin_contract.fwd_period` unless the user explicitly requested another supported horizon.
+When the source is valid and the user is ready to submit, call `fm_run_backtest` with only `session_id` and the exact inline `plugin_source` that passed validation. Do not send `fwd_period`: the session/scoped contract already binds the horizon. Do not edit, regenerate, reformat, or re-read a different copy between successful validation and submission.
 
 ### Mutation Recovery Policy
 
@@ -345,11 +369,11 @@ FACTOR_SECTIONS = {
     "__EXTRA_BUF_DEQUEUE__": "",
     "__EXTRA_BUF_TOARRAY__": "",
     "__FACTOR_COMPUTE_BODY__": """
-            var n = prices.Length;
-            if (_factorWindow < 1 || n < _factorWindow + 1) return false;
-            var past = prices[n - _factorWindow - 1];
-            if (Math.Abs(past) < 1e-12) return false;
-            rawSignal = prices[n - 1] / past - 1.0;
+            var factorPriceCount = prices.Length;
+            if (_factorWindow < 1 || factorPriceCount < _factorWindow + 1) return false;
+            var factorPastPrice = prices[factorPriceCount - _factorWindow - 1];
+            if (Math.Abs(factorPastPrice) < 1e-12) return false;
+            rawSignal = prices[factorPriceCount - 1] / factorPastPrice - 1.0;
             if (double.IsNaN(rawSignal) || double.IsInfinity(rawSignal)) return false;
             return true;
 """,

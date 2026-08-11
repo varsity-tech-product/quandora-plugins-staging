@@ -92,6 +92,16 @@ list is not a substitute for Strategy eligibility.
   `contract` as the current capability boundary and its separately labeled `product_defaults` as
   the effective defaults used when corresponding submit fields are omitted. A bare factor-list
   request does not call this action.
+- Immediately after that contract response and before constructing any payload, use this exact
+  `sb_submit_run` upload whitelist:
+  `name`, `factor_ids`, `factor_weights`, `ranking`, `strategy_type`, `start_date`, `end_date`,
+  `initial_cash`, `taker_fee_rate`, `maker_fee_rate`, `rebalance_bars`, `attribution`.
+  Send exactly one of `factor_ids` or `factor_weights`. Never send `idempotency_key`, `kind`,
+  `strategy_kind`, `weighting`, `contract_revision`, `product_defaults`, `effective_profile`,
+  `composition`, or `parameters`. Idempotency is generated from trusted Auth/gateway context;
+  `kind` / `strategy_kind` are fixed to `cs`; the remaining names are semantic, response-only, or
+  local-only. If `contract.submission.caller_supplied_fields` differs from this whitelist or from
+  the tool schema, stop with a contract mismatch before constructing a payload.
 - Submit only a strategy kind whose contract entry has `submit_supported: true`. The current
   supported submission kind is cross-sectional Strategy; stop if the requested kind is unsupported.
 - Call `sb_list_eligible` for eligible cross-sectional factors. The public action is
@@ -110,15 +120,21 @@ list is not a substitute for Strategy eligibility.
   1–20):
   - `factor_ids`: unique factor ids.
   - `factor_weights`: unique `{ "factor_id": "...", "weight": <finite positive number> }` objects.
-- When configuration is omitted, apply the contract's current representation of the Product
-  defaults: equal weights using the `factor_ids` selection form, long-short neutral, and top/bottom
-  count 5. Read the exact field names, value shapes, and omission semantics from the single returned
-  contract, its `product_defaults`, and the exposed submit schema; never invent a request field or
-  enum value.
+- When configuration is omitted, leave optional caller fields omitted. Interpret the current
+  Product defaults only for effective behavior and local description: equal weights use the
+  `factor_ids` selection form, the default direction is neutral, and omitted ranking uses N=5. Read
+  exact field names, value shapes, and omission semantics from the single returned contract, its
+  `product_defaults`, and the exposed submit schema; never invent a request field or enum value.
 - A user-supplied weight, direction, top/bottom count, or top/bottom percentage overrides the
   corresponding default. For custom weights, validate that ids are unique, every weight is finite
   and positive, and the total is `1.0` within `1e-6`. Preserve every other explicit supported
   option.
+- Validate every numeric value as finite and every integer as binary64-safe. Each fee rate is in
+  `[0, 0.01]`; `rebalance_bars` is an integer in `1..10000`; ranking is exactly mode `N` with a
+  positive integer value or mode `percent` with a value in `(0, 50]`. Dates are exact ISO
+  `YYYY-MM-DD` strings and explicit `end_date` must be later than the effective `start_date`.
+  Omitted `end_date` means Factor Mining's latest-data default, not a fixed or locally invented
+  date.
 - Preserve every user-selected option exactly after validating it against the current contract.
   Do not invent a date range, cash value, fee rate, or rebalance interval.
 
@@ -163,6 +179,26 @@ schema. Call `sb_import_factor` with only schema-declared arguments. If import s
 needed, call `qd_get_guidance` with the known guide id
 `operation.strategy.factor.import`, relevant sections, and an available prior revision.
 
+The minimum legal import request uses the Auth/PB defaults `filename="plugin.py"` and
+`params_json="{}"` by omitting those two optional fields:
+
+```json
+{
+  "session_id": "<session_id>",
+  "plugin_source": "<complete inline plugin.py source>",
+  "factor_type": "<factor_type>",
+  "factor_name": "<factor_name>",
+  "fwd_period": 7
+}
+```
+
+If `params_json` is explicit, it is a string that parses as a finite JSON object, for example
+`"{}"`; never send a `params` object or mix `params` with `params_json`. If `filename` is explicit,
+send the non-empty source filename. Never send `Idempotency-Key`, `Actor.idempotency_key`, or
+`idempotency_key`; Auth supplies the transport identity. For Guidance, the PB-owned
+`mcp_invocation` metadata is the request-shape authority and upstream service-level sections are
+semantic background only.
+
 Use only real lifecycle identifiers returned by `sb_import_factor`. If `next_action` requires
 resume, require the canonical returned `run_id` for `fm_resume_run` and follow the Factor
 Mining bounded policy of at most four resumes in the current request. Treat a returned
@@ -198,6 +234,15 @@ name in the existing local archive logic.
 Call `sb_submit_run` exactly once with the validated selection, generated or user-supplied
 `name`, every explicit user option, and only the omitted-field default representation required by
 the returned contract and submit schema. Then observe and archive only the returned run.
+
+A minimum equal-weight submission is:
+
+```json
+{
+  "name": "Momentum neutral strategy",
+  "factor_ids": ["<exact eligible factor_id>"]
+}
+```
 
 After a valid submit response, store `result.run.id` as the sole Strategy `run_id`. Pass that exact
 value to `sb_get_run`, `sb_resume_run`, and `sb_get_artifact`. Treat
@@ -380,7 +425,7 @@ Create exactly this local-only fingerprint descriptor:
     "ranking": <resolved ranking object>,
     "strategy_type": "<resolved value>",
     "start_date": "<resolved value>",
-    "end_date": "<resolved value>",
+    "end_date": {"value": "<exact explicit end_date>", "source": "caller"},
     "initial_cash": <resolved value>,
     "taker_fee_rate": <resolved value>,
     "maker_fee_rate": <resolved value>,
@@ -392,9 +437,13 @@ Create exactly this local-only fingerprint descriptor:
 
 `submit_payload` contains exactly the fields and semantic values sent to `sb_submit_run`; it
 must not gain omitted Product defaults. Copy `contract_revision` exactly from the single
-`sb_get_contract` response used for this operation. For every effective-profile field, use
-the validated explicit submit value when present and the corresponding `product_defaults` value
-when omitted.
+`sb_get_contract` response used for this operation. For every effective-profile field except
+`end_date`, use the validated explicit submit value when present and the corresponding
+`product_defaults` value when omitted. For an explicit `end_date`, preserve the exact submitted
+string as the `value` with `source: "caller"`. When `end_date` is omitted, use exactly
+`{"value": null, "source": "factor_mining_latest_data_default"}`. Never invent or resolve a
+calendar date locally. This marker is local-only: never send it to `sb_submit_run`, and it must not
+alter the PB request hash, FM request, run window, or result.
 
 When `factor_ids` is submitted, use exactly this effective weighting:
 
