@@ -7,7 +7,7 @@ description: Use when the user asks to list available, eligible, or selectable S
 
 Use this skill through the authenticated Quandora Staging connection exposed by the host as
 `quandora-staging`. It composes cross-sectional strategies from eligible factor ids and includes
-the complete Strategy archive workflow.
+the complete Strategy Result Bundle workflow.
 
 OAuth and all credentials are handled by the host. Quandora access tokens expire after one hour, and the host MCP client should use its stored rotating refresh token automatically. Never inspect, print, copy, store, or ask the user to paste API keys, bearer tokens, authorization codes, access tokens, refresh tokens, PKCE verifiers, service tokens, or other credentials.
 
@@ -25,11 +25,13 @@ needed for the requested path are visible:
 7. `sb_submit_run`
 8. `sb_get_run`
 9. `sb_resume_run`
-10. `sb_get_artifact`
-11. `sb_file_ticket`
-12. `fm_custom_sess`
-13. `fm_resume_run`
-14. `qd_get_guidance`
+10. `sb_bundle_ticket`
+11. `sb_bundle_chunk`
+12. `sb_get_artifact` (legacy single-artifact compatibility)
+13. `sb_file_ticket` (legacy single-artifact compatibility)
+14. `fm_custom_sess`
+15. `fm_resume_run`
+16. `qd_get_guidance`
 
 Some hosts prefix action names with the server name, such as
 `quandora_staging__sb_submit_run`; treat those as the same actions.
@@ -60,7 +62,7 @@ bearer tokens, authorization codes, access tokens, refresh tokens, PKCE verifier
 or pasted credentials, and never
 use an alternative service path. Use host-native HTTP only for the one opaque
 `download_url` returned by
-`sb_file_ticket`; never use it for internal-service calls, raw storage,
+`sb_bundle_ticket`; never use it for internal-service calls, raw storage,
 or credential-paste flows.
 
 ## Workflow
@@ -230,7 +232,7 @@ options where present and the advertised `product_defaults` only where omitted. 
 `liquidation_continuation_ls_neutral_tb5` represents returned liquidation/continuation themes,
 long-short neutral direction, and top/bottom count 5. Never invent a factor label or use a generic
 name such as `agent_neutral_percent_N_strategy`. Send the generated name as `name` and use the same
-name in the existing local archive logic.
+name in the existing deterministic destination-slug logic.
 
 Call `sb_submit_run` exactly once with the validated selection, generated or user-supplied
 `name`, every explicit user option, and only the omitted-field default representation required by
@@ -282,9 +284,9 @@ delay is observation only: do not use a local helper script, credentials, or an 
 path, and do not call `sb_resume_run` or resubmit merely to wait for archiving.
 
 If `archiveStatus` is `completed` or `partial` in the terminal snapshot or a follow-up, stop waiting
-and follow the matching retrieval procedure below. If it remains `pending` or `running` after the
-bounded wait, save the final observed run snapshot and an archive-level incomplete state only in
-`artifact_manifest.json`; do not manufacture per-artifact availability or claim a complete archive.
+and request bundle metadata. If it remains `pending` or `running` after the bounded wait, save the
+final observed run snapshot and an archive-level incomplete state only; do not request a bundle or
+manufacture item availability.
 For any other non-`completed` terminal archive status, likewise record only the archive-level state
 and safe diagnostics. The final observed main-run snapshot remains the source for `run_summary.json`.
 
@@ -306,103 +308,22 @@ For a terminal failure, use only the safe `failureDiagnostics` envelope when it 
 
 Do not infer a source-code repair from a diagnostic and do not automatically resubmit a failed run.
 
-### 3. Read Requested Archive Artifacts
+### 3. Save the Strategy Result Bundle
 
-Use this single archive capability registry. `sb_get_artifact` accepts only the fifteen
-JSON/text names whose unary mode is `allowed`. The ticket action accepts all twenty-one names. The
-six PNG names are stream-only and ticket-only.
+After the Strategy main run is terminal and archive state permits bundle metadata, call `sb_bundle_ticket` exactly once with the exact canonical `run_id` from `result.run.id`. The returned closed metadata and safe manifest are authoritative for the FM-owned Strategy ZIP, including the current 22-name registry, partial/unavailable items, and unsafe text omissions. Do not loop over artifact names, issue one ticket per file, or recreate canonical files outside the ZIP. Keep `sb_get_artifact` and `sb_file_ticket` only for explicit single-artifact compatibility or rollback.
 
-| Artifact name | Format | Unary mode | Local archive name |
-| --- | --- | --- | --- |
-| `status` | JSON | allowed | `status.json` |
-| `summary` | JSON | allowed | `summary.json` |
-| `equity_curve` | JSON | allowed | `equity_curve.json` |
-| `drawdown_curve` | JSON | allowed | `drawdown_curve.json` |
-| `turnover_curve` | JSON | allowed | `turnover_curve.json` |
-| `exposure_curve` | JSON | allowed | `exposure_curve.json` |
-| `orders` | JSON | allowed | `orders.json` |
-| `charts` | JSON | allowed | `charts.json` |
-| `trades` | JSON | allowed | `trades.json` |
-| `performance` | JSON | allowed | `performance.json` |
-| `attribution` | JSON | allowed | `attribution.json` |
-| `signal_return_curves` | JSON | allowed | `signal_return_curves.json` |
-| `result` | JSON | allowed | `result.json` |
-| `logs` | text | allowed | `logs.txt` |
-| `code` | text | allowed | `code.txt` |
-| `chart1_prediction_decile.png` | PNG | forbidden | `prediction_decile.png` |
-| `chart2_style_long_short.png` | PNG | forbidden | `style_long_short.png` |
-| `chart3_style_exposure.png` | PNG | forbidden | `style_exposure.png` |
-| `chart4_decile_autocorr.png` | PNG | forbidden | `decile_autocorr.png` |
-| `chart5_prediction_style_corr.png` | PNG | forbidden | `prediction_style_corr.png` |
-| `chart6_daily_turnover.png` | PNG | forbidden | `daily_turnover.png` |
+Use this URL-first delivery once per request:
 
-When `archiveStatus == completed`, perform one complete twenty-one-artifact retrieval pass with the
-same `run_id`; visit every registry name exactly once for its artifact-state retrieval. When
-`archiveStatus == partial`, perform one bounded artifact-state pass over those same twenty-one
-names, also exactly once each. In either case, do not resubmit the Strategy run to retrieve the
-archive.
+1. Validate `safe_filename` as a basename, require ZIP content type, non-negative size, lowercase SHA-256, and a safe destination beneath `Quandora staging result/strategy/<strategy_slug>/`. Never overwrite an existing verified ZIP or unrelated user file.
+2. Stream the opaque Auth `download_url` directly to `<safe_filename>.partial`, maintaining byte count and SHA-256. Do not print, log, save, edit, or reuse the URL. A transient URL failure may request one fresh `sb_bundle_ticket` and retry once; a ticket is single-use.
+3. Verify exact size and SHA-256, ZIP magic/openability, and safe relative ZIP entry paths, then atomically rename the verified `.partial` to `<safe_filename>`.
 
-1. Use `sb_get_artifact` first for concise artifacts: `status`, `summary`, `performance`,
-   `charts`, `equity_curve`, `drawdown_curve`, `turnover_curve`, `exposure_curve`, `attribution`,
-   and `signal_return_curves`.
-2. Use `sb_file_ticket` first for `orders`, `trades`, `result`, `logs`,
-   and `code`.
-3. If a concise direct read returns `ready`, use it only as the state result: obtain one download
-   ticket for that same artifact and use the ticketed bytes for the local archive rather than saving
-   the unary body. If it returns `too_large`, request that one ticket as its download fallback. Do
-   not make another unary read for it.
-4. Use `sb_file_ticket` first for every PNG. PNG artifacts must never use
-   `sb_get_artifact`, including for state discovery or fallback.
+If the URL is unavailable, blocked by local host network policy, expired, or fails after that one retry, automatically use `sb_bundle_chunk` with the same exact `run_id` and `snapshot_revision`. The fallback uses the already-working authenticated MCP connection and requires no new host-native file sink or shell network access. Start at offset `0`, request at most `256 KiB` (`262144`) raw bytes per call, decode `content_b64` without printing or logging it, append to the same task-created `.partial`, and follow only validated `next_offset`. Enforce the 10 MiB ZIP cap and at most 40 calls. Require the final empty terminal marker and exact size/whole-ZIP SHA-256 before ZIP/path verification and atomic rename. Never mix revisions or append an old partial; on interruption or terminal fallback failure discard only the unverified task-created `.partial` and report that no verified ZIP was saved.
 
-`attribution` describes predictive style exposure, not PnL contribution.
+## Local Result Destination
 
-For every artifact, use its returned source state as authoritative. A complete ticket response with
-`download_url`, `local_name`, `size_bytes`, and `sha256_hex` is the ready/downloadable state. For
-`pending`, `not_available`, `sync_failed`, `integrity_failed`, or retryable backend errors, record
-that exact source state or a bounded safe failure class and do not claim that an artifact was saved.
-During a partial archive pass, download and save only ready/downloadable artifacts; do not blindly
-retry any non-ready artifact or create a placeholder content file.
-
-`logs` and `code` are text artifacts, the six `.png` names are PNG artifacts, and the other names
-are JSON artifacts. Do not print large artifact bodies into chat.
-
-If `sb_get_artifact` returns `RESOURCE_EXHAUSTED`, treat it as `too_large` and use the
-single ticket fallback. Never invent a download URL.
-
-### Ticket Download Procedure
-
-For every initially ready artifact, use exactly one newly issued ticket: a ticket-first call is that
-issuance; a direct-read `ready` or `too_large` needs one call to
-`sb_file_ticket` with the stored `run_id` and archive name. Then:
-
-1. Only when that ticket response contains complete download metadata (including its opaque
-   `download_url`), download it with host-native HTTP. Do not edit the URL, follow it to any other
-   host, print it, or store it in a local file.
-2. For JSON/text, write bytes to `artifacts/<local_name>.partial` beside the final file. Keep every
-   PNG in the dedicated `artifacts/image/` subdirectory: first require the ticket metadata to contain
-   the registry's exact artifact name as `local_name` and `image/png` as its content type. Resolve
-   that artifact through the registry's explicit local archive name, create the image directory
-   before the first PNG write, then write to
-   `artifacts/image/<local archive name>.partial`. Do not derive a local filename from any
-   unrecognized server value.
-3. Verify every `.partial` file's byte count and SHA-256 against `size_bytes` and `sha256_hex` from
-   the ticket response. For PNG, also require its first eight bytes to be the PNG signature
-   `89 50 4e 47 0d 0a 1a 0a`.
-4. Atomically rename the verified `.partial` file to its registry path; for PNG this is
-   `artifacts/image/<local archive name>`. On any download, signature, size, hash, filename, or
-   content-type failure, delete the `.partial` file and record only a bounded safe failure class.
-5. Never reuse a ticket after any attempt. For one transient failure before a verified rename,
-   delete the `.partial` file, request one new ticket for that artifact, and make at most one bounded
-   download retry. A second failure, an integrity mismatch, or any non-transient failure is final for
-   this archive pass.
-
-The ticket is short-lived and single-use. Never place its value, `download_url`, internal host,
-storage details, or a credential in `artifact_manifest.json`, `run_summary.json`, chat output, or a
-user-facing summary.
-
-## Local Result Archive
-
-When the host can write local files, create one deterministic local archive for the strategy.
+Do not assemble a separate local archive of individual files for the strategy. When the host can write local files,
+create only the deterministic destination slug for the FM-owned Result Bundle ZIP.
 Build its local-only `<strategy_slug>` only after the selected eligible factors and final
 `sb_submit_run` parameters are known. Use the actual display names returned for the selected
 eligible factors; never invent factor labels.
@@ -519,96 +440,62 @@ outer underscores and preserving at least one character in each displayed segmen
 complete final `__<fingerprint>` suffix unchanged. Reuse an existing deterministic directory only
 when both the final payload and effective contract context are unchanged.
 
-The slug is a local archive label only. Do not send the slug in an action request. Use it only in
-the local archive folder and the user-facing local paths.
+The slug is a local destination label only. Do not send it in an action request. Use it only in the
+Result Bundle folder and the user-facing local path.
 
 ```text
 Quandora staging result/
   strategy/
     <strategy_slug>/
-      run_summary.json
-      artifacts/
-        <verified JSON/text files using their exact registry local names>
-        image/
-          <verified PNG files using their registry local archive names>
-      artifact_manifest.json
+      <safe_filename>
 ```
 
-Save `run_summary.json` from the final main-run snapshot. Verified JSON/text ticket downloads use
-the `local_name` returned by the ticket response. For PNG, first verify that the returned
-`local_name` exactly matches the requested artifact name, then use the registry's local archive
-name. JSON/text files remain directly under `artifacts/`; every PNG final file and `.partial` file
-remains under `artifacts/image/`.
-
-After a completed archive retrieval pass, create `artifact_manifest.json` with the run id, main-run
-status, `archiveStatus: completed`, and exactly twenty-one entries, one for every registry name.
-Each entry contains only the artifact name, terminal/source state, relative local path when saved,
-content type, size, SHA-256, and a bounded safe failure class when needed. State that this archive
-pass completed, but do not claim that the archive is fully saved unless all required source states
-and verified local saves justify that claim. A saved PNG's relative local path must be
-`artifacts/image/<local archive name>`.
-
-After a partial archive pass, create the same twenty-one per-artifact entries with
-`archiveStatus: partial`, preserving every returned state and the local path only for verified ready
-downloads. Clearly mark the archive as partial and never claim that the full archive was fetched.
-For a pending/running bounded-wait exhaustion or any other non-`completed` terminal archive state,
-record only the archive-level state and observed `archiveStatus` without manufacturing per-artifact
-`not_available` entries. Never include a ticket, download URL, internal URL, storage reference, or
-credential.
-Keep run ids only in `run_summary.json` and `artifact_manifest.json` when traceability requires
-them; never use a run id in a directory name or user-facing summary.
-
-For each artifact attempted during a completed or partial archive pass, update its local file only
-after a verified ticket download. For every non-ready state, record that state exactly as returned.
-Do not create a placeholder body file, or delete or overwrite an existing final body file.
+For a non-terminal or archive-pending run, preserve the existing redacted run-summary behavior
+when local writes are available. For a completed run, the FM-owned ZIP is authoritative and no
+second canonical `run_summary.json` is written beside it. Never place a ticket, URL, internal host,
+storage reference, credential, or bundle bytes in local metadata or user-facing output.
 
 ## Final Response
 
 State the submitted strategy name and whether it was user-supplied or factor-aware generated. State
-the main-run status, archive status, and safe diagnostics. State all twenty-one archive
-artifact states after a completed or partial archive pass; for a partial pass, clearly state that the
-archive is partial and that the full archive was not fetched. Otherwise clearly state that the archive
-is incomplete and that no full artifact retrieval was claimed. For artifacts without a local body
-file, state `not created` and its returned state. Do not print large artifact bodies.
+the main-run status, archive status, safe diagnostics, and the one verified Result Bundle ZIP path
+when saved. If it was not saved, say so accurately; do not print large artifact bodies or describe a
+manually assembled archive.
 
 Never show run ids, download URLs, credentials, secret material, or internal service metadata in a
 user-facing summary.
 
 For a main run that remains non-terminal after the twelfth follow-up, clearly state that the
 server-side run remains in progress and can be resumed later. State that terminal archive
-observation and artifact retrieval were not started, and do not state that results or artifacts are
+observation and bundle retrieval were not started, and do not state that results or bundles are
 available.
 
-At the end of every completed, failed, or interrupted run, show the result folder, artifact folder,
-image folder, `run_summary.json`, and `artifact_manifest.json`. If a specific file or folder was not
-created, say `not created` for that line. After a completed or partial archive pass, link each saved
-PNG when practical; otherwise the absolute image-folder link below is the required PNG handoff.
+At the end of every completed, failed, or interrupted run, show the result folder, verified Result
+Bundle ZIP when saved, and `run_summary.json` when saved. If a specific file was not created, say
+`not created`. Never show run IDs, snapshot revisions, tickets, download URLs, credentials, or
+bundle base64.
 
 For Desktop or GUI hosts, use Markdown links with absolute local paths and angle-bracket link
 targets so paths with spaces work:
 
 ```text
 Result folder: [Open result folder](</absolute/path/to/Quandora staging result/strategy/<strategy_slug>/>)
-Artifact folder: [Open artifact folder](</absolute/path/to/Quandora staging result/strategy/<strategy_slug>/artifacts/>)
-Image folder: [Open image folder](</absolute/path/to/Quandora staging result/strategy/<strategy_slug>/artifacts/image/>)
+Result Bundle ZIP: [verified ZIP](</absolute/path/to/Quandora staging result/strategy/<strategy_slug>/<safe_filename>)
 Run summary: [run_summary.json](</absolute/path/to/Quandora staging result/strategy/<strategy_slug>/run_summary.json>)
-Artifact manifest: [artifact_manifest.json](</absolute/path/to/Quandora staging result/strategy/<strategy_slug>/artifact_manifest.json>)
 ```
 
 For CLI or TUI hosts, use the same absolute paths as plain text, not Markdown links:
 
 ```text
 Result folder: /absolute/path/to/Quandora staging result/strategy/<strategy_slug>/
-Artifact folder: /absolute/path/to/Quandora staging result/strategy/<strategy_slug>/artifacts/
-Image folder: /absolute/path/to/Quandora staging result/strategy/<strategy_slug>/artifacts/image/
+Result Bundle ZIP: /absolute/path/to/Quandora staging result/strategy/<strategy_slug>/<safe_filename>
 Run summary: /absolute/path/to/Quandora staging result/strategy/<strategy_slug>/run_summary.json
-Artifact manifest: /absolute/path/to/Quandora staging result/strategy/<strategy_slug>/artifact_manifest.json
 ```
 
 If the host cannot write files, state:
 
 ```text
 Result folder: unavailable in this host
-Artifact folder: unavailable in this host
-Image folder: unavailable in this host
+Result Bundle ZIP: unavailable in this host
+Run summary: unavailable in this host
 ```

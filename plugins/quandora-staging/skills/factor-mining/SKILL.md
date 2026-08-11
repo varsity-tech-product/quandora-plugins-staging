@@ -7,7 +7,7 @@ description: Use when the user explicitly asks about caller-owned or reusable Fa
 
 Use this skill to run Factor Mining through the authenticated Quandora Staging connection exposed by the host as `quandora-staging`.
 
-The agent drafts a valid Factor Mining `plugin.py`, submits the complete source inline, waits for the backtest result, fetches available artifacts, saves safe local files when the host allows it, and summarizes the outcome.
+The agent drafts a valid Factor Mining `plugin.py`, submits the complete source inline, waits for the backtest result, saves one verified FM-owned Result Bundle ZIP when the host allows it, and summarizes the outcome.
 
 OAuth and all credentials are handled by the host. Quandora access tokens expire after one hour, and the host MCP client should use its stored rotating refresh token automatically. Never inspect, print, copy, store, or ask the user to paste API keys, bearer tokens, authorization codes, access tokens, refresh tokens, PKCE verifiers, service tokens, or other credentials.
 
@@ -39,10 +39,8 @@ After routing has confirmed Factor Mining scope, use only the Factor Mining acti
 - `fm_dedup_context`
 - `fm_run_backtest`
 - `fm_resume_run`
-- `fm_window_cards`
-- `fm_png_ticket`
-- `fm_raw_ticket`
-- `fm_png_chunk`
+- `fm_bundle_ticket`
+- `fm_bundle_chunk`
 - `qd_get_guidance`
 
 Some hosts may prefix action names with the server name, such as `quandora_staging__fm_status`. Treat those as the same actions.
@@ -159,18 +157,24 @@ Determine whether the user wants a public task or a custom idea:
 
   Never send `name`, `idea`, `task_id`, or `task_payload` to `fm_custom_sess`.
 
-After either branch returns its scoped contract, continue through the single shared plugin.py writing, deduplication, validation, upload, resume/polling, and artifact/archive workflow below.
+After either branch returns its scoped contract, continue through the single shared plugin.py writing,
+deduplication, validation, upload, resume/polling, and terminal Result Bundle workflow below.
 
 Do not write `plugin.py` until the plugin construction contract has been returned. If the contract cannot be fetched, stop and report that plugin authoring is blocked by missing contract metadata.
 
-After a session exists, prepare one local result archive when the host supports file writes. Use a stable factor slug for the run folder. Prefer the generated top-level `FACTOR_TYPE`; if it is missing, convert `FACTOR_NAME` to lowercase snake_case. For example, `FACTOR_TYPE = "aggressive_flow_exhaustion_reversal"` uses:
+After a session exists, do not create a result archive or `artifacts/` directory. The result
+directory is reserved for the task-created `.partial` and the final FM-owned ZIP. Use a stable
+factor slug for that destination. Prefer the generated top-level `FACTOR_TYPE`; if it is missing,
+convert `FACTOR_NAME` to lowercase snake_case. For example, `FACTOR_TYPE = "aggressive_flow_exhaustion_reversal"` uses:
 
 ```text
 Quandora staging result/factor-mining/aggressive_flow_exhaustion_reversal/
-Quandora staging result/factor-mining/aggressive_flow_exhaustion_reversal/artifacts/
 ```
 
-Use only the factor slug as the canonical archive directory. The latest run for a factor updates that factor's folder. When traceability requires them, the current `session_id` and `run_id` are the only downstream IDs that may be saved, and only inside local `run_summary.json` / `artifact_manifest.json`; never put them in the user-facing directory name or response.
+Use only the factor slug as the destination directory. The latest run for a factor updates that
+factor's folder. A pre-terminal pending diagnostic may retain the existing redacted summary
+behavior, but never put downstream IDs in the user-facing directory name or response and never
+create a second completed-result summary beside the FM ZIP.
 
 After session creation, call `fm_dedup_context` with only the `session_id`. Use `query_mode`, `scope`, `memory_stats`, `similar_factors`, and `task_memory_pressure` only to select a fresher research hypothesis. A high `task_memory_pressure` must never stop the workflow, reject a draft, or trigger repeated rewrites.
 
@@ -184,7 +188,10 @@ For named indicators or established formulas, use the canonical inputs when the 
 
 Create or locate one `plugin.py` source:
 
-- In local coding hosts with a writable workspace, save the submitted source as `plugin.py` inside the run archive. Read the file back and submit the full contents as inline `plugin_source`.
+- In local coding hosts with a writable workspace, keep the submitted source as `plugin.py` in the
+  normal authoring workspace, read it back, and submit the full contents as inline `plugin_source`.
+  Do not copy it into the result directory; the accepted FM-owned `plugin.py` is delivered in the
+  Result Bundle ZIP.
 - In chat-only hosts without file writes, keep the generated source in the conversation/tool-call context and submit it directly as inline `plugin_source`.
 
 When writing `plugin.py`, keep `build_signal` inputs aligned with `plugin_contract.data_columns[].python_kwarg`. Keep `FACTOR_SECTIONS` runtime code aligned with the same columns. Use each column's `csharp_double_expression` only at runtime sites where `bar` is visible, such as canonical extra-buffer enqueue snippets; inside `__FACTOR_COMPUTE_BODY__`, use `prices` and canonical extra-buffer arrays instead.
@@ -253,48 +260,34 @@ These recovery actions do not add an automatic retry loop.
 
 If `upload_backtest_wait` returns `running`, call `fm_resume_run` at most 4 times in the current request.
 
-If the run is still `running` after the fourth resume, stop waiting and treat the archive as a pending run snapshot, not a completed result. Save only files that are already true at that point, such as `plugin.py` and a redacted pending run summary. Do not fetch factor cards, PNG charts, raw parquet, or artifact manifests until a later `fm_resume_run` returns a terminal status. In the final response, clearly say the backtest is still running, artifacts are not available yet, and the user can ask to resume later. Always print the result folder path.
+If the run is still `running` after the fourth resume, stop waiting and treat the archive as a pending run snapshot, not a completed result. Save only files that are already true at that point, such as `plugin.py` and a redacted pending run summary. Do not request Result Bundle metadata or attempt ZIP delivery until a later `fm_resume_run` returns a terminal status. In the final response, clearly say the backtest is still running, the Result Bundle was not requested, and the user can ask to resume later. Always print the result folder path.
 
-### Artifact Handling
+### Result Bundle Handling
 
-Run artifact handling only after `fm_run_backtest` or `fm_resume_run` returns a terminal status such as `succeeded`, `failed`, or `cancelled`. If the run is still `running`, skip this section.
+Run bundle handling only after `fm_run_backtest` or `fm_resume_run` returns a terminal status such as `succeeded`, `failed`, or `cancelled`. If the run is still `running`, skip this section. Use the redacted terminal response for status and interpretation; do not create a second canonical `run_summary.json` outside the FM-owned ZIP.
 
-Treat the terminal response as the run summary. After a backtest reaches a terminal state, use the window-card response as the manifest for factor cards and chart files. Also request the raw signal parquet artifact when the host exposes that tool:
+For a terminal Factor run, call `fm_bundle_ticket` once with the exact canonical backtest `job_id` from the terminal response. The returned closed metadata is authoritative for the FM-owned ZIP: use its `safe_filename`, `content_type`, `size_bytes`, whole-ZIP `sha256`, `snapshot_revision`, and safe manifest. Do not reconstruct `run_summary.json`, `factor_card_is.json`, `artifact_manifest.json`, PNGs, or parquet outside the ZIP. Keep the legacy `fm_window_cards`, `fm_png_ticket`, `fm_png_chunk`, and `fm_raw_ticket` actions only for explicit single-artifact compatibility or rollback.
 
-1. Save the redacted upload/resume result as `run_summary.json`.
-2. Call `fm_window_cards` with `windows: ["is"]` and the bare backtest `job_id` from `run.run_id` or `run.job_ids[]`.
-3. Save the available returned `factor_card` to the returned `standard_local_name`: `factor_card_is.json`.
-4. For every returned `png_artifacts[].source_name`, call `fm_png_ticket`. The ticket response gives a short-lived Remote MCP download URL for the PNG bytes. Download that URL directly to the returned `standard_local_path`, then verify `size_bytes` and `md5_hex` when the response provides them.
-5. Some hosts cannot download URLs directly from tool output, and a ticket may expire before it is consumed. In that case, call `fm_png_chunk` for the same server `source_name`. Use `standard_local_path` only as the local output path. Loop with `offset=0`, `limit=262144`, decode each `content_b64` chunk, append bytes to `standard_local_path`, and stop when `next_offset` is null.
-6. Call `fm_raw_ticket` with the same bare backtest `job_id` and `name: "step4/signal_raw.parquet"`. If a ticket is returned, download it directly to `signal_raw.parquet` in the factor result folder, then verify `size_bytes` and `sha256_hex` when provided.
-7. If the raw signal parquet ticket is unavailable, expired, or the artifact is missing, record `signal_raw.parquet` as unavailable in `artifact_manifest.json` and continue. Do not treat raw parquet unavailability by itself as a failed backtest.
-8. Save `artifact_manifest.json` listing every source artifact name, local filename, local path, window key when applicable, `size_bytes`, `md5_hex` or `sha256_hex`, download status, and any omitted or unavailable reason.
+Use this URL-first delivery once per request:
+
+1. Validate `safe_filename` as a basename, require the ZIP content type, non-negative size, lowercase SHA-256, and a safe destination beneath `Quandora staging result/factor-mining/<factor_slug>/`. Never overwrite an existing verified ZIP or unrelated user file.
+2. Stream the opaque Auth `download_url` directly to `<safe_filename>.partial`, maintaining byte count and SHA-256. Do not print, log, save, edit, or reuse the URL. A transient URL failure may request one fresh `fm_bundle_ticket` and retry once; a ticket is single-use.
+3. Verify exact size and SHA-256, ZIP magic/openability, and that every ZIP entry is a safe relative path contained by the archive. Atomically rename the verified `.partial` file to `<safe_filename>`.
+
+If the URL is unavailable, blocked by local host network policy, expired, or fails after that one retry, automatically use `fm_bundle_chunk` with the same canonical `job_id` and `snapshot_revision`. This fallback uses the already-working authenticated MCP connection and requires no new host-native file sink or shell network access:
+
+1. Start at offset `0` and request at most `256 KiB` (`262144`) raw bytes per call. Decode `content_b64` without printing or logging it, append to the same task-created `.partial`, and follow only the validated `next_offset`.
+2. Enforce the 10 MiB ZIP cap and at most 40 chunk calls. Keep every response bound to the same kind, job ID, snapshot revision, filename, content type, size, and whole-object SHA. Never mix revisions or append an old partial.
+3. Require the final call to consume the empty terminal marker, then verify the assembled byte count, whole-ZIP SHA-256, ZIP magic/openability, and safe entry paths before atomic rename. On interruption or any terminal fallback failure, discard only the task-created unverified `.partial` and report that no verified ZIP was saved.
 
 Use this standard local layout:
 
 ```text
 Quandora staging result/factor-mining/<factor_slug>/
-  plugin.py
-  signal_raw.parquet
-  run_summary.json
-  factor_card_is.json
-  artifact_manifest.json
-  artifacts/
-    is/
-      group_return_plot.png
-      cs_nav_curves.png
-      cs_profile_4panel.png
+  <safe_filename>
 ```
 
-For API calls, use `png_artifacts[].source_name`; for local files, save to `png_artifacts[].standard_local_path`.
-
-The normal PNG save path is window cards -> download ticket -> local file. Chunked retrieval is the compatibility path for hosts that cannot consume the ticket URL. Keep PNG bytes out of the conversation and record the chosen save method in `artifact_manifest.json`.
-
-The raw signal save path is terminal run -> raw artifact download ticket -> `signal_raw.parquet` in the factor result folder. Keep parquet bytes out of the conversation and record the source artifact name, local filename, size, checksum, and download status in `artifact_manifest.json`.
-
-If a returned window card has `status` other than `available`, record the omitted or unavailable reason and continue. If a PNG download, chunk fetch, or raw signal download fails, record the failure in `artifact_manifest.json` without failing the completed run.
-
-Do not save bearer tokens, download URLs, raw service metadata, artifact IDs, admission IDs, credentials, or any other downstream IDs. The only exception is the current `session_id` / `run_id` local-traceability allowlist described above. If the host does not support file writes, continue the workflow and say local archiving is not available in that host.
+If bundle metadata is `pending`, `not_available`, or `integrity_failure`, preserve its safe status/reason and do not fabricate files. Do not save bearer tokens, download URLs, raw service metadata, artifact IDs, admission IDs, credentials, or any other downstream IDs. The only exception is the current `session_id` / `run_id` local-traceability allowlist described above. If the host does not support file writes, report that no local verified ZIP was saved.
 
 ### Result Insight and Optimization
 
@@ -314,36 +307,28 @@ When interpreting a result:
 
 ## Final Response
 
-Summarize status, factor name, key metrics from the IS factor card when available, and safe diagnostics if the run failed. Inspect `ok`, `status`, `terminal_status`, `failures`, sanitized job statuses, artifact availability, and factor-card metrics. Do not mention internal implementation details, and do not treat optional artifact unavailability as failure.
+Summarize status, factor name, safe diagnostics if the run failed, bundle state, and the one verified ZIP path when saved. Inspect `ok`, `status`, `terminal_status`, `failures`, sanitized job statuses, and bundle metadata. Do not mention internal implementation details or treat an optional bundle item omission recorded by FM as a failed run.
 
-Never show job IDs, download URLs, bearer tokens, raw credentials, or full `plugin.py` source in user-facing summaries. It is safe to show local result and artifact folder paths created by the current host.
+Never show job IDs, snapshot revisions, download URLs, bearer tokens, raw credentials, or full `plugin.py` source in user-facing summaries. It is safe to show the local result folder and verified ZIP path created by the current host.
 
-At the end of every completed, failed, or interrupted run, always explicitly show absolute paths for the result folder, artifact folder, PNG chart folder, `plugin.py`, `run_summary.json`, `factor_card_is.json`, and `artifact_manifest.json`. If a specific file was not created, say `not created` for that line. Still print the result folder if available.
+At the end of every completed, failed, or interrupted run, show the result folder, the verified Result Bundle ZIP when saved, and `run_summary.json` when it was saved. If the ZIP could not be saved, say so accurately. Never show job IDs, snapshot revisions, download URLs, tickets, credentials, or bundle base64.
 
 For GUI/Desktop hosts, use Markdown links with absolute local paths and angle-bracket link targets so paths with spaces work:
 
 Result folder: [Open result folder](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/>)
-Artifact folder: [Open artifact folder](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/artifacts/>)
-PNG chart folder: [Open PNG chart folder](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/artifacts/is/>)
-Plugin source: [plugin.py](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/plugin.py>)
+Result Bundle ZIP: [verified ZIP](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/<safe_filename>)
 Run summary: [run_summary.json](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/run_summary.json>)
-IS factor card: [factor_card_is.json](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/factor_card_is.json>)
-Artifact manifest: [artifact_manifest.json](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/artifact_manifest.json>)
 
 For CLI/TUI hosts, use plain absolute paths, not Markdown links:
 
 Result folder: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/
-Artifact folder: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/artifacts/
-PNG chart folder: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/artifacts/is/
-Plugin source: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/plugin.py
+Result Bundle ZIP: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/<safe_filename>
 Run summary: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/run_summary.json
-IS factor card: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/factor_card_is.json
-Artifact manifest: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/artifact_manifest.json
 
 If the host could not write files, print:
 
 Result folder: not available in this host
-Artifact folder: not available in this host
+Result Bundle ZIP: not available in this host
 
 ## plugin.py Contract
 
@@ -403,13 +388,13 @@ Return a float `pd.DataFrame` aligned with `close`, use only current and histori
 
 ## Security
 
-- Use only Quandora actions for formal product workflows, except for consuming a short-lived artifact URL returned by a Factor Mining download-ticket action exactly once.
+- Use only Quandora actions for formal product workflows, except for consuming a short-lived opaque Result Bundle URL returned by `fm_bundle_ticket` exactly once.
 - Never ask for API keys, auth files, user credentials, local execution keys, `vt_` keys, bearer tokens, or service tokens.
 - Never print, persist in logs, or summarize full credential values.
 - Do not call hosted generation endpoints; the active agent generates factor source in its current host session.
-- Do not call internal service URLs or generic URL/API surfaces, and never construct a download URL. The returned Remote MCP artifact-ticket URL is the sole direct-download exception.
+- Do not call internal service URLs or generic URL/API surfaces, and never construct a download URL. The returned Remote MCP Result Bundle URL is the sole direct-download exception.
 - Do not import, exec, eval, or otherwise execute generated `plugin.py`.
 - Do not submit filesystem paths instead of inline `plugin_source`.
 - Do not print generated `plugin.py` source in summaries.
 - Treat downstream IDs, download URLs, and service metadata as private.
-- Unavailable artifacts should be recorded in `artifact_manifest.json`. Authentication, authorization, network, malformed response, and server errors must fail clearly with redacted messages.
+- Bundle states and safe reason codes are authoritative. Authentication, authorization, network, malformed response, and server errors must fail clearly with redacted messages.
