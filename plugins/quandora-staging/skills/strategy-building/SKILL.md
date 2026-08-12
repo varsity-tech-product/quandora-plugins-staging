@@ -13,25 +13,18 @@ OAuth and all credentials are handled by the host. Quandora access tokens expire
 
 ## Connection and Tools
 
-Before starting, confirm that the Quandora Staging connection is authenticated and that the actions
-needed for the requested path are visible:
+Before starting, confirm that the Quandora Staging connection is authenticated and check only the
+actions needed for the requested path. A normal list, composition, submit, observe, and Result
+Bundle workflow uses the relevant subset of `sb_get_contract`, `sb_list_eligible`,
+`sb_factor_detail`, `sb_shared_list`, `sb_shared_add`, `sb_submit_run`, `sb_get_run`,
+`sb_resume_run`, `sb_bundle_ticket`, and `sb_bundle_chunk`. `sb_get_artifact` and `sb_file_ticket`
+remain legacy single-artifact compatibility actions. Use `qd_get_guidance` only for one of the
+documented guidance branches below.
 
-1. `sb_get_contract`
-2. `sb_list_eligible`
-3. `sb_factor_detail`
-4. `sb_shared_list`
-5. `sb_shared_add`
-6. `sb_import_factor`
-7. `sb_submit_run`
-8. `sb_get_run`
-9. `sb_resume_run`
-10. `sb_bundle_ticket`
-11. `sb_bundle_chunk`
-12. `sb_get_artifact` (legacy single-artifact compatibility)
-13. `sb_file_ticket` (legacy single-artifact compatibility)
-14. `fm_custom_sess`
-15. `fm_resume_run`
-16. `qd_get_guidance`
+The normal Strategy workflow must not require or call `sb_import_factor`. Import-only actions are
+not global prerequisites, and an ordinary Strategy task must continue when they are absent. Check
+import-only tool availability only after the explicit user-supplied-file branch below has been
+selected.
 
 Some hosts prefix action names with the server name, such as
 `quandora_staging__sb_submit_run`; treat those as the same actions.
@@ -173,43 +166,43 @@ then call `sb_list_eligible` with `include_factor_ids` containing exactly the ne
 admitted `factor_id`. Do not submit a Strategy unless that exact id is returned as currently
 eligible.
 
-#### Import
+#### Agent-mined or Agent-authored Factor Selection
 
-Import only complete inline `plugin.py` source. Reuse a real existing Factor Mining `session_id`, or
-create the appropriate custom session with `fm_custom_sess` using its exposed
-schema. Call `sb_import_factor` with only schema-declared arguments. If import semantics are
-needed, call `qd_get_guidance` with the known guide id
-`operation.strategy.factor.import` without `sections`, and include `if_guide_revision` only when
-revalidating an available prior revision. This is a capability-only guide.
+An agent mined or authored factor always follows the canonical eligible-factor inventory; it must
+never call `sb_import_factor`. This includes `plugin.py` found inside an FM-owned Result Bundle,
+which must not be re-imported.
 
-The minimum legal import request uses the Auth/PB defaults `filename="plugin.py"` and
-`params_json="{}"` by omitting those two optional fields:
+- If the exact canonical factor id returned by the mining workflow is already known, make the
+  supported `sb_list_eligible` query for that exact id and require that exact row.
+- If only the exact returned factor name is known, make one bounded eligible-list query and require
+  one unique exact-name match. Do not use fuzzy name inference, partial matching, or a locally
+  cached guess.
+- If the exact factor is not returned as eligible, stop and report that state. In particular, do
+  not read its bundle or import its source as a workaround.
 
-```json
-{
-  "session_id": "<session_id>",
-  "plugin_source": "<complete inline plugin.py source>",
-  "factor_type": "<factor_type>",
-  "factor_name": "<factor_name>",
-  "fwd_period": 7
-}
-```
+#### User-supplied External Import
 
-If `params_json` is explicit, it is a string that parses as a finite JSON object, for example
-`"{}"`; never send a `params` object or mix `params` with `params_json`. If `filename` is explicit,
-send the non-empty source filename. Never send `Idempotency-Key`, `Actor.idempotency_key`, or
-`idempotency_key`; Auth supplies the transport identity. For Guidance, the PB-owned
-`mcp_invocation` metadata is the request-shape authority and upstream service-level sections are
-semantic background only.
+Import is permitted only when all of these facts are true: the user explicitly supplied or
+attached a complete `plugin.py`; the agent did not write or mine that file; the user explicitly
+asked to use that supplied file in Strategy Building; and the current host exposes
+`sb_import_factor` and its current schema. Otherwise stay on the normal eligible-factor path.
 
-Use only real lifecycle identifiers returned by `sb_import_factor`. If `next_action` requires
-resume, require the canonical returned `run_id` for `fm_resume_run` and follow the Factor
-Mining bounded policy of at most four resumes in the current request. Treat a returned
-`backtest_job_id` as lifecycle evidence only; if `run_id` is absent, stop rather than substitute or
-map that value. Do not invent an id mapping or add an import-status poller. Whether the factor was
-newly verified or reused, call `sb_list_eligible` with
-`include_factor_ids` containing exactly its returned factor id. Never submit a Strategy until that
-exact id appears in the current eligible list.
+Only after this branch is selected, inspect the currently exposed schemas for `sb_import_factor`
+and any Factor Mining session action it requires. Call only schema-declared arguments; do not copy
+a backend request schema into this skill. If import semantics are needed, use the approved
+`operation.strategy.factor.import` guidance and its current invocation boundary.
+
+Before import, require a real current-owner `session_id` returned during the current workflow.
+Never derive or guess a session id from a path, filename, factor name, job id, run id, Result
+Bundle, or conversation history. If no session exists, follow the Factor Mining skill's existing
+custom-session setup through the current exposed contracts to obtain one, or stop if that
+prerequisite cannot be completed.
+
+Use only real lifecycle identifiers returned by `sb_import_factor`. If its current response says
+to resume, use only the exact returned run identifier with the current Factor Mining bounded resume
+policy; never substitute another identifier or add an import poller. After import or resume,
+require the exact returned factor to appear in the canonical eligible-factor inventory before
+using it. Never submit a Strategy until that exact factor is returned as currently eligible.
 
 #### Agent Selection
 
@@ -310,152 +303,86 @@ Do not infer a source-code repair from a diagnostic and do not automatically res
 
 ### 3. Save the Strategy Result Bundle
 
-After the Strategy main run is terminal and archive state permits bundle metadata: issue one initial `sb_bundle_ticket` with the exact public `result.run.id`. Pass that public PB run handle unchanged to `sb_bundle_ticket` and `sb_bundle_chunk`; never substitute `fmRunId` or any hidden upstream selector. The returned closed metadata and safe manifest are authoritative for the FM-owned Strategy ZIP, including the current 22-name registry, partial/unavailable items, and unsafe text omissions. Do not loop over artifact names, issue one ticket per file, or recreate canonical files outside the ZIP. Keep `sb_get_artifact` and `sb_file_ticket` only for explicit single-artifact compatibility or rollback.
+After the Strategy main run is terminal and archive state permits bundle metadata, issue one initial
+`sb_bundle_ticket` with the exact public `result.run.id`. Pass that public PB run handle unchanged
+to `sb_bundle_ticket` and `sb_bundle_chunk`; never substitute `fmRunId` or any hidden upstream
+selector. The returned closed metadata and runtime manifest are authoritative for the immutable
+FM-owned ZIP. Treat both `available` and a persisted readable `partial` response as downloadable.
+No individual artifact is a prerequisite, and an optional item that remains unsynchronized must
+not block a readable partial. Never hardcode an artifact registry or count.
+
+Validate the server-provided `safe_filename` as a basename and bind it consistently across the
+selected ticket and every chunk response. It is transport metadata only and never determines the
+local display filename. Likewise bind the bundle kind, public selector, snapshot revision, content
+type, size, whole-ZIP SHA-256, and runtime manifest according to the existing closed response
+contract.
+
+Apply this one optional freshness step before downloading:
+
+1. If the initial ticket is persisted readable `partial` and its runtime manifest reports one or
+   more items with a pending status, wait at most 10 seconds with a short host-native wait or timer.
+   Then issue exactly one fresh current `sb_bundle_ticket` with the same public selector and
+   without `snapshot_revision`. Never loop or poll for freshness.
+2. Do not consume, reuse, display, or log the superseded ticket URL; let it expire naturally. If
+   the refresh returns a valid readable newer snapshot, select that response. If it has a transient
+   transport failure, retain the initial valid readable partial. If it is a malformed contract
+   response, fail closed instead of masking it.
+3. If the selected response remains readable `partial`, download it normally, state clearly that
+   the snapshot is partial, and report the exact runtime omissions and pending reasons from its
+   selected manifest. If the initial partial reports no pending item, do not wait or refresh. A
+   later independent user request may obtain a newer current snapshot after synchronization.
+
+This optional freshness refresh is separate from the URL-delivery retry below and does not consume
+that retry. Do not use legacy per-file tools to fill an omitted item or rebuild the selected
+immutable ZIP. Do not loop over artifact names or issue one ticket per file. Keep
+`sb_get_artifact` and `sb_file_ticket` only for a user request that explicitly asks for one
+compatibility artifact; they are not bundle-completion tools.
 
 Use this URL-first delivery once per request:
 
-1. Validate `safe_filename` as a basename, require ZIP content type, non-negative size, lowercase SHA-256, and a safe destination beneath `Quandora staging result/strategy/<strategy_slug>/`. Never overwrite an existing verified ZIP or unrelated user file.
-2. Stream the opaque Auth `download_url` directly to `<safe_filename>.partial`, maintaining byte count and SHA-256. Do not print, log, save, edit, or reuse the URL. Retry rule: after one transient URL failure, at most one fresh ticket may be issued for one retry; after that failure, move to MCP fallback; never reuse a single-use URL/ticket.
-3. Verify exact size and SHA-256, ZIP magic/openability, and safe relative ZIP entry paths, then atomically rename the verified `.partial` to `<safe_filename>`.
+1. Require ZIP content type, non-negative size, lowercase SHA-256, and the exact safe local
+   destination `Quandora staging/<strategy_slug>.zip`. Write only to
+   `Quandora staging/<strategy_slug>.zip.partial` until verification finishes. If the final path
+   already contains unrelated bytes or cannot be proven to match the selected ZIP, do not
+   overwrite it silently: tell the user and use a different safe user-facing slug chosen with the
+   user, never an internal backend identifier.
+2. Stream the opaque Auth `download_url` directly to the task-created `.partial`, maintaining byte
+   count and SHA-256. Do not print, log, save, edit, or reuse the URL. Retry rule: after one transient
+   URL failure, at most one fresh ticket may be issued for one retry; after that failure, move to
+   MCP fallback; never reuse a single-use URL/ticket.
+3. Verify exact size and SHA-256, ZIP magic/openability, and safe relative ZIP entry paths, then
+   atomically rename the verified `.partial` to `Quandora staging/<strategy_slug>.zip`.
 
 If the URL is unavailable, blocked by local host network policy, expired, or fails after that one retry, automatically use `sb_bundle_chunk` with the same exact public `result.run.id` and `snapshot_revision`. The fallback uses the already-working authenticated MCP connection and requires no new host-native file sink or shell network access. Start at offset `0`, request at most `262,144` raw bytes per call, decode `content_b64` without printing or logging it, append to the same task-created `.partial`, and follow only validated `next_offset`. Enforce the 10 MiB ZIP cap and at most 40 chunk calls. PB's `terminal: true` means PB consumed and validated FM's empty upstream final marker; it is the terminal continuation response, so there is no second public empty chunk to request. Require that terminal response and exact size/whole-ZIP SHA-256 before ZIP/path verification and atomic rename. Never mix revisions or append an old partial; on interruption or terminal fallback failure discard only the unverified task-created `.partial` and report that no verified ZIP was saved.
 
 If bundle metadata is `pending`, `not_available`, or `integrity_failure`, stop before URL/chunk/file creation: no URL, no chunk, no fabricated file. Preserve its safe status/reason and do not invent a completed bundle.
 
+Preserve the verified ZIP as the canonical local output. Do not automatically extract the ZIP,
+delete it, re-ZIP it, or reconstruct a replacement archive from individual files. Do not modify ZIP
+entry timestamps: deterministic entry timestamps belong to the FM-owned archive, and the agent must
+not rebuild the ZIP to change how a file browser displays them.
+
 ## Local Result Destination
 
-Do not assemble a separate local archive of individual files for the strategy. When the host can write local files,
-create only the deterministic destination slug for the FM-owned Result Bundle ZIP.
-Build its local-only `<strategy_slug>` only after the selected eligible factors and final
-`sb_submit_run` parameters are known. Use the actual display names returned for the selected
-eligible factors; never invent factor labels.
+Do not assemble a separate local archive or extracted directory for the strategy. Build
+`<strategy_slug>` only from the current user-facing submitted Strategy name, whether user-supplied
+or generated: lowercase it, replace each run of non-`[a-z0-9]` characters with one underscore,
+trim outer underscores, truncate it to at most 48 characters, and use `strategy` if the result is
+empty. The slug must not contain a backend UUID, factor id, internal selector, snapshot revision,
+remote filename prefix, fingerprint, or path separator.
 
-Normalize each readable name to a lowercase ASCII filesystem slug by replacing each run of
-non-`[a-z0-9]` characters with one underscore and trimming outer underscores. Truncate every
-readable slug segment to at most 48 characters after normalization. Use one selected factor-name
-slug when one factor is submitted, or the first two selected factor-name slugs in final submission
-order when multiple factors are submitted. If a selected factor display name normalizes to an empty
-slug, use `factor_1` or `factor_2` according to its displayed folder position. Never use a factor id
-as a readable slug or place one anywhere in the visible directory name.
-
-Create exactly this local-only fingerprint descriptor:
-
-```json
-{
-  "submit_payload": <canonical semantic copy of the exact final sb_submit_run payload>,
-  "contract_revision": "<exact contract.contract_revision>",
-  "effective_profile": {
-    "weighting": <canonical weighting object>,
-    "ranking": <resolved ranking object>,
-    "strategy_type": "<resolved value>",
-    "start_date": "<resolved value>",
-    "end_date": {"value": "<exact explicit end_date>", "source": "caller"},
-    "initial_cash": <resolved value>,
-    "taker_fee_rate": <resolved value>,
-    "maker_fee_rate": <resolved value>,
-    "rebalance_bars": <resolved value>,
-    "attribution": <resolved value>
-  }
-}
-```
-
-`submit_payload` contains exactly the fields and semantic values sent to `sb_submit_run`; it
-must not gain omitted Product defaults. Copy `contract_revision` exactly from the single
-`sb_get_contract` response used for this operation. For every effective-profile field except
-`end_date`, use the validated explicit submit value when present and the corresponding
-`product_defaults` value when omitted. For an explicit `end_date`, preserve the exact submitted
-string as the `value` with `source: "caller"`. When `end_date` is omitted, use exactly
-`{"value": null, "source": "factor_mining_latest_data_default"}`. Never invent or resolve a
-calendar date locally. This marker is local-only: never send it to `sb_submit_run`, and it must not
-alter the PB request hash, FM request, run window, or result.
-
-When `factor_ids` is submitted, use exactly this effective weighting:
-
-```json
-{
-  "mode": "equal"
-}
-```
-
-When `factor_weights` is submitted, preserve every validated factor id and weight in exactly this
-effective weighting shape:
-
-```json
-{
-  "mode": "custom",
-  "factor_weights": [
-    {
-      "factor_id": "<exact factor id>",
-      "weight": <exact validated weight>
-    }
-  ]
-}
-```
-
-Canonicalize only a local hashing copy as follows; none of these operations may alter the payload
-sent to the MCP tool:
-
-- Recursively sort all JSON object keys lexicographically.
-- Sort `submit_payload.factor_ids` by the factor-id string in ascending lexical order.
-- Sort `submit_payload.factor_weights` by `item.factor_id` in ascending lexical order.
-- Sort `effective_profile.weighting.factor_weights` by `item.factor_id` in ascending lexical order.
-- Do not reorder unrelated arrays. Preserve strings and booleans exactly.
-- Reject non-finite numeric values before fingerprinting. Treat each finite numeric leaf as an exact
-  decimal value and encode it as a canonical plain-decimal JSON number: no leading plus sign; no
-  exponent notation; no redundant leading zeros; no redundant trailing fractional zeros. Normalize
-  an integral value such as `5.0` to `5`, and normalize negative zero to `0`.
-- Encode the canonical descriptor as compact UTF-8 JSON with no insignificant whitespace. Hash
-  those exact bytes with SHA-256 and use the first 16 lowercase hexadecimal characters as
-  `<fingerprint>`.
-
-The descriptor, effective profile, resolved Product defaults, and contract revision exist only for
-local fingerprinting. Never send them to `sb_submit_run`, never pass `contract_revision` as a
-tool argument, and never add `weighting`, a resolved default, or `contract_revision` to the actual
-request. Factor ids remain in the hashed descriptor but never appear in the visible directory name,
-a user-facing path, or a user-facing summary. Beyond the required contract revision and selector
-factor ids, never include credentials, OAuth material, URLs, source code, internal filesystem paths,
-run ids, or other internal identifiers in the fingerprint descriptor.
-
-The same final payload, contract revision, and effective profile must produce the same fingerprint
-across agents and hosts. A changed factor selection, custom weight, explicit option, resolved
-Product default, or contract revision must change it. Reordering `factor_ids`, reordering either
-factor-weights array, changing JSON object-key order, or representing an integral number as `5`
-instead of `5.0` must not change it. Explicitly supplying a value and omitting it may produce
-different fingerprints even when both resolve to the same effective behavior because the exact
-final submit payload is part of the descriptor. These local rules do not change any server request
-or remote behavior.
-
-Use this folder-name format:
+The only canonical completed local path is:
 
 ```text
-<strategy_name_slug>__<factor_slug_1>__<factor_slug_2>__<fingerprint>
+Quandora staging/<strategy_slug>.zip
 ```
 
-Build `<strategy_name_slug>` from the final submitted `name`, whether user-supplied or generated,
-and truncate it to at most 48 characters. For a one-factor strategy, omit the `<factor_slug_2>`
-segment.
-
-Bound the complete `<strategy_slug>` directory component to at most 180 ASCII characters. If
-additional truncation is necessary after composing it, remove trailing characters from the leading
-strategy segment first, then `<factor_slug_2>`, then `<factor_slug_1>`, trimming any newly exposed
-outer underscores and preserving at least one character in each displayed segment. Preserve the
-complete final `__<fingerprint>` suffix unchanged. Reuse an existing deterministic directory only
-when both the final payload and effective contract context are unchanged.
-
-The slug is a local destination label only. Do not send it in an action request. Use it only in the
-Result Bundle folder and the user-facing local path.
-
-```text
-Quandora staging result/
-  strategy/
-    <strategy_slug>/
-      <safe_filename>
-```
-
-For a non-terminal or archive-pending run, preserve the existing redacted run-summary behavior
-when local writes are available. For a completed run, the FM-owned ZIP is authoritative and no
-second canonical `run_summary.json` is written beside it. Never place a ticket, URL, internal host,
-storage reference, credential, or bundle bytes in local metadata or user-facing output.
+The slug is a local presentation label only and must not be sent in an action request. For a
+non-terminal or archive-pending run, preserve the existing redacted run-summary behavior in the
+normal authoring workspace when local writes are available. For a completed run, the FM-owned ZIP
+is authoritative and no second canonical `run_summary.json` is written beside it. Never place a
+ticket, URL, internal host, storage reference, credential, or bundle bytes in local metadata or
+user-facing output.
 
 ## Final Response
 
@@ -463,6 +390,9 @@ State the submitted strategy name and whether it was user-supplied or factor-awa
 the main-run status, archive status, safe diagnostics, and the one verified Result Bundle ZIP path
 when saved. If it was not saved, say so accurately; do not print large artifact bodies or describe a
 manually assembled archive.
+
+For a selected partial snapshot, state that it is partial and report the exact omissions and pending
+reasons from the runtime manifest without claiming completeness.
 
 Never show run ids, download URLs, credentials, secret material, or internal service metadata in a
 user-facing summary.
@@ -472,23 +402,27 @@ server-side run remains in progress and can be resumed later. State that termina
 observation and bundle retrieval were not started, and do not state that results or bundles are
 available.
 
-At the end of every completed, failed, or interrupted run, show the result folder and the verified Result Bundle ZIP when saved. For a non-terminal or archive-pending run, show `run_summary.json` only when that pending summary was saved. For a completed run, FM-owned ZIP is the only canonical completed-result archive; never create a second completed-result `run_summary.json` beside it. If a specific file was not created, say `not created`. Never show run IDs, snapshot revisions, tickets, download URLs, credentials, or bundle base64.
+At the end of every completed, failed, or interrupted run, show the `Quandora staging/` folder and
+the exact `Quandora staging/<strategy_slug>.zip` path when the ZIP was saved. For a non-terminal or
+archive-pending run, mention `run_summary.json` only when the normal authoring workflow saved that
+pending summary. For a completed run, the FM-owned ZIP is the only canonical completed-result
+archive; never create a second completed-result `run_summary.json` beside it. If a specific file was
+not created, say `not created`. Never show run IDs, snapshot revisions, tickets, download URLs,
+credentials, or bundle base64.
 
 For Desktop or GUI hosts, use Markdown links with absolute local paths and angle-bracket link
 targets so paths with spaces work:
 
 ```text
-Result folder: [Open result folder](</absolute/path/to/Quandora staging result/strategy/<strategy_slug>/>)
-Result Bundle ZIP: [verified ZIP](</absolute/path/to/Quandora staging result/strategy/<strategy_slug>/<safe_filename>)
-Pending run summary: [run_summary.json](</absolute/path/to/Quandora staging result/strategy/<strategy_slug>/run_summary.json>) when saved
+Result folder: [Open result folder](</absolute/path/to/Quandora staging/>)
+Result Bundle ZIP: [verified ZIP](</absolute/path/to/Quandora staging/<strategy_slug>.zip>)
 ```
 
 For CLI or TUI hosts, use the same absolute paths as plain text, not Markdown links:
 
 ```text
-Result folder: /absolute/path/to/Quandora staging result/strategy/<strategy_slug>/
-Result Bundle ZIP: /absolute/path/to/Quandora staging result/strategy/<strategy_slug>/<safe_filename>
-Pending run summary: /absolute/path/to/Quandora staging result/strategy/<strategy_slug>/run_summary.json when saved
+Result folder: /absolute/path/to/Quandora staging/
+Result Bundle ZIP: /absolute/path/to/Quandora staging/<strategy_slug>.zip
 ```
 
 If the host cannot write files, state:

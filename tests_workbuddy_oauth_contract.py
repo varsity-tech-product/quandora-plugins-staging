@@ -6,7 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 MACOS_HELPER = ROOT / "plugins/quandora-staging/scripts/workbuddy-mcp-login-macos.sh"
 WINDOWS_HELPER = ROOT / "plugins/quandora-staging/scripts/workbuddy-mcp-login-windows.ps1"
-EXPECTED_VERSION = "1.0.8-staging.40"
+EXPECTED_VERSION = "1.0.8-staging.41"
 
 
 def test_workbuddy_oauth_readiness_is_not_pinned_to_backend_tool_count():
