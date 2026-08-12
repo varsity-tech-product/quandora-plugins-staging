@@ -166,21 +166,14 @@ try {
     for ($attempt = 0; $attempt -lt 30; $attempt++) {
         try {
             $state = Get-McpState
-            if ($state.name -eq $mcpName -and $state.status -eq 'connected' -and -not $state.needsAuth -and $state.toolsCount -eq 27) {
+            if ($state.name -eq $mcpName -and $state.status -eq 'connected' -and -not $state.needsAuth) {
                 $ready = $true
                 $alreadyAuthorized = $true
                 break
             }
-            if ($state.name -eq $mcpName -and $state.status -ne 'disconnected') {
-                if ($state.toolsCount -eq 27 -and $attempt -lt 10) {
-                    Start-Sleep -Seconds 1
-                    continue
-                }
-                if (($state.toolsCount -eq 27 -and -not $state.needsAuth) -or $state.needsAuth -or $attempt -ge 10) {
-                    $ready = $true
-                    $alreadyAuthorized = $state.toolsCount -eq 27 -and -not $state.needsAuth
-                    break
-                }
+            if ($state.name -eq $mcpName -and $state.status -ne 'disconnected' -and $state.needsAuth) {
+                $ready = $true
+                break
             }
         }
         catch {
@@ -207,9 +200,16 @@ try {
     if ($authorization.PSObject.Properties.Name -contains 'error') {
         $authorizationError = [string]$authorization.error
     }
-    if ($authorizationError -eq 'No authorization URL available. Server may not require OAuth or connection attempt has not been made yet.' -and $state.toolsCount -eq 27) {
-        Write-State -Status 'native_ready' -ToolsCount 27 -NeedsAuth $false -ExitCode 0
-        exit 0
+    if ($authorizationError -eq 'No authorization URL available. Server may not require OAuth or connection attempt has not been made yet.') {
+        try {
+            $state = Get-McpState
+            if ($state.name -eq $mcpName -and $state.status -eq 'connected' -and -not $state.needsAuth) {
+                Write-State -Status 'native_ready' -ToolsCount $state.toolsCount -NeedsAuth $false -ExitCode 0
+                exit 0
+            }
+        }
+        catch {
+        }
     }
 
     $authorizationUrl = ''
@@ -234,8 +234,8 @@ try {
     for ($attempt = 0; $attempt -lt 300; $attempt++) {
         try {
             $state = Get-McpState
-            if ($state.status -eq 'connected' -and -not $state.needsAuth -and $state.toolsCount -eq 27) {
-                Write-State -Status 'completed' -ToolsCount 27 -NeedsAuth $false -ExitCode 0
+            if ($state.name -eq $mcpName -and $state.status -eq 'connected' -and -not $state.needsAuth) {
+                Write-State -Status 'completed' -ToolsCount $state.toolsCount -NeedsAuth $false -ExitCode 0
                 exit 0
             }
         }

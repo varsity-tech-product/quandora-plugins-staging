@@ -123,28 +123,15 @@ while [ "$attempt" -lt 30 ]; do
   connection_status=$(printf '%s' "$status_json" | /usr/bin/plutil -extract status raw -o - - 2>/dev/null || printf '')
   needs_auth=$(printf '%s' "$status_json" | /usr/bin/plutil -extract needsAuth raw -o - - 2>/dev/null || printf 'null')
   if [ "$server_name" = "$MCP_NAME" ] && [ "$needs_auth" = 'false' ] && \
-     [ "$connection_status" = 'connected' ] && [ "$tools_count" -eq 27 ]; then
+     [ "$connection_status" = 'connected' ]; then
     ready=1
     already_authorized=1
     break
   fi
-  if [ "$server_name" = "$MCP_NAME" ] && [ "$connection_status" != 'disconnected' ]; then
-    if [ "$tools_count" -eq 27 ]; then
-      if [ "$attempt" -lt 10 ]; then
-        attempt=$((attempt + 1))
-        sleep 1
-        continue
-      fi
-      if [ "$needs_auth" != 'true' ]; then
-        ready=1
-        already_authorized=1
-        break
-      fi
-    fi
-    if [ "$needs_auth" = 'true' ] || [ "$attempt" -ge 10 ]; then
-      ready=1
-      break
-    fi
+  if [ "$server_name" = "$MCP_NAME" ] && [ "$connection_status" != 'disconnected' ] && \
+     [ "$needs_auth" = 'true' ]; then
+    ready=1
+    break
   fi
   if ! /bin/kill -0 "$host_pid" 2>/dev/null; then
     write_status 'host_failed' "$tools_count" "$needs_auth" 70
@@ -174,9 +161,20 @@ if ! authorization_json=$(/usr/bin/curl -fsS --max-time 10 \
   exit 69
 fi
 authorization_error=$(printf '%s' "$authorization_json" | /usr/bin/plutil -extract error raw -o - - 2>/dev/null || printf '')
-if [ "$authorization_error" = 'No authorization URL available. Server may not require OAuth or connection attempt has not been made yet.' ] && [ "$tools_count" -eq 27 ]; then
-  write_status 'native_ready' "$tools_count" false 0
-  exit 0
+if [ "$authorization_error" = 'No authorization URL available. Server may not require OAuth or connection attempt has not been made yet.' ]; then
+  status_json=$(/usr/bin/curl -fsS --max-time 3 \
+    -H 'x-codebuddy-request: 1' \
+    -H 'Content-Type: application/json' \
+    -d '{"name":"quandora-staging"}' \
+    "http://127.0.0.1:$OAUTH_PORT/internal/mcp/status" 2>/dev/null || true)
+  server_name=$(printf '%s' "$status_json" | /usr/bin/plutil -extract name raw -o - - 2>/dev/null || printf '')
+  connection_status=$(printf '%s' "$status_json" | /usr/bin/plutil -extract status raw -o - - 2>/dev/null || printf '')
+  needs_auth=$(printf '%s' "$status_json" | /usr/bin/plutil -extract needsAuth raw -o - - 2>/dev/null || printf 'null')
+  if [ "$server_name" = "$MCP_NAME" ] && [ "$connection_status" = 'connected' ] && \
+     [ "$needs_auth" = 'false' ]; then
+    write_status 'native_ready' "$tools_count" false 0
+    exit 0
+  fi
 fi
 if ! authorization_url=$(printf '%s' "$authorization_json" | /usr/bin/plutil -extract authorizationUrl raw -o - - 2>/dev/null); then
   write_status 'oauth_response_invalid' "$tools_count" true 65
@@ -205,6 +203,7 @@ while [ "$attempt" -lt 300 ]; do
     "http://127.0.0.1:$OAUTH_PORT/internal/mcp/status" 2>/dev/null || true)
   needs_auth=$(printf '%s' "$status_json" | /usr/bin/plutil -extract needsAuth raw -o - - 2>/dev/null || printf 'null')
   connection_status=$(printf '%s' "$status_json" | /usr/bin/plutil -extract status raw -o - - 2>/dev/null || printf '')
+  server_name=$(printf '%s' "$status_json" | /usr/bin/plutil -extract name raw -o - - 2>/dev/null || printf '')
   tools_json=$(/usr/bin/curl -fsS --max-time 3 \
     -H 'x-codebuddy-request: 1' \
     -H 'Content-Type: application/json' \
@@ -214,7 +213,8 @@ while [ "$attempt" -lt 300 ]; do
   while printf '%s' "$tools_json" | /usr/bin/plutil -extract "$tools_count.name" raw -o - - >/dev/null 2>&1; do
     tools_count=$((tools_count + 1))
   done
-  if [ "$needs_auth" = 'false' ] && [ "$connection_status" = 'connected' ] && [ "$tools_count" -eq 27 ]; then
+  if [ "$server_name" = "$MCP_NAME" ] && [ "$needs_auth" = 'false' ] && \
+     [ "$connection_status" = 'connected' ]; then
     write_status 'completed' "$tools_count" false 0
     exit 0
   fi
