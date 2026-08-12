@@ -102,7 +102,7 @@ Quandora Staging Plugins is the public marketplace for testing Quandora agent in
 quandora-staging@quandora-staging
 ```
 
-Quandora Staging Factor Mining lets local agents create `plugin.py`, submit it through the authenticated staging Quandora connection, run a backtest, retrieve available factor cards and chart artifacts, and save the run files in the local workspace.
+Quandora Staging Factor Mining lets local agents create `plugin.py`, submit it through the authenticated staging Quandora connection, run a backtest, and save one verified FM-owned Result Bundle ZIP in the local workspace.
 
 ## Install
 
@@ -263,7 +263,7 @@ When the host supports local files, each run is saved under a stable folder name
 Quandora staging result/factor-mining/aggressive_flow_exhaustion_reversal/
 ```
 
-The run folder contains the submitted `plugin.py`, a redacted `run_summary.json`, `factor_card_is.json` when available, `artifact_manifest.json`, and PNG charts under `artifacts/is/`. The agent prints the result, artifact, and chart folder paths at the end of each run.
+The run folder contains the verified FM-owned Result Bundle ZIP, with the submitted source and redacted run summary retained only when the host workflow saves them separately. The agent prints the result folder and one verified ZIP path at the end of each run. The ZIP manifest remains authoritative for available, partial, and omitted bundle items.
 
 ## Use Strategy Building
 
