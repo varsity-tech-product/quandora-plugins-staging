@@ -5,11 +5,28 @@ description: Use when the user explicitly asks about caller-owned or reusable Fa
 
 # Quandora Staging Factor Mining
 
+Bundled plugin version: 1.0.8-staging.42
+
 Use this skill to run Factor Mining through the authenticated Quandora Staging connection exposed by the host as `quandora-staging`.
 
 The agent drafts a valid Factor Mining `plugin.py`, submits the complete source inline, waits for the backtest result, saves one verified FM-owned Result Bundle ZIP when the host allows it, and summarizes the outcome.
 
-OAuth and all credentials are handled by the host. Quandora access tokens expire after one hour, and the host MCP client should use its stored rotating refresh token automatically. Never inspect, print, copy, store, or ask the user to paste API keys, bearer tokens, authorization codes, access tokens, refresh tokens, PKCE verifiers, service tokens, or other credentials.
+OAuth and all credentials are handled by the host. Quandora access tokens expire after 24 hours, and the host MCP client should use its stored rotating refresh token automatically. Never inspect, print, copy, store, or ask the user to paste API keys, bearer tokens, authorization codes, access tokens, refresh tokens, PKCE verifiers, service tokens, or other credentials.
+
+## Plugin Version Reminder
+
+On the first entry into any Quandora skill in the current conversation, if the conversation history does not already contain one successful `qd_check_plugin_version` call and no earlier version-check attempt has occurred, call it once before the business entry point. Pass the bundled plugin version declared by the current skill verbatim as `installed_version`; never infer it from memory, the remote latest version, or the host name.
+
+- If `update_available=false`, continue silently.
+- If `update_available=true`, tell the user only: `The latest Quandora plugin version is <latest_version>. Please update the plugin.` Then continue the user's original request.
+- If `qd_check_plugin_version` is missing, invisible, or fails, do not report that the plugin is outdated, do not retry the check anywhere later in the current conversation, and continue the original request without a version message or any change to the business workflow. OAuth or connection failures continue through the existing safe connection-handling path; never bypass MCP with raw HTTP.
+- Never install, update, uninstall, or reload a plugin; execute an update command; ask whether to update; start OAuth or reauthorize because of the version result; provide platform-specific instructions; or delay the original request.
+- A later entry into Factor Mining or Strategy Building in the same conversation recognizes the prior successful version check and does not call it or remind again.
+- Treat `qd_check_plugin_version` as optional for connection readiness. Its absence alone never triggers connection recovery or changes the required business-tool set.
+
+The version check is not a business action. For a normal Factor Mining workflow, check first when required above and then call `fm_status` under the existing rules. For a bare Strategy factor-list request, check first when required and then make the one business call `sb_list_eligible`. For Strategy composition, check first when required and then call `sb_get_contract` under the existing rules. All other exact call-count, pagination, and mutation constraints remain unchanged.
+
+<!-- end-plugin-version-reminder -->
 
 If the required Quandora Staging tools are visible, continue automatically. If they are not visible, tell the user to update or reinstall the current staging plugin, then use the host's normal Quandora Staging reconnect and browser re-authorization path before stopping:
 
@@ -20,7 +37,7 @@ If the required Quandora Staging tools are visible, continue automatically. If t
 - Claude Desktop: the plugin alone is not enough. Tell the user to open Settings -> Connectors, add a Connector named `quandora-staging` with URL `https://mcp-staging.varsity.lol/quant`, click Connect, authorize Quandora Staging in the browser, then start a new chat.
 - CodeBuddy and the WorkBuddy China edition: update or reinstall the `quandora-staging` plugin, reconnect its plugin-managed Remote MCP server, complete the host-native browser authorization flow, then start a new chat.
 
-Do not start a new authorization flow merely because an access token reached its one-hour lifetime or because of a single authorization response while the host is refreshing. Reauthorize only when the host reports a terminal authorization failure or still requires authorization after refresh handling.
+Do not start a new authorization flow merely because an access token reached its 24-hour lifetime or because of a single authorization response while the host is refreshing. Reauthorize only when the host reports a terminal authorization failure or still requires authorization after refresh handling.
 
 Do not ask for Quandora API keys, `vt_` keys, bearer tokens, authorization codes, access tokens, refresh tokens, PKCE verifiers, service tokens, or pasted credentials. Do not use raw HTTP calls, local helper scripts, direct internal service calls, local execution keys, or credential paste flows. The only permitted direct HTTP download is consuming a short-lived Remote MCP artifact URL returned by a Factor Mining download-ticket action; never construct, modify, reuse, or persist that URL.
 
@@ -42,6 +59,7 @@ After routing has confirmed Factor Mining scope, use only the Factor Mining acti
 - `fm_bundle_ticket`
 - `fm_bundle_chunk`
 - `qd_get_guidance`
+- `qd_check_plugin_version` (conversation-level read-only reminder check; not a business action)
 
 Some hosts may prefix action names with the server name, such as `quandora_staging__fm_status`. Treat those as the same actions.
 
