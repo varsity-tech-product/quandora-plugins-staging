@@ -264,21 +264,21 @@ If the run is still `running` after the fourth resume, stop waiting and treat th
 
 ### Result Bundle Handling
 
-Run bundle handling only after `fm_run_backtest` or `fm_resume_run` returns a terminal status such as `succeeded`, `failed`, or `cancelled`. If the run is still `running`, skip this section. Use the redacted terminal response for status and interpretation; do not create a second canonical `run_summary.json` outside the FM-owned ZIP.
+Run bundle handling only after `fm_run_backtest` or `fm_resume_run` returns a terminal status such as `succeeded`, `failed`, or `cancelled`. If the run is still `running`, skip this section. Use the redacted terminal response for status and interpretation. For completed runs, the FM-owned ZIP is the only canonical completed-result archive; never create a second completed-result `run_summary.json` beside it.
 
-For a terminal Factor run, call `fm_bundle_ticket` once with the exact canonical backtest `job_id` from the terminal response. The returned closed metadata is authoritative for the FM-owned ZIP: use its `safe_filename`, `content_type`, `size_bytes`, whole-ZIP `sha256`, `snapshot_revision`, and safe manifest. Do not reconstruct `run_summary.json`, `factor_card_is.json`, `artifact_manifest.json`, PNGs, or parquet outside the ZIP. Keep the legacy `fm_window_cards`, `fm_png_ticket`, `fm_png_chunk`, and `fm_raw_ticket` actions only for explicit single-artifact compatibility or rollback.
+For a terminal Factor run: issue one initial `fm_bundle_ticket` with the exact canonical backtest `job_id` from the terminal response. The returned closed metadata is authoritative for the FM-owned ZIP: use its `safe_filename`, `content_type`, `size_bytes`, whole-ZIP `sha256`, `snapshot_revision`, and safe manifest. Do not reconstruct `run_summary.json`, `factor_card_is.json`, `artifact_manifest.json`, PNGs, or parquet outside the ZIP. Keep the legacy `fm_window_cards`, `fm_png_ticket`, `fm_png_chunk`, and `fm_raw_ticket` actions only for explicit single-artifact compatibility or rollback.
 
 Use this URL-first delivery once per request:
 
 1. Validate `safe_filename` as a basename, require the ZIP content type, non-negative size, lowercase SHA-256, and a safe destination beneath `Quandora staging result/factor-mining/<factor_slug>/`. Never overwrite an existing verified ZIP or unrelated user file.
-2. Stream the opaque Auth `download_url` directly to `<safe_filename>.partial`, maintaining byte count and SHA-256. Do not print, log, save, edit, or reuse the URL. A transient URL failure may request one fresh `fm_bundle_ticket` and retry once; a ticket is single-use.
+2. Stream the opaque Auth `download_url` directly to `<safe_filename>.partial`, maintaining byte count and SHA-256. Do not print, log, save, edit, or reuse the URL. Retry rule: after one transient URL failure, at most one fresh ticket may be issued for one retry; after that failure, move to MCP fallback; never reuse a single-use URL/ticket.
 3. Verify exact size and SHA-256, ZIP magic/openability, and that every ZIP entry is a safe relative path contained by the archive. Atomically rename the verified `.partial` file to `<safe_filename>`.
 
 If the URL is unavailable, blocked by local host network policy, expired, or fails after that one retry, automatically use `fm_bundle_chunk` with the same canonical `job_id` and `snapshot_revision`. This fallback uses the already-working authenticated MCP connection and requires no new host-native file sink or shell network access:
 
 1. Start at offset `0` and request at most `256 KiB` (`262144`) raw bytes per call. Decode `content_b64` without printing or logging it, append to the same task-created `.partial`, and follow only the validated `next_offset`.
 2. Enforce the 10 MiB ZIP cap and at most 40 chunk calls. Keep every response bound to the same kind, job ID, snapshot revision, filename, content type, size, and whole-object SHA. Never mix revisions or append an old partial.
-3. Require the final call to consume the empty terminal marker, then verify the assembled byte count, whole-ZIP SHA-256, ZIP magic/openability, and safe entry paths before atomic rename. On interruption or any terminal fallback failure, discard only the task-created unverified `.partial` and report that no verified ZIP was saved.
+3. Require the final call to consume the empty terminal marker. PB's `terminal: true` means PB consumed and validated FM's empty upstream final marker; it is the terminal continuation response, so there is no second public empty chunk to request. Then verify the assembled byte count, whole-ZIP SHA-256, ZIP magic/openability, and safe entry paths before atomic rename. On interruption or any terminal fallback failure, discard only the task-created unverified `.partial` and report that no verified ZIP was saved.
 
 Use this standard local layout:
 
@@ -287,7 +287,7 @@ Quandora staging result/factor-mining/<factor_slug>/
   <safe_filename>
 ```
 
-If bundle metadata is `pending`, `not_available`, or `integrity_failure`, preserve its safe status/reason and do not fabricate files. Do not save bearer tokens, download URLs, raw service metadata, artifact IDs, admission IDs, credentials, or any other downstream IDs. The only exception is the current `session_id` / `run_id` local-traceability allowlist described above. If the host does not support file writes, report that no local verified ZIP was saved.
+If bundle metadata is `pending`, `not_available`, or `integrity_failure`, stop before URL/chunk/file creation: no URL, no chunk, no fabricated file. Preserve its safe status/reason. Do not save bearer tokens, download URLs, raw service metadata, artifact IDs, admission IDs, credentials, or any other downstream IDs. The only exception is the current `session_id` / `run_id` local-traceability allowlist described above. If the host does not support file writes, report that no local verified ZIP was saved.
 
 ### Result Insight and Optimization
 
@@ -311,19 +311,19 @@ Summarize status, factor name, safe diagnostics if the run failed, bundle state,
 
 Never show job IDs, snapshot revisions, download URLs, bearer tokens, raw credentials, or full `plugin.py` source in user-facing summaries. It is safe to show the local result folder and verified ZIP path created by the current host.
 
-At the end of every completed, failed, or interrupted run, show the result folder, the verified Result Bundle ZIP when saved, and `run_summary.json` when it was saved. If the ZIP could not be saved, say so accurately. Never show job IDs, snapshot revisions, download URLs, tickets, credentials, or bundle base64.
+At the end of every completed, failed, or interrupted run, show the result folder and the verified Result Bundle ZIP when saved. For a pending run, show `run_summary.json` only when that pending summary was saved. For a completed run, the FM-owned ZIP is the only canonical completed-result archive. If the ZIP could not be saved, say so accurately. Never show job IDs, snapshot revisions, download URLs, tickets, credentials, or bundle base64.
 
 For GUI/Desktop hosts, use Markdown links with absolute local paths and angle-bracket link targets so paths with spaces work:
 
 Result folder: [Open result folder](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/>)
 Result Bundle ZIP: [verified ZIP](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/<safe_filename>)
-Run summary: [run_summary.json](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/run_summary.json>)
+Pending run summary: [run_summary.json](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/run_summary.json>) when saved
 
 For CLI/TUI hosts, use plain absolute paths, not Markdown links:
 
 Result folder: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/
 Result Bundle ZIP: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/<safe_filename>
-Run summary: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/run_summary.json
+Pending run summary: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/run_summary.json when saved
 
 If the host could not write files, print:
 

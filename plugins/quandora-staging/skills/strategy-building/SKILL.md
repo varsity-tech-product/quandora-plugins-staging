@@ -310,15 +310,17 @@ Do not infer a source-code repair from a diagnostic and do not automatically res
 
 ### 3. Save the Strategy Result Bundle
 
-After the Strategy main run is terminal and archive state permits bundle metadata, call `sb_bundle_ticket` exactly once with the exact canonical `run_id` from `result.run.id`. The returned closed metadata and safe manifest are authoritative for the FM-owned Strategy ZIP, including the current 22-name registry, partial/unavailable items, and unsafe text omissions. Do not loop over artifact names, issue one ticket per file, or recreate canonical files outside the ZIP. Keep `sb_get_artifact` and `sb_file_ticket` only for explicit single-artifact compatibility or rollback.
+After the Strategy main run is terminal and archive state permits bundle metadata: issue one initial `sb_bundle_ticket` with the exact public `result.run.id`. Pass that public PB run handle unchanged to `sb_bundle_ticket` and `sb_bundle_chunk`; never substitute `fmRunId` or any hidden upstream selector. The returned closed metadata and safe manifest are authoritative for the FM-owned Strategy ZIP, including the current 22-name registry, partial/unavailable items, and unsafe text omissions. Do not loop over artifact names, issue one ticket per file, or recreate canonical files outside the ZIP. Keep `sb_get_artifact` and `sb_file_ticket` only for explicit single-artifact compatibility or rollback.
 
 Use this URL-first delivery once per request:
 
 1. Validate `safe_filename` as a basename, require ZIP content type, non-negative size, lowercase SHA-256, and a safe destination beneath `Quandora staging result/strategy/<strategy_slug>/`. Never overwrite an existing verified ZIP or unrelated user file.
-2. Stream the opaque Auth `download_url` directly to `<safe_filename>.partial`, maintaining byte count and SHA-256. Do not print, log, save, edit, or reuse the URL. A transient URL failure may request one fresh `sb_bundle_ticket` and retry once; a ticket is single-use.
+2. Stream the opaque Auth `download_url` directly to `<safe_filename>.partial`, maintaining byte count and SHA-256. Do not print, log, save, edit, or reuse the URL. Retry rule: after one transient URL failure, at most one fresh ticket may be issued for one retry; after that failure, move to MCP fallback; never reuse a single-use URL/ticket.
 3. Verify exact size and SHA-256, ZIP magic/openability, and safe relative ZIP entry paths, then atomically rename the verified `.partial` to `<safe_filename>`.
 
-If the URL is unavailable, blocked by local host network policy, expired, or fails after that one retry, automatically use `sb_bundle_chunk` with the same exact `run_id` and `snapshot_revision`. The fallback uses the already-working authenticated MCP connection and requires no new host-native file sink or shell network access. Start at offset `0`, request at most `256 KiB` (`262144`) raw bytes per call, decode `content_b64` without printing or logging it, append to the same task-created `.partial`, and follow only validated `next_offset`. Enforce the 10 MiB ZIP cap and at most 40 calls. Require the final empty terminal marker and exact size/whole-ZIP SHA-256 before ZIP/path verification and atomic rename. Never mix revisions or append an old partial; on interruption or terminal fallback failure discard only the unverified task-created `.partial` and report that no verified ZIP was saved.
+If the URL is unavailable, blocked by local host network policy, expired, or fails after that one retry, automatically use `sb_bundle_chunk` with the same exact public `result.run.id` and `snapshot_revision`. The fallback uses the already-working authenticated MCP connection and requires no new host-native file sink or shell network access. Start at offset `0`, request at most `262,144` raw bytes per call, decode `content_b64` without printing or logging it, append to the same task-created `.partial`, and follow only validated `next_offset`. Enforce the 10 MiB ZIP cap and at most 40 chunk calls. PB's `terminal: true` means PB consumed and validated FM's empty upstream final marker; it is the terminal continuation response, so there is no second public empty chunk to request. Require that terminal response and exact size/whole-ZIP SHA-256 before ZIP/path verification and atomic rename. Never mix revisions or append an old partial; on interruption or terminal fallback failure discard only the unverified task-created `.partial` and report that no verified ZIP was saved.
+
+If bundle metadata is `pending`, `not_available`, or `integrity_failure`, stop before URL/chunk/file creation: no URL, no chunk, no fabricated file. Preserve its safe status/reason and do not invent a completed bundle.
 
 ## Local Result Destination
 
@@ -470,10 +472,7 @@ server-side run remains in progress and can be resumed later. State that termina
 observation and bundle retrieval were not started, and do not state that results or bundles are
 available.
 
-At the end of every completed, failed, or interrupted run, show the result folder, verified Result
-Bundle ZIP when saved, and `run_summary.json` when saved. If a specific file was not created, say
-`not created`. Never show run IDs, snapshot revisions, tickets, download URLs, credentials, or
-bundle base64.
+At the end of every completed, failed, or interrupted run, show the result folder and the verified Result Bundle ZIP when saved. For a non-terminal or archive-pending run, show `run_summary.json` only when that pending summary was saved. For a completed run, FM-owned ZIP is the only canonical completed-result archive; never create a second completed-result `run_summary.json` beside it. If a specific file was not created, say `not created`. Never show run IDs, snapshot revisions, tickets, download URLs, credentials, or bundle base64.
 
 For Desktop or GUI hosts, use Markdown links with absolute local paths and angle-bracket link
 targets so paths with spaces work:
@@ -481,7 +480,7 @@ targets so paths with spaces work:
 ```text
 Result folder: [Open result folder](</absolute/path/to/Quandora staging result/strategy/<strategy_slug>/>)
 Result Bundle ZIP: [verified ZIP](</absolute/path/to/Quandora staging result/strategy/<strategy_slug>/<safe_filename>)
-Run summary: [run_summary.json](</absolute/path/to/Quandora staging result/strategy/<strategy_slug>/run_summary.json>)
+Pending run summary: [run_summary.json](</absolute/path/to/Quandora staging result/strategy/<strategy_slug>/run_summary.json>) when saved
 ```
 
 For CLI or TUI hosts, use the same absolute paths as plain text, not Markdown links:
@@ -489,7 +488,7 @@ For CLI or TUI hosts, use the same absolute paths as plain text, not Markdown li
 ```text
 Result folder: /absolute/path/to/Quandora staging result/strategy/<strategy_slug>/
 Result Bundle ZIP: /absolute/path/to/Quandora staging result/strategy/<strategy_slug>/<safe_filename>
-Run summary: /absolute/path/to/Quandora staging result/strategy/<strategy_slug>/run_summary.json
+Pending run summary: /absolute/path/to/Quandora staging result/strategy/<strategy_slug>/run_summary.json when saved
 ```
 
 If the host cannot write files, state:
