@@ -162,19 +162,15 @@ deduplication, validation, upload, resume/polling, and terminal Result Bundle wo
 
 Do not write `plugin.py` until the plugin construction contract has been returned. If the contract cannot be fetched, stop and report that plugin authoring is blocked by missing contract metadata.
 
-After a session exists, do not create a result archive or `artifacts/` directory. The result
-directory is reserved for the task-created `.partial` and the final FM-owned ZIP. Use a stable
-factor slug for that destination. Prefer the generated top-level `FACTOR_TYPE`; if it is missing,
-convert `FACTOR_NAME` to lowercase snake_case. For example, `FACTOR_TYPE = "aggressive_flow_exhaustion_reversal"` uses:
-
-```text
-Quandora staging result/factor-mining/aggressive_flow_exhaustion_reversal/
-```
-
-Use only the factor slug as the destination directory. The latest run for a factor updates that
-factor's folder. A pre-terminal pending diagnostic may retain the existing redacted summary
-behavior, but never put downstream IDs in the user-facing directory name or response and never
-create a second completed-result summary beside the FM ZIP.
+After a session exists, do not create a local result archive, extracted result directory, or
+`artifacts/` directory. The canonical completed local output is the verified FM-owned ZIP beneath
+`Quandora staging/`. Build `<factor_slug>` from the current user-facing factor name (`FACTOR_NAME`
+or the exact returned display name): lowercase it, replace each run of non-`[a-z0-9]` characters
+with one underscore, trim outer underscores, and use `factor` if the result is empty. The slug must
+not contain a backend UUID, internal selector, snapshot revision, remote filename prefix, or path
+separator. A pre-terminal pending diagnostic may retain the existing redacted summary behavior in
+the normal authoring workspace, but it is not a completed result and must not be presented as the
+canonical Result Bundle.
 
 After session creation, call `fm_dedup_context` with only the `session_id`. Use `query_mode`, `scope`, `memory_stats`, `similar_factors`, and `task_memory_pressure` only to select a fresher research hypothesis. A high `task_memory_pressure` must never stop the workflow, reject a draft, or trigger repeated rewrites.
 
@@ -260,19 +256,59 @@ These recovery actions do not add an automatic retry loop.
 
 If `upload_backtest_wait` returns `running`, call `fm_resume_run` at most 4 times in the current request.
 
-If the run is still `running` after the fourth resume, stop waiting and treat the archive as a pending run snapshot, not a completed result. Save only files that are already true at that point, such as `plugin.py` and a redacted pending run summary. Do not request Result Bundle metadata or attempt ZIP delivery until a later `fm_resume_run` returns a terminal status. In the final response, clearly say the backtest is still running, the Result Bundle was not requested, and the user can ask to resume later. Always print the result folder path.
+If the run is still `running` after the fourth resume, stop waiting and treat the archive as a pending run snapshot, not a completed result. Save only files that are already true at that point, such as `plugin.py` and a redacted pending run summary. Do not request Result Bundle metadata or attempt ZIP delivery until a later `fm_resume_run` returns a terminal status. In the final response, clearly say the backtest is still running, the Result Bundle was not requested, and the user can ask to resume later. Show the `Quandora staging/` folder path when the host supports local files.
 
 ### Result Bundle Handling
 
 Run bundle handling only after `fm_run_backtest` or `fm_resume_run` returns a terminal status such as `succeeded`, `failed`, or `cancelled`. If the run is still `running`, skip this section. Use the redacted terminal response for status and interpretation. For completed runs, the FM-owned ZIP is the only canonical completed-result archive; never create a second completed-result `run_summary.json` beside it.
 
-For a terminal Factor run: issue one initial `fm_bundle_ticket` with the exact canonical backtest `job_id` from the terminal response. The returned closed metadata is authoritative for the FM-owned ZIP: use its `safe_filename`, `content_type`, `size_bytes`, whole-ZIP `sha256`, `snapshot_revision`, and safe manifest. Do not reconstruct `run_summary.json`, `factor_card_is.json`, `artifact_manifest.json`, PNGs, or parquet outside the ZIP. Keep the legacy `fm_window_cards`, `fm_png_ticket`, `fm_png_chunk`, and `fm_raw_ticket` actions only for explicit single-artifact compatibility or rollback.
+For a terminal Factor run, issue one initial `fm_bundle_ticket` with the exact canonical backtest
+`job_id` from the terminal response. The returned closed metadata and runtime manifest are
+authoritative for the immutable FM-owned ZIP. Treat both `available` and a persisted readable
+`partial` response as downloadable. Raw Parquet is optional and its absence or pending sync must
+not block a readable partial. Do not make any individual artifact a prerequisite or hardcode an
+artifact inventory.
+
+Validate the server-provided `safe_filename` as a basename and bind it consistently across the
+selected ticket and every chunk response. It is transport metadata only and never determines the
+local display filename. Likewise bind the bundle kind, selector, snapshot revision, content type,
+size, whole-ZIP SHA-256, and runtime manifest according to the existing closed response contract.
+
+Apply this one optional freshness step before downloading:
+
+1. If the initial ticket is persisted readable `partial` and its runtime manifest reports one or
+   more items with a pending status, wait at most 10 seconds with a short host-native wait or timer.
+   Then issue exactly one fresh current `fm_bundle_ticket` with the same public selector and
+   without `snapshot_revision`. Never loop or poll for freshness.
+2. Do not consume, reuse, display, or log the superseded ticket URL; let it expire naturally. If
+   the refresh returns a valid readable newer snapshot, select that response. If it has a transient
+   transport failure, retain the initial valid readable partial. If it is a malformed contract
+   response, fail closed instead of masking it.
+3. If the selected response remains readable `partial`, download it normally, state clearly that
+   the snapshot is partial, and report the exact runtime omissions and pending reasons from its
+   selected manifest. If the initial partial reports no pending item, do not wait or refresh. A
+   later independent user request may obtain a newer current snapshot after synchronization.
+
+This optional freshness refresh is separate from the URL-delivery retry below and does not consume
+that retry. Do not use legacy per-file tools to fill an omitted item, complete Raw Parquet, or
+rebuild the selected immutable ZIP. Keep the legacy single-artifact actions only for a user request
+that explicitly asks for one compatibility artifact; they are not bundle-completion tools.
 
 Use this URL-first delivery once per request:
 
-1. Validate `safe_filename` as a basename, require the ZIP content type, non-negative size, lowercase SHA-256, and a safe destination beneath `Quandora staging result/factor-mining/<factor_slug>/`. Never overwrite an existing verified ZIP or unrelated user file.
-2. Stream the opaque Auth `download_url` directly to `<safe_filename>.partial`, maintaining byte count and SHA-256. Do not print, log, save, edit, or reuse the URL. Retry rule: after one transient URL failure, at most one fresh ticket may be issued for one retry; after that failure, move to MCP fallback; never reuse a single-use URL/ticket.
-3. Verify exact size and SHA-256, ZIP magic/openability, and that every ZIP entry is a safe relative path contained by the archive. Atomically rename the verified `.partial` file to `<safe_filename>`.
+1. Require ZIP content type, non-negative size, lowercase SHA-256, and the exact safe local
+   destination `Quandora staging/<factor_slug>.zip`. Write only to
+   `Quandora staging/<factor_slug>.zip.partial` until verification finishes. If the final path
+   already contains unrelated bytes or cannot be proven to match the selected ZIP, do not
+   overwrite it silently: tell the user and use a different safe user-facing slug chosen with the
+   user, never an internal backend identifier.
+2. Stream the opaque Auth `download_url` directly to the task-created `.partial`, maintaining byte
+   count and SHA-256. Do not print, log, save, edit, or reuse the URL. Retry rule: after one transient
+   URL failure, at most one fresh ticket may be issued for one retry; after that failure, move to
+   MCP fallback; never reuse a single-use URL/ticket.
+3. Verify exact size and SHA-256, ZIP magic/openability, and that every ZIP entry is a safe relative
+   path contained by the archive. Then atomically rename the verified `.partial` file to
+   `Quandora staging/<factor_slug>.zip`.
 
 If the URL is unavailable, blocked by local host network policy, expired, or fails after that one retry, automatically use `fm_bundle_chunk` with the same canonical `job_id` and `snapshot_revision`. This fallback uses the already-working authenticated MCP connection and requires no new host-native file sink or shell network access:
 
@@ -280,14 +316,12 @@ If the URL is unavailable, blocked by local host network policy, expired, or fai
 2. Enforce the 10 MiB ZIP cap and at most 40 chunk calls. Keep every response bound to the same kind, job ID, snapshot revision, filename, content type, size, and whole-object SHA. Never mix revisions or append an old partial.
 3. Require the final call to consume the empty terminal marker. PB's `terminal: true` means PB consumed and validated FM's empty upstream final marker; it is the terminal continuation response, so there is no second public empty chunk to request. Then verify the assembled byte count, whole-ZIP SHA-256, ZIP magic/openability, and safe entry paths before atomic rename. On interruption or any terminal fallback failure, discard only the task-created unverified `.partial` and report that no verified ZIP was saved.
 
-Use this standard local layout:
-
-```text
-Quandora staging result/factor-mining/<factor_slug>/
-  <safe_filename>
-```
-
 If bundle metadata is `pending`, `not_available`, or `integrity_failure`, stop before URL/chunk/file creation: no URL, no chunk, no fabricated file. Preserve its safe status/reason. Do not save bearer tokens, download URLs, raw service metadata, artifact IDs, admission IDs, credentials, or any other downstream IDs. The only exception is the current `session_id` / `run_id` local-traceability allowlist described above. If the host does not support file writes, report that no local verified ZIP was saved.
+
+Preserve the verified ZIP as the canonical local output. Do not automatically extract the ZIP,
+delete it, re-ZIP it, or reconstruct a replacement archive from individual files. Do not modify ZIP
+entry timestamps: deterministic entry timestamps belong to the FM-owned archive, and the agent must
+not rebuild the ZIP to change how a file browser displays them.
 
 ### Result Insight and Optimization
 
@@ -307,23 +341,30 @@ When interpreting a result:
 
 ## Final Response
 
-Summarize status, factor name, safe diagnostics if the run failed, bundle state, and the one verified ZIP path when saved. Inspect `ok`, `status`, `terminal_status`, `failures`, sanitized job statuses, and bundle metadata. Do not mention internal implementation details or treat an optional bundle item omission recorded by FM as a failed run.
+Summarize status, factor name, safe diagnostics if the run failed, bundle state, and the exact
+verified `Quandora staging/<factor_slug>.zip` path when saved. Inspect `ok`, `status`,
+`terminal_status`, `failures`, sanitized job statuses, and bundle metadata. Do not mention internal
+implementation details or treat an optional bundle item omission recorded by FM as a failed run.
+For a selected partial snapshot, state that it is partial and report the exact omissions and pending
+reasons from the runtime manifest without claiming completeness.
 
 Never show job IDs, snapshot revisions, download URLs, bearer tokens, raw credentials, or full `plugin.py` source in user-facing summaries. It is safe to show the local result folder and verified ZIP path created by the current host.
 
-At the end of every completed, failed, or interrupted run, show the result folder and the verified Result Bundle ZIP when saved. For a pending run, show `run_summary.json` only when that pending summary was saved. For a completed run, the FM-owned ZIP is the only canonical completed-result archive. If the ZIP could not be saved, say so accurately. Never show job IDs, snapshot revisions, download URLs, tickets, credentials, or bundle base64.
+At the end of every completed, failed, or interrupted run, show the `Quandora staging/` folder and
+the verified Result Bundle ZIP when saved. For a pending run, mention a redacted pending summary
+only if the normal authoring workflow saved one. For a completed run, the FM-owned ZIP is the only
+canonical completed-result archive. If the ZIP could not be saved, say so accurately. Never show
+job IDs, snapshot revisions, download URLs, tickets, credentials, or bundle base64.
 
 For GUI/Desktop hosts, use Markdown links with absolute local paths and angle-bracket link targets so paths with spaces work:
 
-Result folder: [Open result folder](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/>)
-Result Bundle ZIP: [verified ZIP](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/<safe_filename>)
-Pending run summary: [run_summary.json](</absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/run_summary.json>) when saved
+Result folder: [Open result folder](</absolute/path/to/Quandora staging/>)
+Result Bundle ZIP: [verified ZIP](</absolute/path/to/Quandora staging/<factor_slug>.zip>)
 
 For CLI/TUI hosts, use plain absolute paths, not Markdown links:
 
-Result folder: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/
-Result Bundle ZIP: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/<safe_filename>
-Pending run summary: /absolute/path/to/Quandora staging result/factor-mining/<factor_slug>/run_summary.json when saved
+Result folder: /absolute/path/to/Quandora staging/
+Result Bundle ZIP: /absolute/path/to/Quandora staging/<factor_slug>.zip
 
 If the host could not write files, print:
 

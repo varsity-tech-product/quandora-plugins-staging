@@ -11,17 +11,28 @@ Quandora Staging Factor Mining helps an agent:
 3. Generate a valid `plugin.py` in the local workspace when file writes are available.
 4. Submit the factor source inline to Quandora Staging.
 5. Wait for the backtest, retrieve one verified FM-owned Result Bundle ZIP, and summarize the result.
-6. Save the local working files and returned results together.
+6. Retain the verified ZIP as the canonical completed local result without automatic extraction.
 
 ## Result Files
 
-When the host supports local files, Factor Mining archives each run under:
+When the host supports local files, Factor Mining saves the verified FM-owned archive as:
 
 ```text
-Quandora staging result/factor-mining/aggressive_flow_exhaustion_reversal/
+Quandora staging/<factor_slug>.zip
 ```
 
-The result directory is named from the factor slug, preferably the generated `FACTOR_TYPE`, and contains one verified FM-owned Result Bundle ZIP. The bundle's safe manifest is authoritative for its canonical JSON, PNG, parquet, partial, and omitted items. The agent prints the result folder and one verified ZIP path after each run.
+The factor slug is derived from the current user-facing factor name. The remote filename remains
+transport metadata, and the bundle's runtime manifest is authoritative for included, pending, and
+omitted items. A readable partial remains downloadable. The verified ZIP is not automatically
+extracted, deleted, or rebuilt.
+
+Completed Strategy bundles follow the same root-level presentation contract:
+
+```text
+Quandora staging/<strategy_slug>.zip
+```
+
+The strategy slug is derived from the current user-facing submitted Strategy name.
 
 ## Skills
 

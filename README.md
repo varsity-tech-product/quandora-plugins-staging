@@ -257,13 +257,17 @@ show public tasks.
 mine a factor with custom idea
 ```
 
-When the host supports local files, each run is saved under a stable folder named after the factor slug:
+When the host supports local files, the verified FM-owned archive is saved with a local name derived
+from the current user-facing factor name:
 
 ```text
-Quandora staging result/factor-mining/aggressive_flow_exhaustion_reversal/
+Quandora staging/<factor_slug>.zip
 ```
 
-The run folder contains the verified FM-owned Result Bundle ZIP, with the submitted source and redacted run summary retained only when the host workflow saves them separately. The agent prints the result folder and one verified ZIP path at the end of each run. The ZIP manifest remains authoritative for available, partial, and omitted bundle items.
+The remote filename remains transport metadata. The verified ZIP is retained as the canonical local
+output and is not automatically extracted, deleted, or rebuilt. A readable partial ZIP remains
+downloadable; its runtime manifest is authoritative for the exact included, pending, and omitted
+items.
 
 ## Use Strategy Building
 
@@ -280,6 +284,15 @@ You can also ask naturally:
 list available factors.
 help me build a strategy.
 ```
+
+When a completed Strategy Result Bundle is saved locally, its path is derived from the current
+user-facing submitted Strategy name:
+
+```text
+Quandora staging/<strategy_slug>.zip
+```
+
+The verified FM-owned Strategy ZIP is retained without automatic extraction or reconstruction.
 
 ## License
 
