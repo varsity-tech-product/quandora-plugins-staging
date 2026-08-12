@@ -1,7 +1,7 @@
 {
   "name": "quandora-staging",
   "displayName": "Quandora Staging",
-  "version": "1.0.8-staging.39",
+  "version": "1.0.8-staging.40",
   "description": "Staging Quandora plugin with Factor Mining and Strategy Building skills for pre-release workflow testing.",
   "author": {
     "name": "Varsity Tech Product"
