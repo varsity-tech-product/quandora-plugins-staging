@@ -341,8 +341,8 @@ compatibility artifact; they are not bundle-completion tools.
 Use this URL-first delivery once per request:
 
 1. Require ZIP content type, non-negative size, lowercase SHA-256, and the exact safe local
-   destination `Quandora staging/<strategy_slug>.zip`. Write only to
-   `Quandora staging/<strategy_slug>.zip.partial` until verification finishes. If the final path
+   destination `Quandora staging result/<strategy_slug>.zip`. Write only to
+   `Quandora staging result/<strategy_slug>.zip.partial` until verification finishes. If the final path
    already contains unrelated bytes or cannot be proven to match the selected ZIP, do not
    overwrite it silently: tell the user and use a different safe user-facing slug chosen with the
    user, never an internal backend identifier.
@@ -351,7 +351,7 @@ Use this URL-first delivery once per request:
    URL failure, at most one fresh ticket may be issued for one retry; after that failure, move to
    MCP fallback; never reuse a single-use URL/ticket.
 3. Verify exact size and SHA-256, ZIP magic/openability, and safe relative ZIP entry paths, then
-   atomically rename the verified `.partial` to `Quandora staging/<strategy_slug>.zip`.
+   atomically rename the verified `.partial` to `Quandora staging result/<strategy_slug>.zip`.
 
 If the URL is unavailable, blocked by local host network policy, expired, or fails after that one retry, automatically use `sb_bundle_chunk` with the same exact public `result.run.id` and `snapshot_revision`. The fallback uses the already-working authenticated MCP connection and requires no new host-native file sink or shell network access. Start at offset `0`, request at most `262,144` raw bytes per call, decode `content_b64` without printing or logging it, append to the same task-created `.partial`, and follow only validated `next_offset`. Enforce the 10 MiB ZIP cap and at most 40 chunk calls. PB's `terminal: true` means PB consumed and validated FM's empty upstream final marker; it is the terminal continuation response, so there is no second public empty chunk to request. Require that terminal response and exact size/whole-ZIP SHA-256 before ZIP/path verification and atomic rename. Never mix revisions or append an old partial; on interruption or terminal fallback failure discard only the unverified task-created `.partial` and report that no verified ZIP was saved.
 
@@ -374,7 +374,7 @@ remote filename prefix, fingerprint, or path separator.
 The only canonical completed local path is:
 
 ```text
-Quandora staging/<strategy_slug>.zip
+Quandora staging result/<strategy_slug>.zip
 ```
 
 The slug is a local presentation label only and must not be sent in an action request. For a
@@ -402,8 +402,8 @@ server-side run remains in progress and can be resumed later. State that termina
 observation and bundle retrieval were not started, and do not state that results or bundles are
 available.
 
-At the end of every completed, failed, or interrupted run, show the `Quandora staging/` folder and
-the exact `Quandora staging/<strategy_slug>.zip` path when the ZIP was saved. For a non-terminal or
+At the end of every completed, failed, or interrupted run, show the `Quandora staging result/` folder and
+the exact `Quandora staging result/<strategy_slug>.zip` path when the ZIP was saved. For a non-terminal or
 archive-pending run, mention `run_summary.json` only when the normal authoring workflow saved that
 pending summary. For a completed run, the FM-owned ZIP is the only canonical completed-result
 archive; never create a second completed-result `run_summary.json` beside it. If a specific file was
@@ -414,15 +414,15 @@ For Desktop or GUI hosts, use Markdown links with absolute local paths and angle
 targets so paths with spaces work:
 
 ```text
-Result folder: [Open result folder](</absolute/path/to/Quandora staging/>)
-Result Bundle ZIP: [verified ZIP](</absolute/path/to/Quandora staging/<strategy_slug>.zip>)
+Result folder: [Open result folder](</absolute/path/to/Quandora staging result/>)
+Result Bundle ZIP: [verified ZIP](</absolute/path/to/Quandora staging result/<strategy_slug>.zip>)
 ```
 
 For CLI or TUI hosts, use the same absolute paths as plain text, not Markdown links:
 
 ```text
-Result folder: /absolute/path/to/Quandora staging/
-Result Bundle ZIP: /absolute/path/to/Quandora staging/<strategy_slug>.zip
+Result folder: /absolute/path/to/Quandora staging result/
+Result Bundle ZIP: /absolute/path/to/Quandora staging result/<strategy_slug>.zip
 ```
 
 If the host cannot write files, state:

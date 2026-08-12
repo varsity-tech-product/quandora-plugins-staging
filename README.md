@@ -261,7 +261,7 @@ When the host supports local files, the verified FM-owned archive is saved with 
 from the current user-facing factor name:
 
 ```text
-Quandora staging/<factor_slug>.zip
+Quandora staging result/<factor_slug>.zip
 ```
 
 The remote filename remains transport metadata. The verified ZIP is retained as the canonical local
@@ -289,7 +289,7 @@ When a completed Strategy Result Bundle is saved locally, its path is derived fr
 user-facing submitted Strategy name:
 
 ```text
-Quandora staging/<strategy_slug>.zip
+Quandora staging result/<strategy_slug>.zip
 ```
 
 The verified FM-owned Strategy ZIP is retained without automatic extraction or reconstruction.
