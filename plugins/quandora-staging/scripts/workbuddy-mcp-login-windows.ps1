@@ -21,6 +21,8 @@ $pluginSelector = 'quandora-staging@quandora-staging'
 $oauthPort = 64361
 $expectedAuthorizationPrefix = 'https://mcp-staging.varsity.lol/oauth/authorize?'
 $expectedRedirect = 'redirect_uri=http%3A%2F%2F127.0.0.1%3A64361%2Fmcp%2Foauth%2Fcallback'
+$hostReadyTimeoutSeconds = 30
+$authorizationTimeoutSeconds = 300
 $utf8WithoutBom = New-Object System.Text.UTF8Encoding($false)
 
 if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
@@ -117,27 +119,66 @@ function Write-State {
 }
 
 function Invoke-NativeMcp {
-    param([Parameter(Mandatory = $true)][string]$Path)
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [ValidateRange(1, 30)][int]$TimeoutSeconds = 3
+    )
 
     $headers = @{ 'x-codebuddy-request' = '1' }
     $body = @{ name = $mcpName } | ConvertTo-Json -Compress
-    Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:$oauthPort$Path" -Headers $headers -ContentType 'application/json' -Body $body -TimeoutSec 10
+    Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:$oauthPort$Path" -Headers $headers -ContentType 'application/json' -Body $body -TimeoutSec $TimeoutSeconds
+}
+
+function Test-LoopbackPortAvailable {
+    $probe = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, $oauthPort)
+    try {
+        $probe.Start()
+        return $true
+    }
+    catch [Net.Sockets.SocketException] {
+        return $false
+    }
+    finally {
+        $probe.Stop()
+    }
 }
 
 function Get-McpState {
     $status = Invoke-NativeMcp -Path '/internal/mcp/status'
-    $tools = @(Invoke-NativeMcp -Path '/internal/mcp/listTools')
+    $needsAuth = $null
+    if ($null -ne $status -and $status.PSObject.Properties.Name -contains 'needsAuth') {
+        $rawNeedsAuth = $status.needsAuth
+        if ($rawNeedsAuth -is [bool]) {
+            $needsAuth = $rawNeedsAuth
+        }
+        elseif ($rawNeedsAuth -is [string]) {
+            $parsedNeedsAuth = $false
+            if ([bool]::TryParse($rawNeedsAuth, [ref]$parsedNeedsAuth)) {
+                $needsAuth = $parsedNeedsAuth
+            }
+        }
+    }
+
     [ordered]@{
         name = [string]$status.name
         status = [string]$status.status
-        needsAuth = [bool]$status.needsAuth
-        toolsCount = $tools.Count
+        needsAuth = $needsAuth
+        toolsCount = $null
+    }
+}
+
+function Get-McpToolsCount {
+    try {
+        $tools = Invoke-NativeMcp -Path '/internal/mcp/listTools'
+        return $(if ($null -eq $tools) { 0 } else { @($tools).Count })
+    }
+    catch {
+        return $null
     }
 }
 
 try {
-    $listener = Get-NetTCPConnection -LocalPort $oauthPort -State Listen -ErrorAction SilentlyContinue
-    if ($null -ne $listener) {
+    if (-not (Test-LoopbackPortAvailable)) {
         Write-State -Status 'port_conflict' -ToolsCount 0 -NeedsAuth $null -ExitCode 75
         exit 75
     }
@@ -155,6 +196,10 @@ try {
         )
         $hostProcess = Start-Process -FilePath $resolvedCodeBuddy -ArgumentList $hostArguments -RedirectStandardOutput $hostLog -RedirectStandardError $hostErrorLog -WindowStyle Hidden -PassThru
     }
+    catch {
+        Write-State -Status 'host_start_failed' -ToolsCount 0 -NeedsAuth $null -ExitCode 70
+        exit 70
+    }
     finally {
         [Environment]::SetEnvironmentVariable('CODEBUDDY_CONFIG_DIR', $previousConfigDirectory, 'Process')
     }
@@ -163,15 +208,16 @@ try {
     $ready = $false
     $alreadyAuthorized = $false
     $state = $null
-    for ($attempt = 0; $attempt -lt 30; $attempt++) {
+    $hostReadyDeadline = [DateTime]::UtcNow.AddSeconds($hostReadyTimeoutSeconds)
+    while ([DateTime]::UtcNow -lt $hostReadyDeadline) {
         try {
             $state = Get-McpState
-            if ($state.name -eq $mcpName -and $state.status -eq 'connected' -and -not $state.needsAuth) {
+            if ($state.name -eq $mcpName -and $state.status -eq 'connected' -and $state.needsAuth -eq $false) {
                 $ready = $true
                 $alreadyAuthorized = $true
                 break
             }
-            if ($state.name -eq $mcpName -and $state.status -ne 'disconnected' -and $state.needsAuth) {
+            if ($state.name -eq $mcpName -and $state.status -ne 'disconnected' -and $state.needsAuth -eq $true) {
                 $ready = $true
                 break
             }
@@ -190,12 +236,18 @@ try {
         exit 69
     }
     if ($alreadyAuthorized) {
-        Write-State -Status 'completed' -ToolsCount $state.toolsCount -NeedsAuth $false -ExitCode 0
+        Write-State -Status 'completed' -ToolsCount (Get-McpToolsCount) -NeedsAuth $false -ExitCode 0
         exit 0
     }
 
-    Write-State -Status 'authorizing' -ToolsCount $state.toolsCount -NeedsAuth $true -ExitCode $null
-    $authorization = Invoke-NativeMcp -Path '/internal/mcp/oauth/authorize'
+    Write-State -Status 'authorizing' -ToolsCount (Get-McpToolsCount) -NeedsAuth $true -ExitCode $null
+    try {
+        $authorization = Invoke-NativeMcp -Path '/internal/mcp/oauth/authorize' -TimeoutSeconds 10
+    }
+    catch {
+        Write-State -Status 'oauth_request_failed' -ToolsCount $null -NeedsAuth $true -ExitCode 69
+        exit 69
+    }
     $authorizationError = ''
     if ($authorization.PSObject.Properties.Name -contains 'error') {
         $authorizationError = [string]$authorization.error
@@ -203,8 +255,8 @@ try {
     if ($authorizationError -eq 'No authorization URL available. Server may not require OAuth or connection attempt has not been made yet.') {
         try {
             $state = Get-McpState
-            if ($state.name -eq $mcpName -and $state.status -eq 'connected' -and -not $state.needsAuth) {
-                Write-State -Status 'native_ready' -ToolsCount $state.toolsCount -NeedsAuth $false -ExitCode 0
+            if ($state.name -eq $mcpName -and $state.status -eq 'connected' -and $state.needsAuth -eq $false) {
+                Write-State -Status 'native_ready' -ToolsCount (Get-McpToolsCount) -NeedsAuth $false -ExitCode 0
                 exit 0
             }
         }
@@ -217,25 +269,29 @@ try {
         $authorizationUrl = [string]$authorization.authorizationUrl
     }
     if ([string]::IsNullOrWhiteSpace($authorizationUrl) -or -not $authorizationUrl.StartsWith($expectedAuthorizationPrefix, [StringComparison]::Ordinal) -or -not $authorizationUrl.Contains($expectedRedirect)) {
-        Write-State -Status 'oauth_response_invalid' -ToolsCount $state.toolsCount -NeedsAuth $true -ExitCode 65
+        Write-State -Status 'oauth_response_invalid' -ToolsCount $null -NeedsAuth $true -ExitCode 65
         exit 65
     }
 
     try {
-        Start-Process -FilePath $authorizationUrl -ErrorAction Stop
+        $browserStartInfo = New-Object System.Diagnostics.ProcessStartInfo
+        $browserStartInfo.FileName = $authorizationUrl
+        $browserStartInfo.UseShellExecute = $true
+        $null = [Diagnostics.Process]::Start($browserStartInfo)
     }
     catch {
-        Write-State -Status 'browser_open_failed' -ToolsCount $state.toolsCount -NeedsAuth $true -ExitCode 69
+        Write-State -Status 'browser_open_failed' -ToolsCount $null -NeedsAuth $true -ExitCode 69
         exit 69
     }
     $authorizationUrl = $null
     $authorization = $null
 
-    for ($attempt = 0; $attempt -lt 300; $attempt++) {
+    $authorizationDeadline = [DateTime]::UtcNow.AddSeconds($authorizationTimeoutSeconds)
+    while ([DateTime]::UtcNow -lt $authorizationDeadline) {
         try {
             $state = Get-McpState
-            if ($state.name -eq $mcpName -and $state.status -eq 'connected' -and -not $state.needsAuth) {
-                Write-State -Status 'completed' -ToolsCount $state.toolsCount -NeedsAuth $false -ExitCode 0
+            if ($state.name -eq $mcpName -and $state.status -eq 'connected' -and $state.needsAuth -eq $false) {
+                Write-State -Status 'completed' -ToolsCount (Get-McpToolsCount) -NeedsAuth $false -ExitCode 0
                 exit 0
             }
         }
@@ -248,7 +304,7 @@ try {
         Start-Sleep -Seconds 1
     }
 
-    Write-State -Status 'timed_out' -ToolsCount $state.toolsCount -NeedsAuth $state.needsAuth -ExitCode 124
+    Write-State -Status 'timed_out' -ToolsCount $null -NeedsAuth $state.needsAuth -ExitCode 124
     exit 124
 }
 catch {
