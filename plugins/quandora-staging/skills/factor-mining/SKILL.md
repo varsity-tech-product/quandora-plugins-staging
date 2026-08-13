@@ -184,7 +184,7 @@ Do not write `plugin.py` until the plugin construction contract has been returne
 
 After a session exists, do not create a local result archive, extracted result directory, or
 `artifacts/` directory. The canonical completed local output is the verified FM-owned ZIP beneath
-`Quandora staging/`. Build `<factor_slug>` from the current user-facing factor name (`FACTOR_NAME`
+`Quandora staging result/`. Build `<factor_slug>` from the current user-facing factor name (`FACTOR_NAME`
 or the exact returned display name): lowercase it, replace each run of non-`[a-z0-9]` characters
 with one underscore, trim outer underscores, and use `factor` if the result is empty. The slug must
 not contain a backend UUID, internal selector, snapshot revision, remote filename prefix, or path
@@ -276,7 +276,7 @@ These recovery actions do not add an automatic retry loop.
 
 If `upload_backtest_wait` returns `running`, call `fm_resume_run` at most 4 times in the current request.
 
-If the run is still `running` after the fourth resume, stop waiting and treat the archive as a pending run snapshot, not a completed result. Save only files that are already true at that point, such as `plugin.py` and a redacted pending run summary. Do not request Result Bundle metadata or attempt ZIP delivery until a later `fm_resume_run` returns a terminal status. In the final response, clearly say the backtest is still running, the Result Bundle was not requested, and the user can ask to resume later. Show the `Quandora staging/` folder path when the host supports local files.
+If the run is still `running` after the fourth resume, stop waiting and treat the archive as a pending run snapshot, not a completed result. Save only files that are already true at that point, such as `plugin.py` and a redacted pending run summary. Do not request Result Bundle metadata or attempt ZIP delivery until a later `fm_resume_run` returns a terminal status. In the final response, clearly say the backtest is still running, the Result Bundle was not requested, and the user can ask to resume later. Show the `Quandora staging result/` folder path when the host supports local files.
 
 ### Result Bundle Handling
 
@@ -317,8 +317,8 @@ that explicitly asks for one compatibility artifact; they are not bundle-complet
 Use this URL-first delivery once per request:
 
 1. Require ZIP content type, non-negative size, lowercase SHA-256, and the exact safe local
-   destination `Quandora staging/<factor_slug>.zip`. Write only to
-   `Quandora staging/<factor_slug>.zip.partial` until verification finishes. If the final path
+   destination `Quandora staging result/<factor_slug>.zip`. Write only to
+   `Quandora staging result/<factor_slug>.zip.partial` until verification finishes. If the final path
    already contains unrelated bytes or cannot be proven to match the selected ZIP, do not
    overwrite it silently: tell the user and use a different safe user-facing slug chosen with the
    user, never an internal backend identifier.
@@ -328,7 +328,7 @@ Use this URL-first delivery once per request:
    MCP fallback; never reuse a single-use URL/ticket.
 3. Verify exact size and SHA-256, ZIP magic/openability, and that every ZIP entry is a safe relative
    path contained by the archive. Then atomically rename the verified `.partial` file to
-   `Quandora staging/<factor_slug>.zip`.
+   `Quandora staging result/<factor_slug>.zip`.
 
 If the URL is unavailable, blocked by local host network policy, expired, or fails after that one retry, automatically use `fm_bundle_chunk` with the same canonical `job_id` and `snapshot_revision`. This fallback uses the already-working authenticated MCP connection and requires no new host-native file sink or shell network access:
 
@@ -362,7 +362,7 @@ When interpreting a result:
 ## Final Response
 
 Summarize status, factor name, safe diagnostics if the run failed, bundle state, and the exact
-verified `Quandora staging/<factor_slug>.zip` path when saved. Inspect `ok`, `status`,
+verified `Quandora staging result/<factor_slug>.zip` path when saved. Inspect `ok`, `status`,
 `terminal_status`, `failures`, sanitized job statuses, and bundle metadata. Do not mention internal
 implementation details or treat an optional bundle item omission recorded by FM as a failed run.
 For a selected partial snapshot, state that it is partial and report the exact omissions and pending
@@ -370,7 +370,7 @@ reasons from the runtime manifest without claiming completeness.
 
 Never show job IDs, snapshot revisions, download URLs, bearer tokens, raw credentials, or full `plugin.py` source in user-facing summaries. It is safe to show the local result folder and verified ZIP path created by the current host.
 
-At the end of every completed, failed, or interrupted run, show the `Quandora staging/` folder and
+At the end of every completed, failed, or interrupted run, show the `Quandora staging result/` folder and
 the verified Result Bundle ZIP when saved. For a pending run, mention a redacted pending summary
 only if the normal authoring workflow saved one. For a completed run, the FM-owned ZIP is the only
 canonical completed-result archive. If the ZIP could not be saved, say so accurately. Never show
@@ -378,13 +378,13 @@ job IDs, snapshot revisions, download URLs, tickets, credentials, or bundle base
 
 For GUI/Desktop hosts, use Markdown links with absolute local paths and angle-bracket link targets so paths with spaces work:
 
-Result folder: [Open result folder](</absolute/path/to/Quandora staging/>)
-Result Bundle ZIP: [verified ZIP](</absolute/path/to/Quandora staging/<factor_slug>.zip>)
+Result folder: [Open result folder](</absolute/path/to/Quandora staging result/>)
+Result Bundle ZIP: [verified ZIP](</absolute/path/to/Quandora staging result/<factor_slug>.zip>)
 
 For CLI/TUI hosts, use plain absolute paths, not Markdown links:
 
-Result folder: /absolute/path/to/Quandora staging/
-Result Bundle ZIP: /absolute/path/to/Quandora staging/<factor_slug>.zip
+Result folder: /absolute/path/to/Quandora staging result/
+Result Bundle ZIP: /absolute/path/to/Quandora staging result/<factor_slug>.zip
 
 If the host could not write files, print:
 
