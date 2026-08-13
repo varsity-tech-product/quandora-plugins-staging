@@ -1,6 +1,6 @@
 {
   "name": "quandora-staging",
-  "version": "1.0.8-staging.41",
+  "version": "1.0.8-staging.42",
   "description": "Staging Quandora plugin with Factor Mining and Strategy Building skills for pre-release workflow testing.",
   "author": {
     "name": "Varsity Tech Product",
@@ -32,9 +32,10 @@
     "defaultPrompt": [
       "Use Quandora Staging Factor Mining to show public tasks.",
       "Use Quandora Staging Factor Mining with my custom factor idea.",
-      "Use Quandora Staging Factor Mining to resume a run and summarize results.",
       "Use Quandora Staging Strategy to combine existing factors into a cross-sectional strategy."
     ],
-    "brandColor": "#0F766E"
+    "brandColor": "#F28C00",
+    "composerIcon": "./assets/quandora.png",
+    "logo": "./assets/quandora.png"
   }
 }
