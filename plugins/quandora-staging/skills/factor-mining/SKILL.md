@@ -5,7 +5,7 @@ description: Use when the user explicitly asks about caller-owned or reusable Fa
 
 # Quandora Staging Factor Mining
 
-Bundled plugin version: 1.42
+Bundled plugin version: 1.43
 
 Use this skill to run Factor Mining through the authenticated Quandora Staging connection exposed by the host as `quandora-staging`.
 
@@ -156,7 +156,7 @@ factor. Never treat browsing history as permission to edit or resubmit historica
 
 Determine whether the user wants a public task or a custom idea:
 
-- For a public task: call `fm_list_tasks`, show concise choices, and select one exact public `task_id`, asking the user to pick unless they explicitly ask the agent to choose. In every user-facing task list or selection prompt, label each choice with the exact returned `name`, optionally followed by the exact returned `category`; never display `task_id` or derive a display label from it. Treat `task_id`, including any `task_...` or `taskn...` prefix, as an opaque internal selector used only in subsequent tool calls. When the user selects a displayed name or category, resolve it back to the exact row's `task_id` internally. Treat the selected Task's returned category as authoritative and do not replace or reinterpret it. Either call `fm_get_contract` with only that exact `task_id` before creating the task session and then create the session for that same task, or create the session first with `fm_task_session` and call `fm_get_contract` with only the returned `session_id`.
+- For a public task: call `fm_list_tasks`, show concise choices, and select one exact public `task_id`, asking the user to pick unless they explicitly ask the agent to choose. For a task-list-only request, render exactly two user-facing fields per row: the exact returned `name` and the exact returned `category`. Use localized equivalents of `Task name` and `Category` as the only table columns. Never render a `Task ID` column, raw task rows, raw JSON, code-formatted selectors, or any `task_id` value anywhere in the response. If the user needs to select a task, use temporary ordinal choices such as 1, 2, and 3 and map the selected ordinal back to the exact row's `task_id` internally. In every other user-facing task list or selection prompt, label each choice with the exact returned `name`, optionally followed by the exact returned `category`; never display `task_id` or derive a display label from it. Treat `task_id`, including any `task_...` or `taskn...` prefix, as an opaque internal selector used only in subsequent tool calls. When the user selects a displayed name, category, or temporary ordinal, resolve it back to the exact row's `task_id` internally. Treat the selected Task's returned category as authoritative and do not replace or reinterpret it. Either call `fm_get_contract` with only that exact `task_id` before creating the task session and then create the session for that same task, or create the session first with `fm_task_session` and call `fm_get_contract` with only the returned `session_id`.
 - For a custom idea: before choosing `category` and before `fm_custom_sess`, obtain one complete current `fm_list_tasks` response. Reuse a complete response already obtained in the same conversation and workflow; otherwise call once in the normal flow. If that read fails with a retryable transport error, the single bounded identical retry below is allowed, but never call it again after a complete success. Require exactly eight open public task references. Every row must have a unique non-empty `task_id`, one of the eight non-`Other` canonical categories, and non-empty `core_question`, `primary_alpha_source`, `economic_principle`, `microstructure_logic`, `crypto_specific_mechanism`, `research_directions`, and `target_behavior` arrays. Their categories must be exactly `Microstructure`, `Volatility`, `Imbalance`, `Order Flow`, `Auction`, `Momentum`, `Volume`, and `Liquidity`, once each. Any malformed row or duplicate, missing, or inconsistent task/category is a backend/plugin contract mismatch: stop before `fm_custom_sess`, report the mismatch, and do not fall back to a static classification guess, stale model memory, or invented content.
 
   Compare the user's thesis semantically with those returned research fields; never classify from task ID or title alone. Choose exactly the category returned by the matching public task reference when the economic mechanism honestly fits. If none of the eight references fits, use the explicit product fallback `Other`; `Other` has no public reference task and must not be fabricated as a ninth public row. The public list is only the custom branch's semantic reference: never copy a public `task_id` into a custom task/session and never turn this branch into `fm_task_session`.
@@ -184,7 +184,9 @@ Do not write `plugin.py` until the plugin construction contract has been returne
 
 After a session exists, do not create a local result archive, extracted result directory, or
 `artifacts/` directory. The canonical completed local output is the verified FM-owned ZIP beneath
-`Quandora staging result/`. Build `<factor_slug>` from the current user-facing factor name (`FACTOR_NAME`
+the exact directory `/Users/richsion/Quandora staging result/factor/`. Create that directory if it
+does not exist; never save a completed Factor ZIP in the parent result directory, the current
+workspace, or a Strategy directory. Build `<factor_slug>` from the current user-facing factor name (`FACTOR_NAME`
 or the exact returned display name): lowercase it, replace each run of non-`[a-z0-9]` characters
 with one underscore, trim outer underscores, and use `factor` if the result is empty. The slug must
 not contain a backend UUID, internal selector, snapshot revision, remote filename prefix, or path
@@ -276,7 +278,7 @@ These recovery actions do not add an automatic retry loop.
 
 If `upload_backtest_wait` returns `running`, call `fm_resume_run` at most 4 times in the current request.
 
-If the run is still `running` after the fourth resume, stop waiting and treat the archive as a pending run snapshot, not a completed result. Save only files that are already true at that point, such as `plugin.py` and a redacted pending run summary. Do not request Result Bundle metadata or attempt ZIP delivery until a later `fm_resume_run` returns a terminal status. In the final response, clearly say the backtest is still running, the Result Bundle was not requested, and the user can ask to resume later. Show the `Quandora staging result/` folder path when the host supports local files.
+If the run is still `running` after the fourth resume, stop waiting and treat the archive as a pending run snapshot, not a completed result. Save only files that are already true at that point, such as `plugin.py` and a redacted pending run summary. Do not request Result Bundle metadata or attempt ZIP delivery until a later `fm_resume_run` returns a terminal status. In the final response, clearly say the backtest is still running, the Result Bundle was not requested, and the user can ask to resume later. Show the `/Users/richsion/Quandora staging result/factor/` folder path when the host supports local files.
 
 ### Result Bundle Handling
 
@@ -317,8 +319,9 @@ that explicitly asks for one compatibility artifact; they are not bundle-complet
 Use this URL-first delivery once per request:
 
 1. Require ZIP content type, non-negative size, lowercase SHA-256, and the exact safe local
-   destination `Quandora staging result/<factor_slug>.zip`. Write only to
-   `Quandora staging result/<factor_slug>.zip.partial` until verification finishes. If the final path
+   destination `/Users/richsion/Quandora staging result/factor/<factor_slug>.zip`. Before creating
+   any file, create `/Users/richsion/Quandora staging result/factor/` if needed. Write only to
+   `/Users/richsion/Quandora staging result/factor/<factor_slug>.zip.partial` until verification finishes. If the final path
    already contains unrelated bytes or cannot be proven to match the selected ZIP, do not
    overwrite it silently: tell the user and use a different safe user-facing slug chosen with the
    user, never an internal backend identifier.
@@ -328,7 +331,7 @@ Use this URL-first delivery once per request:
    MCP fallback; never reuse a single-use URL/ticket.
 3. Verify exact size and SHA-256, ZIP magic/openability, and that every ZIP entry is a safe relative
    path contained by the archive. Then atomically rename the verified `.partial` file to
-   `Quandora staging result/<factor_slug>.zip`.
+   `/Users/richsion/Quandora staging result/factor/<factor_slug>.zip`.
 
 If the URL is unavailable, blocked by local host network policy, expired, or fails after that one retry, automatically use `fm_bundle_chunk` with the same canonical `job_id` and `snapshot_revision`. This fallback uses the already-working authenticated MCP connection and requires no new host-native file sink or shell network access:
 
@@ -362,7 +365,7 @@ When interpreting a result:
 ## Final Response
 
 Summarize status, factor name, safe diagnostics if the run failed, bundle state, and the exact
-verified `Quandora staging result/<factor_slug>.zip` path when saved. Inspect `ok`, `status`,
+verified `/Users/richsion/Quandora staging result/factor/<factor_slug>.zip` path when saved. Inspect `ok`, `status`,
 `terminal_status`, `failures`, sanitized job statuses, and bundle metadata. Do not mention internal
 implementation details or treat an optional bundle item omission recorded by FM as a failed run.
 For a selected partial snapshot, state that it is partial and report the exact omissions and pending
@@ -370,7 +373,7 @@ reasons from the runtime manifest without claiming completeness.
 
 Never show job IDs, snapshot revisions, download URLs, bearer tokens, raw credentials, or full `plugin.py` source in user-facing summaries. It is safe to show the local result folder and verified ZIP path created by the current host.
 
-At the end of every completed, failed, or interrupted run, show the `Quandora staging result/` folder and
+At the end of every completed, failed, or interrupted run, show the `/Users/richsion/Quandora staging result/factor/` folder and
 the verified Result Bundle ZIP when saved. For a pending run, mention a redacted pending summary
 only if the normal authoring workflow saved one. For a completed run, the FM-owned ZIP is the only
 canonical completed-result archive. If the ZIP could not be saved, say so accurately. Never show
@@ -378,13 +381,13 @@ job IDs, snapshot revisions, download URLs, tickets, credentials, or bundle base
 
 For GUI/Desktop hosts, use Markdown links with absolute local paths and angle-bracket link targets so paths with spaces work:
 
-Result folder: [Open result folder](</absolute/path/to/Quandora staging result/>)
-Result Bundle ZIP: [verified ZIP](</absolute/path/to/Quandora staging result/<factor_slug>.zip>)
+Result folder: [Open result folder](</Users/richsion/Quandora staging result/factor/>)
+Result Bundle ZIP: [verified ZIP](</Users/richsion/Quandora staging result/factor/<factor_slug>.zip>)
 
 For CLI/TUI hosts, use plain absolute paths, not Markdown links:
 
-Result folder: /absolute/path/to/Quandora staging result/
-Result Bundle ZIP: /absolute/path/to/Quandora staging result/<factor_slug>.zip
+Result folder: /Users/richsion/Quandora\ staging\ result/factor/
+Result Bundle ZIP: /Users/richsion/Quandora\ staging\ result/factor/<factor_slug>.zip
 
 If the host could not write files, print:
 
