@@ -5,7 +5,7 @@ description: Use when the user asks to list available, eligible, or selectable S
 
 # Quandora Staging Strategy Building
 
-Bundled plugin version: 1.43
+Bundled plugin version: 1.44
 
 Use this skill through the authenticated Quandora Staging connection exposed by the host as
 `quandora-staging`. It composes cross-sectional strategies from eligible factor ids and includes
@@ -336,6 +336,22 @@ local display filename. Likewise bind the bundle kind, public selector, snapshot
 type, size, whole-ZIP SHA-256, and runtime manifest according to the existing closed response
 contract.
 
+Apply this one bounded materialization recheck before the readable-partial freshness step:
+
+1. If the initial metadata is `pending` with `reason_code=bundle_materializing`, treat it as a
+   valid non-readable state, not as a transport or backend failure. Do not use its revision for a
+   chunk call, create a file or `.partial`, consume a URL, retry a download ticket, or use a
+   legacy-artifact fallback.
+2. Wait at most 10 seconds with a host-native bounded wait or timer, then make exactly one fresh current `sb_bundle_ticket`
+   call with the same public PB `result.run.id` and without a
+   caller-supplied `snapshot_revision`; never use `fmRunId`. Never resubmit or resume the completed
+   Strategy run merely to make a bundle appear.
+3. If that single recheck is still `pending` with `reason_code=bundle_materializing`, stop safely
+   and tell the user the Result Bundle is still materializing and can be requested later. Never
+   loop. If it is readable `available` or persisted readable `partial`, continue with the ordinary
+   URL-first flow. If it becomes another truthful non-readable state, preserve its exact safe
+   status and reason and stop. A malformed recheck remains fail-closed.
+
 Apply this one optional freshness step before downloading:
 
 1. If the initial ticket is persisted readable `partial` and its runtime manifest reports one or
@@ -351,8 +367,10 @@ Apply this one optional freshness step before downloading:
    selected manifest. If the initial partial reports no pending item, do not wait or refresh. A
    later independent user request may obtain a newer current snapshot after synchronization.
 
-This optional freshness refresh is separate from the URL-delivery retry below and does not consume
-that retry. Do not use legacy per-file tools to fill an omitted item or rebuild the selected
+The bounded materialization recheck, this optional readable-partial freshness refresh, and the one
+fresh-ticket retry after a transient single-use URL failure are three separate bounds. Never
+collapse them into a loop. The freshness refresh does not consume the URL retry. Do not use legacy
+per-file tools to fill an omitted item or rebuild the selected
 immutable ZIP. Do not loop over artifact names or issue one ticket per file. Keep
 `sb_get_artifact` and `sb_file_ticket` only for a user request that explicitly asks for one
 compatibility artifact; they are not bundle-completion tools.
@@ -375,12 +393,17 @@ Use this URL-first delivery once per request:
 
 If the URL is unavailable, blocked by local host network policy, expired, or fails after that one retry, automatically use `sb_bundle_chunk` with the same exact public `result.run.id` and `snapshot_revision`. The fallback uses the already-working authenticated MCP connection and requires no new host-native file sink or shell network access. Start at offset `0`, request at most `262,144` raw bytes per call, decode `content_b64` without printing or logging it, append to the same task-created `.partial`, and follow only validated `next_offset`. Enforce the 10 MiB ZIP cap and at most 40 chunk calls. PB's `terminal: true` means PB consumed and validated FM's empty upstream final marker; it is the terminal continuation response, so there is no second public empty chunk to request. Require that terminal response and exact size/whole-ZIP SHA-256 before ZIP/path verification and atomic rename. Never mix revisions or append an old partial; on interruption or terminal fallback failure discard only the unverified task-created `.partial` and report that no verified ZIP was saved.
 
-If bundle metadata is `pending`, `not_available`, or `integrity_failure`, stop before URL/chunk/file creation: no URL, no chunk, no fabricated file. Preserve its safe status/reason and do not invent a completed bundle.
+After the bounded materialization recheck when applicable, if the selected bundle metadata is `pending`, `not_available`, or `integrity_failure`, stop before URL/chunk/file creation: no URL, no chunk, no fabricated file. Preserve its safe status/reason and do not invent a completed bundle.
 
 Preserve the verified ZIP as the canonical local output. Do not automatically extract the ZIP,
-delete it, re-ZIP it, or reconstruct a replacement archive from individual files. Do not modify ZIP
-entry timestamps: deterministic entry timestamps belong to the FM-owned archive, and the agent must
-not rebuild the ZIP to change how a file browser displays them.
+delete it, re-ZIP it, rename its entries, synthesize missing files, or reconstruct a replacement
+archive from individual files. Do not modify ZIP entry timestamps: stable entry timestamps belong
+to the FM-owned archive, and the agent must not rebuild the ZIP to change how a file browser
+displays them. Normal logs may be present; when the manifest truthfully omits a log because FM
+detected concrete prohibited credential or storage-topology content, preserve that omission and do
+not bypass it. Do not hardcode an artifact registry, item count, entry-name list, backend commit,
+safe-filename UUID pattern, or FM storage implementation. Existing immutable snapshot revisions
+are not expected to gain later parity fixes; acceptance of those fixes uses a fresh snapshot.
 
 ## Local Result Destination
 
