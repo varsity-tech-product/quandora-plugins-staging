@@ -72,3 +72,22 @@ The Windows path is statically validated; smoke-test it on Windows 10/11 x64 and
 ## Connection Recovery
 
 If the `quandora-staging` connection is unavailable, update or reinstall the staging plugin, reconnect the plugin-managed Remote MCP server, and complete the host-native browser authorization flow again. The host owns OAuth and credentials; agents never request API keys, bearer tokens, authorization codes, access tokens, refresh tokens, PKCE verifiers, or pasted credentials.
+
+## Paper Trading Release Order
+
+Plugin 1.44 must be published and confirmed installable from every supported staging manifest before
+the Auth service advertises `1.44`. PB and Auth Paper code deploys keep their independent Paper
+gates closed and omit the new Paper OAuth scopes during that interval. A later, separately
+auditable staging rollout enables both gates, adds the Paper scopes, and changes the Auth latest
+label together. Production plugin metadata and production service configuration are outside this
+staging release and remain unchanged.
+
+Before publishing the staging package, run the repository-local static contract check:
+
+```bash
+python plugins/quandora-staging/scripts/validate-paper-trading.py
+```
+
+It verifies the nine release-version fields, all 21 Paper tool names, forbidden-tool absence,
+downstream safety reason text, and the eight required prompt-routing scenarios without calling a
+service or performing a mutation.

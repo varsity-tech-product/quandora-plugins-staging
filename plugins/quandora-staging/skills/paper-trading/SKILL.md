@@ -99,7 +99,24 @@ without downstream internals:
   unsupported strategy kind, missing semantic lineage, or non-caller optimizer configuration.
 
 A source must ultimately be owner-scoped, completed, successfully submitted, cross-sectional, and
-semantically reconstructable. Provider fallback is not optimizer success.
+semantically reconstructable. Interpret the additional closed reasons without asking for or
+revealing raw source parameters:
+
+- `optimizer_config_not_caller`: `optimizer_execution.config_source=default` is safe historical
+  evidence but remains ineligible, as does `config_source=default_after_invalid`. Only `caller` is
+  eligible. One historical ineligible item does not invalidate the other source-list entries.
+- `optimizer_execution_unavailable`: required optimizer execution evidence is absent or invalid;
+  treat the source as `provider_validation_required`, not as caller-configured success.
+- `source_capital_mismatch`: the authoritative FM StrategyRun capital and the local product binding
+  disagree. Do not choose either value or submit until the source binding is repaired.
+- `source_capital_unavailable`: authoritative FM source capital is missing, non-finite, invalid, or
+  cannot be represented safely. Never substitute the local snapshot value.
+- `source_validation_unavailable`: the bounded source read failed or exhausted its deadline. Keep
+  the item and its list position, describe validation as incomplete, and retry only the read later
+  if the user asks.
+
+Provider fallback is not optimizer success. Unknown reason or execution-evidence values fail
+closed; do not infer their meaning or request downstream payloads.
 
 ### 2. Confirm and Submit
 
@@ -114,11 +131,14 @@ Before `pt_submit_run`, display and obtain explicit confirmation for:
 Send only `source_strategy_run_id`, `start_date`, `initial_balance`, and `leverage`, omitting optional
 fields the user did not choose. Never send an optimizer override.
 
-For an optimizer source, default to and preserve the source run's exact initial cash. Do not suggest
-changing optimizer policy or capital at Paper time. If the user wants different capital, explain
-that they must first complete a new StrategyRun for the same StrategyVersion at that capital, then
-use that new run as the source. Only `optimizer_execution.config_source=caller` is eligible; a
-provider fallback or any other config source is not optimizer success.
+For an optimizer source, default to and preserve the source run's exact authoritative FM initial
+cash. A local snapshot is only consistency evidence and can never replace that value. Do not
+suggest changing optimizer policy or capital at Paper time. If the user wants different capital,
+explain that they must first complete a new StrategyRun for the same StrategyVersion at that
+capital, then use that new run as the source. Only
+`optimizer_execution.config_source=caller` is eligible; historical `config_source=default`,
+`config_source=default_after_invalid`, provider fallback, or missing evidence is not optimizer
+success.
 
 For a normal non-optimizer strategy, an explicit contract-valid `initial_balance` may be used.
 
@@ -197,7 +217,8 @@ that capital.
 
 Use `pt_get_portfolio_paper` for the parent lifecycle and ordered child handles/status. Present child
 status in component order and label every child `independent sleeve`. Do not claim parent aggregate
-positions, net positions, shared margin, or a parent real-time/equity curve exists.
+positions exist. Do not claim parent net positions, shared margin, or a parent real-time/equity
+curve exists.
 
 Before `pt_stop_portfolio_paper`, show the exact parent handle, explain that stop fans out to its
 children and is terminal, and obtain explicit confirmation. Call stop once, then reconcile with
@@ -208,14 +229,30 @@ children and is terminal, and obtain explicit confirmation. Call stop once, then
 Explain safe failures as actionable product states without exposing downstream text:
 
 - `source_strategy_ineligible`: choose another eligible completed source or complete the missing
-  source prerequisite.
+  source prerequisite. Use only its returned closed `eligibility_reasons` as described above.
+- `paper_initial_balance_unavailable` or `source_capital_unavailable`: the authoritative source
+  capital cannot be used safely; do not fall back to a local/displayed value.
+- `source_capital_mismatch`: the authoritative source capital disagrees with its local product
+  binding; stop and have the source binding repaired rather than choosing one value.
+- `optimizer_execution_unavailable` or `optimizer_config_not_caller`: use another completed source
+  with closed caller-effective optimizer evidence.
 - `portfolio_optimizer_portfolio_value_mismatch`: create a new source StrategyRun at the desired
   capital; do not override Paper capital.
 - `portfolio_optimizer_backtest_config_mismatch`: the frozen source execution does not match the
   approved optimizer intent; use an eligible caller-effective run.
+- `portfolio_optimizer_paper_config_mismatch`: the Paper execution does not match the source run's
+  frozen optimizer configuration; reconcile with the run detail and do not resubmit automatically.
+- `source_validation_unavailable`: source discovery could not complete its bounded FM validation;
+  keep the item visible as `provider_validation_required` and do not describe it as eligible.
+- `quantai_unavailable` or another retryable mutation error: the safe reason may be actionable, but
+  the mutation can still be ambiguous. Reconcile authoritatively and never change its idempotency
+  identity or blindly submit again.
 - authorization/scope failure: complete fresh staging authorization for the minimum required Paper
   scopes.
 - rate/freshness response: honor returned cache, stale, and retry-after information.
+
+If the response contains no recognized closed reason, report only the generic safe error code and
+retryability. Never quote, reinterpret, or ask for a hidden provider message.
 
 Do not fetch or cite `operation.paper_trade.submit` or an optimizer Paper guidance entry in this
 release. Its upstream catalog wording may conflict with the current implementation. The tools,

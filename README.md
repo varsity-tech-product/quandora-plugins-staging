@@ -321,6 +321,10 @@ or terminal stop. Lifecycle monitoring uses Paper detail rather than repeatedly 
 live portfolio. Strategy Portfolio Paper is presented as ordered, static independent sleeves; no
 parent aggregate position or parent Paper equity capability is implied.
 
+Release invariant: publish and verify staging plugin 1.44 as installable before the Auth staging
+service advertises it. Paper service gates and OAuth scopes are enabled only in a separate rollout;
+production plugin and service configuration remain unchanged.
+
 ## License
 
 This repository is licensed under the Apache License 2.0. See [LICENSE](LICENSE).
