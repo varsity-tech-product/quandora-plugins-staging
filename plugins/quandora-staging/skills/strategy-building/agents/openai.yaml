@@ -1,6 +1,9 @@
 interface:
   display_name: "Strategy Building Staging"
   short_description: "Compose and backtest cross-sectional staging strategies"
+  icon_small: "./assets/strategy-building.png"
+  icon_large: "./assets/strategy-building.png"
+  brand_color: "#F28C00"
   default_prompt: "Use $strategy-building to combine existing Quandora factors into a cross-sectional strategy."
 
 dependencies:
