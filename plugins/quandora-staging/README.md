@@ -1,6 +1,6 @@
 # Quandora Staging
 
-Quandora Staging is the public staging plugin package for pre-release Quandora agent workflow testing. It includes Factor Mining and Strategy Building skills, points to staging services, and is not the production plugin.
+Quandora Staging is the public staging plugin package for pre-release Quandora agent workflow testing. It includes Factor Mining, Strategy Building, and Paper Trading skills, points to staging services, and is not the production plugin.
 
 ## What Factor Mining Does
 
@@ -34,17 +34,26 @@ Completed Strategy bundles use the dedicated Strategy subdirectory:
 
 The strategy slug is derived from the current user-facing submitted Strategy name.
 
+## What Paper Trading Does
+
+Quandora Staging Paper Trading helps an agent discover the current user's eligible source
+StrategyRuns, obtain explicit submit/stop confirmation, monitor lifecycle, and read live current
+PnL, position history, fills, funding, equity curves, and bounded strategy code. It also supports
+static independent-sleeve Strategy Portfolio backtests and Paper runs. It does not expose production
+trading, universe overrides, Paper archive/resume, or nonexistent parent aggregate positions/equity.
+
 ## Skills
 
 ```text
 skills/
   factor-mining/
+  paper-trading/
   strategy-building/
 ```
 
 ## CodeBuddy and the WorkBuddy China edition
 
-The CodeBuddy-compatible plugin manifest registers both skills and the plugin-managed `quandora-staging` remote HTTP MCP server. CodeBuddy and the WorkBuddy China edition handle the MCP connection and browser OAuth authorization natively. The package requires no local MCP process, Python, Node.js, API key, or credential-paste flow.
+The CodeBuddy-compatible plugin manifest registers all three skills and the plugin-managed `quandora-staging` remote HTTP MCP server. CodeBuddy and the WorkBuddy China edition handle the MCP connection and browser OAuth authorization natively. The package requires no local MCP process, Python, Node.js, API key, or credential-paste flow.
 
 ## Claude Desktop Code OAuth launchers
 

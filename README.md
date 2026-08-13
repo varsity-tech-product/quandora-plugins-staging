@@ -43,8 +43,8 @@ This repository is for staging validation only. It points to Quandora staging se
         +----------------------+                 |
                   |                              |
                   |                              |
-                  |                              | performance decay
-                  |                              | restarts mining
+                  |                              | user reviews decay
+                  |                              | and chooses next step
                   |                              |
                   v                              |
         +----------------------+                 |
@@ -91,7 +91,7 @@ Each agent is named for the workflow stage it runs.
 | **Factor / Strategy Card Agent** | Produces structured cards with formulas, metrics, risks, assumptions, verdicts, and plain-English explanations. |
 | **Strategy Construction Agent** | Combines accepted factors into strategy candidates with portfolio logic, sizing rules, and risk constraints. |
 | **Strategy Evaluation Agent** | Evaluates strategy performance, drawdown, turnover, cost viability, and robustness before monitoring. |
-| **Paper Trading Monitor Agent** | Monitors paper performance and restarts factor mining when performance decay is detected. |
+| **Paper Trading Monitor Agent** | Starts and monitors confirmed staging Paper runs, reads current and historical performance, and terminally stops a selected run only after user confirmation. It never changes strategies or restarts mining automatically. |
 | **Deployment Supervisor Agent** | Keeps users in the loop for approvals, guardrails, deployment checks, and supervised rollout. |
 
 <br>
@@ -103,6 +103,11 @@ quandora-staging@quandora-staging
 ```
 
 Quandora Staging Factor Mining lets local agents create `plugin.py`, submit it through the authenticated staging Quandora connection, run a backtest, and save one verified FM-owned Result Bundle ZIP in the local workspace.
+
+Quandora Staging Paper Trading lets agents discover the user's eligible StrategyRun sources, start
+and monitor single-strategy or static-sleeve Strategy Portfolio Paper runs after confirmation, read
+current PnL and historical execution data, and terminally stop selected runs. It is staging-only and
+does not place live-money trades.
 
 ## Install
 
@@ -119,7 +124,7 @@ Plugin: quandora-staging@quandora-staging
 You can also ask Codex Desktop to install and connect Quandora for you:
 
 ```text
-Install Quandora Staging from varsity-tech-product/quandora-plugins-staging, then connect Quandora Staging Factor Mining.
+Install Quandora Staging from varsity-tech-product/quandora-plugins-staging, then connect Quandora Staging.
 ```
 
 Codex may ask before running the Codex CLI setup commands. These commands install the Quandora Staging plugin into Codex, write Codex plugin/MCP configuration, and open Quandora staging OAuth. They do not grant Quandora access to your local files.
@@ -184,7 +189,7 @@ In a new Cursor Desktop Agent chat, enter the complete host command:
 /add-plugin quandora-staging@https://github.com/varsity-tech-product/quandora-plugins-staging
 ```
 
-After Cursor Desktop installs the plugin, authenticate the plugin-provided `quandora-staging` remote MCP server and complete Quandora Staging authorization in the browser. Then start a new Agent chat before invoking the Factor Mining or Strategy Building skill.
+After Cursor Desktop installs the plugin, authenticate the plugin-provided `quandora-staging` remote MCP server and complete Quandora Staging authorization in the browser. Then start a new Agent chat before invoking the Factor Mining, Strategy Building, or Paper Trading skill.
 
 ### CodeBuddy CLI
 
@@ -240,7 +245,7 @@ Start a new session, authorize the plugin-provided staging MCP server, and verif
 /mcp
 ```
 
-Complete Quandora Staging authorization in the browser when prompted. After authorization, start a new session before invoking the Factor Mining or Strategy Building skill.
+Complete Quandora Staging authorization in the browser when prompted. After authorization, start a new session before invoking the Factor Mining, Strategy Building, or Paper Trading skill.
 
 ## Use Factor Mining
 
@@ -293,6 +298,28 @@ Quandora staging result/<strategy_slug>.zip
 ```
 
 The verified FM-owned Strategy ZIP is retained without automatic extraction or reconstruction.
+
+## Use Paper Trading
+
+Use the skill command when available:
+
+```text
+/quandora-staging:paper-trading start a paper run
+/quandora-staging:paper-trading show my current paper PnL
+```
+
+You can also ask naturally:
+
+```text
+start paper trading from one of my eligible strategy runs.
+show the 30D paper equity curve.
+stop my paper run.
+```
+
+The skill lists owner-scoped sources when needed and asks for explicit confirmation before submit
+or terminal stop. Lifecycle monitoring uses Paper detail rather than repeatedly collecting the
+live portfolio. Strategy Portfolio Paper is presented as ordered, static independent sleeves; no
+parent aggregate position or parent Paper equity capability is implied.
 
 ## License
 
