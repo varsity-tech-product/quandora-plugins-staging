@@ -70,6 +70,11 @@ def test_static_factor_and_strategy_instruction_contracts_are_identical():
         "never parse, order, or normalize it",
         "If `update_available=false`, continue silently.",
         "The latest Quandora plugin version is <latest_version>. Please update the plugin.",
+        "A Quandora Staging MCP access token is valid for 7 days.",
+        "After 7 days, use the prompt below to ask your agent to refresh the connection",
+        "it should use automatic refresh first and CLI re-authentication only if required",
+        "provide this exact copyable prompt in a fenced `text` block",
+        "Refresh the Quandora Staging MCP connection. If automatic refresh fails, re-authenticate it with the CLI.",
         "Then immediately continue the user's original request.",
         "missing, disabled, invisible, or fails",
         "do not retry the check",
@@ -116,8 +121,9 @@ def test_static_instruction_contract_never_automates_updates_or_asserts_a_gramma
         text = skill.read_text(encoding="utf-8")
         reminder = _version_block(skill).lower()
         assert "never install, update, uninstall, or reload a plugin" in reminder
-        assert "start oauth or reauthorize" in reminder
-        assert "provide platform-specific instructions" in reminder
+        assert "immediately start oauth or reauthorize merely because of the version result" in reminder
+        assert "provide a platform-specific command in the version reminder" in reminder
+        assert "not permission to run it during the version check" in reminder
         assert "opaque release label" in reminder
         for fixed_grammar in (
             "semantic version",
