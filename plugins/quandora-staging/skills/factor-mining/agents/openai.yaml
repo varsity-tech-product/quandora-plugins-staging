@@ -1,6 +1,9 @@
 interface:
   display_name: "Factor Mining Staging"
   short_description: "Write and backtest Quandora staging factor plugins"
+  icon_small: "./assets/factor-mining.png"
+  icon_large: "./assets/factor-mining.png"
+  brand_color: "#F28C00"
   default_prompt: "Use $factor-mining to list public tasks or run a custom factor idea."
 
 dependencies:
