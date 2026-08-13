@@ -11,7 +11,7 @@ Use this skill through the authenticated Quandora Staging connection exposed by 
 `quandora-staging`. It composes cross-sectional strategies from eligible factor ids and includes
 the complete Strategy Result Bundle workflow.
 
-OAuth and all credentials are handled by the host. Quandora access tokens expire after 24 hours, and the host MCP client should use its stored rotating refresh token automatically. Never inspect, print, copy, store, or ask the user to paste API keys, bearer tokens, authorization codes, access tokens, refresh tokens, PKCE verifiers, service tokens, or other credentials.
+OAuth and all credentials are handled by the host. Quandora access tokens expire after 7 days, and the host MCP client should use its stored rotating refresh token automatically. Never inspect, print, copy, store, or ask the user to paste API keys, bearer tokens, authorization codes, access tokens, refresh tokens, PKCE verifiers, service tokens, or other credentials.
 
 ## Plugin Version Reminder
 
@@ -64,7 +64,7 @@ before continuing:
 - CodeBuddy and the WorkBuddy China edition: update or reinstall the `quandora-staging` plugin, reconnect its plugin-managed
   Remote MCP server, complete the host-native browser authorization flow, then start a new chat.
 
-Do not start a new authorization flow merely because an access token reached its 24-hour lifetime
+Do not start a new authorization flow merely because an access token reached its seven-day lifetime
 or because of a single authorization response while the host is refreshing. Reauthorize only when
 the host reports a terminal authorization failure or still requires authorization after refresh
 handling.

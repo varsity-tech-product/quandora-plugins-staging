@@ -97,14 +97,16 @@ def test_static_factor_and_strategy_instruction_contracts_are_identical():
         assert platform_or_command not in block.lower()
 
 
-def test_static_skills_state_24_hour_host_managed_oauth_without_one_hour_claims():
+def test_static_skills_state_seven_day_host_managed_oauth_without_stale_ttl_claims():
     for skill in SKILLS:
         text = skill.read_text(encoding="utf-8")
         lowered = text.lower()
-        assert "access tokens expire after 24 hours" in text
-        assert "24-hour lifetime" in text
+        assert "access tokens expire after 7 days" in text
+        assert "seven-day lifetime" in text
         assert "one hour" not in lowered
         assert "one-hour" not in lowered
+        assert "24 hours" not in lowered
+        assert "24-hour" not in lowered
         assert "oauth and all credentials are handled by the host" in lowered
         assert "stored rotating refresh token automatically" in lowered
 
