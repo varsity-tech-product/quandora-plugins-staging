@@ -1,4 +1,4 @@
-"""Quandora staging bundle-version and reminder-skill contracts."""
+"""Static Quandora staging bundle-version and reminder instruction contracts."""
 
 import json
 import re
@@ -6,7 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 PLUGIN = ROOT / "plugins" / "quandora-staging"
-EXPECTED_VERSION = "1.0.8-staging.42"
+EXPECTED_VERSION = "1.42"
 SKILLS = (
     PLUGIN / "skills" / "factor-mining" / "SKILL.md",
     PLUGIN / "skills" / "strategy-building" / "SKILL.md",
@@ -57,7 +57,7 @@ def test_all_existing_manifests_marketplaces_and_skills_share_one_version():
         assert match.group(1) == EXPECTED_VERSION
 
 
-def test_factor_and_strategy_share_the_exact_conversation_level_check_contract():
+def test_static_factor_and_strategy_instruction_contracts_are_identical():
     blocks = [_version_block(skill) for skill in SKILLS]
     assert blocks[0] == blocks[1]
     block = blocks[0]
@@ -66,10 +66,12 @@ def test_factor_and_strategy_share_the_exact_conversation_level_check_contract()
         "does not already contain one successful `qd_check_plugin_version` call",
         "call it once before the business entry point",
         "verbatim as `installed_version`",
+        "opaque release label",
+        "never parse, order, or normalize it",
         "If `update_available=false`, continue silently.",
         "The latest Quandora plugin version is <latest_version>. Please update the plugin.",
-        "Then continue the user's original request.",
-        "missing, invisible, or fails",
+        "Then immediately continue the user's original request.",
+        "missing, disabled, invisible, or fails",
         "do not retry the check",
         "without a version message",
         "does not call it or remind again",
@@ -95,7 +97,7 @@ def test_factor_and_strategy_share_the_exact_conversation_level_check_contract()
         assert platform_or_command not in block.lower()
 
 
-def test_skills_state_24_hour_host_managed_oauth_without_one_hour_claims():
+def test_static_skills_state_24_hour_host_managed_oauth_without_one_hour_claims():
     for skill in SKILLS:
         text = skill.read_text(encoding="utf-8")
         lowered = text.lower()
@@ -105,3 +107,21 @@ def test_skills_state_24_hour_host_managed_oauth_without_one_hour_claims():
         assert "one-hour" not in lowered
         assert "oauth and all credentials are handled by the host" in lowered
         assert "stored rotating refresh token automatically" in lowered
+
+
+def test_static_instruction_contract_never_automates_updates_or_asserts_a_grammar():
+    for skill in SKILLS:
+        text = skill.read_text(encoding="utf-8")
+        reminder = _version_block(skill).lower()
+        assert "never install, update, uninstall, or reload a plugin" in reminder
+        assert "start oauth or reauthorize" in reminder
+        assert "provide platform-specific instructions" in reminder
+        assert "opaque release label" in reminder
+        for fixed_grammar in (
+            "semantic version",
+            "semver",
+            "three-component",
+            "x.y.z",
+            "staging suffix",
+        ):
+            assert fixed_grammar not in text.lower()

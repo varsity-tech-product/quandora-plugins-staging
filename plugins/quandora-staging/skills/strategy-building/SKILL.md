@@ -5,7 +5,7 @@ description: Use when the user asks to list available, eligible, or selectable S
 
 # Quandora Staging Strategy Building
 
-Bundled plugin version: 1.0.8-staging.42
+Bundled plugin version: 1.42
 
 Use this skill through the authenticated Quandora Staging connection exposed by the host as
 `quandora-staging`. It composes cross-sectional strategies from eligible factor ids and includes
@@ -17,9 +17,11 @@ OAuth and all credentials are handled by the host. Quandora access tokens expire
 
 On the first entry into any Quandora skill in the current conversation, if the conversation history does not already contain one successful `qd_check_plugin_version` call and no earlier version-check attempt has occurred, call it once before the business entry point. Pass the bundled plugin version declared by the current skill verbatim as `installed_version`; never infer it from memory, the remote latest version, or the host name.
 
+Treat the bundled version as an opaque release label: pass it verbatim and never parse, order, or normalize it.
+
 - If `update_available=false`, continue silently.
-- If `update_available=true`, tell the user only: `The latest Quandora plugin version is <latest_version>. Please update the plugin.` Then continue the user's original request.
-- If `qd_check_plugin_version` is missing, invisible, or fails, do not report that the plugin is outdated, do not retry the check anywhere later in the current conversation, and continue the original request without a version message or any change to the business workflow. OAuth or connection failures continue through the existing safe connection-handling path; never bypass MCP with raw HTTP.
+- If `update_available=true`, say exactly: `The latest Quandora plugin version is <latest_version>. Please update the plugin.` Then immediately continue the user's original request.
+- If `qd_check_plugin_version` is missing, disabled, invisible, or fails, do not report that the plugin is outdated, do not retry the check anywhere later in the current conversation, and continue the original request without a version message or any change to the business workflow. OAuth or connection failures continue through the existing safe connection-handling path; never bypass MCP with raw HTTP.
 - Never install, update, uninstall, or reload a plugin; execute an update command; ask whether to update; start OAuth or reauthorize because of the version result; provide platform-specific instructions; or delay the original request.
 - A later entry into Factor Mining or Strategy Building in the same conversation recognizes the prior successful version check and does not call it or remind again.
 - Treat `qd_check_plugin_version` as optional for connection readiness. Its absence alone never triggers connection recovery or changes the required business-tool set.
