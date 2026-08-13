@@ -6,7 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 PLUGIN = ROOT / "plugins" / "quandora-staging"
-EXPECTED_VERSION = "1.42"
+EXPECTED_VERSION = "1.43"
 SKILLS = (
     PLUGIN / "skills" / "factor-mining" / "SKILL.md",
     PLUGIN / "skills" / "strategy-building" / "SKILL.md",
@@ -133,3 +133,51 @@ def test_static_instruction_contract_never_automates_updates_or_asserts_a_gramma
             "staging suffix",
         ):
             assert fixed_grammar not in text.lower()
+
+
+def test_factor_task_list_keeps_internal_task_ids_out_of_user_output():
+    text = SKILLS[0].read_text(encoding="utf-8")
+    required = (
+        "render exactly two user-facing fields per row",
+        "the exact returned `name` and the exact returned `category`",
+        "the only table columns",
+        "Never render a `Task ID` column",
+        "raw task rows",
+        "raw JSON",
+        "code-formatted selectors",
+        "or any `task_id` value anywhere in the response",
+        "use temporary ordinal choices",
+        "map the selected ordinal back to the exact row's `task_id` internally",
+    )
+    for phrase in required:
+        assert phrase in text
+
+
+def test_result_bundle_paths_are_absolute_and_split_by_workflow():
+    factor = SKILLS[0].read_text(encoding="utf-8")
+    strategy = SKILLS[1].read_text(encoding="utf-8")
+    readme = (PLUGIN / "README.md").read_text(encoding="utf-8")
+
+    factor_dir = "/Users/richsion/Quandora staging result/factor/"
+    strategy_dir = "/Users/richsion/Quandora staging result/strategy/"
+    factor_zip = f"{factor_dir}<factor_slug>.zip"
+    strategy_zip = f"{strategy_dir}<strategy_slug>.zip"
+
+    assert factor_dir in factor
+    assert factor_zip in factor
+    assert strategy_dir not in factor
+    assert strategy_dir in strategy
+    assert strategy_zip in strategy
+    assert factor_dir not in strategy
+    assert factor_zip in readme
+    assert strategy_zip in readme
+
+    stale_paths = (
+        "Quandora staging result/<factor_slug>.zip",
+        "Quandora staging result/<strategy_slug>.zip",
+        "/absolute/path/to/Quandora staging result/",
+    )
+    for stale in stale_paths:
+        assert stale not in factor
+        assert stale not in strategy
+        assert stale not in readme

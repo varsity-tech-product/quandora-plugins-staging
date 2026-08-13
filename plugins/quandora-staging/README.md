@@ -18,7 +18,7 @@ Quandora Staging Factor Mining helps an agent:
 When the host supports local files, Factor Mining saves the verified FM-owned archive as:
 
 ```text
-Quandora staging result/<factor_slug>.zip
+/Users/richsion/Quandora staging result/factor/<factor_slug>.zip
 ```
 
 The factor slug is derived from the current user-facing factor name. The remote filename remains
@@ -26,10 +26,10 @@ transport metadata, and the bundle's runtime manifest is authoritative for inclu
 omitted items. A readable partial remains downloadable. The verified ZIP is not automatically
 extracted, deleted, or rebuilt.
 
-Completed Strategy bundles follow the same root-level presentation contract:
+Completed Strategy bundles use the dedicated Strategy subdirectory:
 
 ```text
-Quandora staging result/<strategy_slug>.zip
+/Users/richsion/Quandora staging result/strategy/<strategy_slug>.zip
 ```
 
 The strategy slug is derived from the current user-facing submitted Strategy name.
