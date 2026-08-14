@@ -136,9 +136,11 @@ list is not a substitute for Strategy eligibility.
   - `factor_weights`: unique `{ "factor_id": "...", "weight": <finite positive number> }` objects.
 - When configuration is omitted, leave optional caller fields omitted. Interpret the current
   Product defaults only for effective behavior and local description: equal weights use the
-  `factor_ids` selection form, the default direction is neutral, and omitted ranking uses N=5. Read
-  exact field names, value shapes, and omission semantics from the single returned contract, its
-  `product_defaults`, and the exposed submit schema; never invent a request field or enum value.
+  `factor_ids` selection form, the default direction is neutral, and omitted ranking uses percentage
+  mode: long the top 20 percent and short the bottom 20 percent of the ranked universe. This is a
+  20-percent universe fraction, not 20 instruments on each side. Read exact field names, value
+  shapes, and omission semantics from the single returned contract, its `product_defaults`, and the
+  exposed submit schema; never invent a request field or enum value.
 - A user-supplied weight, direction, top/bottom count, or top/bottom percentage overrides the
   corresponding default. For custom weights, validate that ids are unique, every weight is finite
   and positive, and the total is `1.0` within `1e-6`. Preserve every other explicit supported
@@ -241,10 +243,11 @@ after validating it against the submit tool schema: trim it, require a non-empty
 within 255 characters. Otherwise derive a concise, distinguishable name from themes present in the
 selected returned display names plus the actual effective configuration: use explicit user-selected
 options where present and the advertised `product_defaults` only where omitted. For example,
-`liquidation_continuation_ls_neutral_tb5` represents returned liquidation/continuation themes,
-long-short neutral direction, and top/bottom count 5. Never invent a factor label or use a generic
-name such as `agent_neutral_percent_N_strategy`. Send the generated name as `name` and use the same
-name in the existing deterministic destination-slug logic.
+`liquidation_continuation_ls_neutral_tb20pct` represents returned liquidation/continuation themes,
+long-short neutral direction, and top/bottom 20 percent of the universe, not a count of 20
+instruments. Never invent a factor label or use a generic name such as
+`agent_neutral_percent_N_strategy`. Send the generated name as `name` and use the same name in the
+existing deterministic destination-slug logic.
 
 Call `sb_submit_run` exactly once with the validated selection, generated or user-supplied
 `name`, every explicit user option, and only the omitted-field default representation required by
