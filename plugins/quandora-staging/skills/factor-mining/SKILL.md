@@ -5,7 +5,7 @@ description: Use when the user explicitly asks about caller-owned or reusable Fa
 
 # Quandora Staging Factor Mining
 
-Bundled plugin version: 1.44
+Bundled plugin version: 1.46
 
 Use this skill to run Factor Mining through the authenticated Quandora Staging connection exposed by the host as `quandora-staging`.
 
@@ -343,19 +343,27 @@ Use this URL-first delivery once per request:
    already contains unrelated bytes or cannot be proven to match the selected ZIP, do not
    overwrite it silently: tell the user and use a different safe user-facing slug chosen with the
    user, never an internal backend identifier.
-2. Stream the opaque Auth `download_url` directly to the task-created `.partial`, maintaining byte
-   count and SHA-256. Do not print, log, save, edit, or reuse the URL. Retry rule: after one transient
-   URL failure, at most one fresh ticket may be issued for one retry; after that failure, move to
-   MCP fallback; never reuse a single-use URL/ticket.
-3. Verify exact size and SHA-256, ZIP magic/openability, and that every ZIP entry is a safe relative
+2. Immediately consume the selected `download_url` in the same execution context that receives it:
+   pass it unchanged to the host-native HTTP downloader and stream the response directly to the
+   task-created `.partial`, maintaining byte count and SHA-256. Never delete, redact, clear, or
+   transform the URL before the HTTP attempt, and do not split ticket parsing and URL consumption
+   across unrelated commands or agent turns. This returned URL is an approved short-lived transfer
+   capability, not a value to redact before use. Its transient appearance in the ticket response
+   and host download-tool invocation is safe and expected. Do not copy it into a persistent file or
+   diagnostic log, or retain it after the attempt; it need not be repeated in the final summary.
+3. Do not declare the URL unavailable unless an actual HTTP download attempt was made and returned
+   a network-policy, expiry, transport, or non-success HTTP failure. After one such transient URL
+   failure, issue at most one fresh ticket and immediately consume its new URL for one retry. After
+   that actual retry fails, move to MCP fallback. Never reuse a single-use URL/ticket.
+4. Verify exact size and SHA-256, ZIP magic/openability, and that every ZIP entry is a safe relative
    path contained by the archive. Then atomically rename the verified `.partial` file to
    `/Users/richsion/Quandora staging result/factor/<factor_slug>.zip`.
 
 If the URL is unavailable, blocked by local host network policy, expired, or fails after that one retry, automatically use `fm_bundle_chunk` with the same canonical `job_id` and `snapshot_revision`. This fallback uses the already-working authenticated MCP connection and requires no new host-native file sink or shell network access:
 
-1. Start at offset `0` and request at most `256 KiB` (`262144`) raw bytes per call. Decode `content_b64` without printing or logging it, append to the same task-created `.partial`, and follow only the validated `next_offset`.
-2. Enforce the 10 MiB ZIP cap and at most 40 chunk calls. Keep every response bound to the same kind, job ID, snapshot revision, filename, content type, size, and whole-object SHA. Never mix revisions or append an old partial.
-3. Require the final call to consume the empty terminal marker. PB's `terminal: true` means PB consumed and validated FM's empty upstream final marker; it is the terminal continuation response, so there is no second public empty chunk to request. Then verify the assembled byte count, whole-ZIP SHA-256, ZIP magic/openability, and safe entry paths before atomic rename. On interruption or any terminal fallback failure, discard only the task-created unverified `.partial` and report that no verified ZIP was saved.
+1. Start at offset `0` and request at most `256 KiB` (`262144`) raw bytes per call. For every valid response, decode and append `content_b64` before acting on `terminal`; never print or log the base64. A `terminal: true` response may carry the final non-empty `content_b64`, so those bytes are part of the ZIP and must be appended before stopping. When `terminal` is false, require `next_offset` to equal the current offset plus the decoded byte length and continue from exactly that value. When `terminal` is true, require `next_offset` to be null and the appended total to equal `size_bytes`; do not request another public empty chunk.
+2. Enforce the 10 MiB ZIP cap and at most 40 chunk calls. Keep every response bound to the same kind, job ID, snapshot revision, filename, content type, size, and whole-object SHA. Never mix revisions or append an old partial. Do not start a local receiver that exits when its setup command reaches EOF; use a per-response binary-safe append operation, or keep one verified writer session open until the terminal response has been appended.
+3. The public chunk contract's `terminal: true` means that response ends the stream; the client must not require `content_b64` itself to be empty and must not request an extra empty response. After appending the terminal response, verify the assembled byte count, whole-ZIP SHA-256, ZIP magic/openability, and safe entry paths before atomic rename. On interruption or any terminal fallback failure, discard only the task-created unverified `.partial` and report that no verified ZIP was saved.
 
 After the bounded materialization recheck when applicable, if the selected bundle metadata is `pending`, `not_available`, or `integrity_failure`, stop before URL/chunk/file creation: no URL, no chunk, no fabricated file. Preserve its safe status/reason. Do not save bearer tokens, download URLs, raw service metadata, artifact IDs, admission IDs, credentials, or any other downstream IDs. The only exception is the current `session_id` / `run_id` local-traceability allowlist described above. If the host does not support file writes, report that no local verified ZIP was saved.
 
@@ -394,7 +402,7 @@ implementation details or treat an optional bundle item omission recorded by FM 
 For a selected partial snapshot, state that it is partial and report the exact omissions and pending
 reasons from the runtime manifest without claiming completeness.
 
-Never show job IDs, snapshot revisions, download URLs, bearer tokens, raw credentials, or full `plugin.py` source in user-facing summaries. It is safe to show the local result folder and verified ZIP path created by the current host.
+Never show job IDs, snapshot revisions, bearer tokens, raw credentials, or full `plugin.py` source in user-facing summaries. Do not repeat a consumed or expired download URL in the final summary; this does not prohibit its safe transient appearance in the ticket response or download-tool invocation. It is safe to show the local result folder and verified ZIP path created by the current host.
 
 At the end of every completed, failed, or interrupted run, show the `/Users/richsion/Quandora staging result/factor/` folder and
 the verified Result Bundle ZIP when saved. For a pending run, mention a redacted pending summary
@@ -483,5 +491,5 @@ Return a float `pd.DataFrame` aligned with `close`, use only current and histori
 - Do not import, exec, eval, or otherwise execute generated `plugin.py`.
 - Do not submit filesystem paths instead of inline `plugin_source`.
 - Do not print generated `plugin.py` source in summaries.
-- Treat downstream IDs, download URLs, and service metadata as private.
+- Treat downstream IDs and service metadata as private. Treat the returned one-time Result Bundle URL as an approved immediate download capability under the URL-first rules above, not as a credential that must be removed before use.
 - Bundle states and safe reason codes are authoritative. Authentication, authorization, network, malformed response, and server errors must fail clearly with redacted messages.
