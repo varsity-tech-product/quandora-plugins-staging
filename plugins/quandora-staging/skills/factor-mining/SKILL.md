@@ -157,11 +157,11 @@ factor. Never treat browsing history as permission to edit or resubmit historica
 Determine whether the user wants a public task or a custom idea:
 
 - For a public task: call `fm_list_tasks`, show concise choices, and select one exact public `task_id`, asking the user to pick unless they explicitly ask the agent to choose. For a task-list-only request, render exactly two user-facing fields per row: the exact returned `name` and the exact returned `category`. Use localized equivalents of `Task name` and `Category` as the only table columns. Never render a `Task ID` column, raw task rows, raw JSON, code-formatted selectors, or any `task_id` value anywhere in the response. If the user needs to select a task, use temporary ordinal choices such as 1, 2, and 3 and map the selected ordinal back to the exact row's `task_id` internally. In every other user-facing task list or selection prompt, label each choice with the exact returned `name`, optionally followed by the exact returned `category`; never display `task_id` or derive a display label from it. Treat `task_id`, including any `task_...` or `taskn...` prefix, as an opaque internal selector used only in subsequent tool calls. When the user selects a displayed name, category, or temporary ordinal, resolve it back to the exact row's `task_id` internally. Treat the selected Task's returned category as authoritative and do not replace or reinterpret it. Either call `fm_get_contract` with only that exact `task_id` before creating the task session and then create the session for that same task, or create the session first with `fm_task_session` and call `fm_get_contract` with only the returned `session_id`.
-- For a custom idea: before choosing `category` and before `fm_custom_sess`, obtain one complete current `fm_list_tasks` response. Reuse a complete response already obtained in the same conversation and workflow; otherwise call once in the normal flow. If that read fails with a retryable transport error, the single bounded identical retry below is allowed, but never call it again after a complete success. Require exactly eight open public task references. Every row must have a unique non-empty `task_id`, one of the eight non-`Other` canonical categories, and non-empty `core_question`, `primary_alpha_source`, `economic_principle`, `microstructure_logic`, `crypto_specific_mechanism`, `research_directions`, and `target_behavior` arrays. Their categories must be exactly `Microstructure`, `Volatility`, `Imbalance`, `Order Flow`, `Auction`, `Momentum`, `Volume`, and `Liquidity`, once each. Any malformed row or duplicate, missing, or inconsistent task/category is a backend/plugin contract mismatch: stop before `fm_custom_sess`, report the mismatch, and do not fall back to a static classification guess, stale model memory, or invented content.
+- For a custom idea: before choosing `category` and before `fm_custom_sess`, obtain one complete current successful `fm_list_tasks` response. Reuse a complete response already obtained in the same conversation and workflow; otherwise call once in the normal flow. If that read fails with a retryable transport error, the single bounded identical retry below is allowed, but never call it again after a complete success. Require a non-empty bounded list of open public task references. Every row must have `status: open`, a unique non-empty opaque `task_id`, a non-empty bounded returned `category`, non-empty `allowed_data`, and non-empty `core_question`, `primary_alpha_source`, `economic_principle`, `microstructure_logic`, `crypto_specific_mechanism`, `research_directions`, and `target_behavior` arrays. Any malformed row, duplicate ID, missing required semantic field, or empty list is a backend/plugin contract mismatch: stop before `fm_custom_sess`, report the mismatch, and do not fall back to a static classification guess, stale model memory, or invented content. Treat every returned category as authoritative because Product Backend has already applied FM's closed category contract. Do not add a plugin-side backend row-count or category-distribution assertion. Do not require one row per category, and do not fail merely because a new valid public category or an additional valid task appears.
 
-  Compare the user's thesis semantically with those returned research fields; never classify from task ID or title alone. Choose exactly the category returned by the matching public task reference when the economic mechanism honestly fits. If none of the eight references fits, use the explicit product fallback `Other`; `Other` has no public reference task and must not be fabricated as a ninth public row. The public list is only the custom branch's semantic reference: never copy a public `task_id` into a custom task/session and never turn this branch into `fm_task_session`.
+  Compare the user's thesis semantically with the returned research fields across all current rows; never classify from task ID or title alone. Choose exactly the category of the best honestly matching returned public reference. This includes `Technical` when the current response returns it and the thesis matches technical price action, trend, reversal, breakout, range, candlestick, or volume-confirmed pattern semantics. If no returned public reference honestly fits, use the explicit product fallback `Other`. Do not fabricate an `Other` public row, copy a public `task_id` into the custom task/session, or turn this branch into `fm_task_session`.
 
-  Separately, before creating the session, call `fm_get_contract({})` exactly once to read the global construction and data-column contract; the runtime classification read and this construction-contract read are both required. Validate the selected label against exactly `Microstructure`, `Volatility`, `Imbalance`, `Order Flow`, `Auction`, `Momentum`, `Volume`, `Liquidity`, or `Other`; this vocabulary validates the runtime result and never replaces the runtime reference read. Prepare a clear title, category, description, non-empty `allowed_data`, and `fwd_period` for `fm_custom_sess`, using only exact column names returned by the global contract's `plugin_contract.allowed_data`, including `close`, `volume`, `funding_rate_close`, or `open_interest_close` only when returned. Use `fwd_period: 7` unless the user explicitly asks for another supported horizon. Create the custom session, then call `fm_get_contract` with only the returned `session_id`; treat that scoped contract as authoritative for writing and validating `plugin.py`. Never send a hand-built custom `task_payload` to `fm_get_contract`.
+  Separately, before creating the session, call `fm_get_contract({})` exactly once to read the global construction and data-column contract; the runtime classification read and this construction-contract read are both required. Validate the selected label as either the exact category of the matching row in the complete current response or the unmatched fallback `Other`; do not maintain a separate static copy of the backend category vocabulary. Prepare a clear title, category, description, non-empty `allowed_data`, and `fwd_period` for `fm_custom_sess`, using only exact column names returned by the global contract's `plugin_contract.allowed_data`, including `close`, `volume`, `funding_rate_close`, or `open_interest_close` only when returned. Use `fwd_period: 7` unless the user explicitly asks for another supported horizon. Create the custom session, then call `fm_get_contract` with only the returned `session_id`; treat that scoped contract as authoritative for writing and validating `plugin.py`. Never send a hand-built custom `task_payload` to `fm_get_contract`.
 
   `fm_custom_sess` has only the canonical flat shape below. This example is valid only when the immediately preceding global contract returned `close` exactly:
 
@@ -200,7 +200,7 @@ Before drafting, form a concise research thesis. For public tasks, stay inside t
 
 Treat Task `category` and plugin `FACTOR_TYPE` as separate but strictly aligned fields. `category` is exactly the chosen product label retained by the custom Task/session lineage; `FACTOR_TYPE` is an agent-authored, mechanism-specific, unique snake_case identifier. For every custom factor, the thesis, formula, selected inputs, `FACTOR_NAME`, and `FACTOR_TYPE` must all semantically belong to the category supplied to `fm_custom_sess`. Use a mechanism-specific value such as `funding_adjusted_trend_persistence` inside `Momentum`; `FACTOR_TYPE` must never be a bare category label such as `momentum`, and never infer or rewrite the category from `FACTOR_TYPE`, names, tags, or backtest performance.
 
-Immediately before validation and again after any source repair, verify this category-to-mechanism alignment. For a public task, revise an out-of-category draft to remain inside the selected Task or start the appropriate different task/session; never relabel the published Task. For a custom idea, if the mechanism has changed so that it no longer belongs to the category bound at session creation, do not validate or upload it through that session. Create a new custom session with the correct canonical category and a new invocation identity, then repeat the scoped contract, deduplication, validation, and ordinary upload flow. Do not silently keep a mismatched category or coerce an unrelated mechanism into one of the eight named categories.
+Immediately before validation and again after any source repair, verify this category-to-mechanism alignment. For a public task, revise an out-of-category draft to remain inside the selected Task or start the appropriate different task/session; never relabel the published Task. For a custom idea, if the mechanism has changed so that it no longer belongs to the category bound at session creation, do not validate or upload it through that session. Create a new custom session with the correct current returned category and a new invocation identity, then repeat the scoped contract, deduplication, validation, and ordinary upload flow. Do not silently keep a mismatched category or coerce an unrelated mechanism into a category that does not honestly fit.
 
 For named indicators or established formulas, use the canonical inputs when the plugin contract allows them. For example, MFI should use high, low, close, and volume when those columns are available. If required inputs are unavailable, clearly treat the factor as a variant and reflect that in `FACTOR_NAME`, `FACTOR_TYPE`, description, and formula.
 
@@ -296,6 +296,22 @@ selected ticket and every chunk response. It is transport metadata only and neve
 local display filename. Likewise bind the bundle kind, selector, snapshot revision, content type,
 size, whole-ZIP SHA-256, and runtime manifest according to the existing closed response contract.
 
+Apply this one bounded materialization recheck before the readable-partial freshness step:
+
+1. If the initial metadata is `pending` with `reason_code=bundle_materializing`, treat it as a
+   valid non-readable state, not as a transport or backend failure. Do not use its revision for a
+   chunk call, create a file or `.partial`, consume a URL, retry a download ticket, or use a
+   legacy-artifact fallback.
+2. Wait at most 10 seconds with a host-native bounded wait or timer, then make exactly one fresh current `fm_bundle_ticket`
+   call with the same canonical terminal `job_id` and without a
+   caller-supplied `snapshot_revision`. Never resubmit or resume the completed Factor run merely
+   to make a bundle appear.
+3. If that single recheck is still `pending` with `reason_code=bundle_materializing`, stop safely
+   and tell the user the Result Bundle is still materializing and can be requested later. Never
+   loop. If it is readable `available` or persisted readable `partial`, continue with the ordinary
+   URL-first flow. If it becomes another truthful non-readable state, preserve its exact safe
+   status and reason and stop. A malformed recheck remains fail-closed.
+
 Apply this one optional freshness step before downloading:
 
 1. If the initial ticket is persisted readable `partial` and its runtime manifest reports one or
@@ -311,8 +327,10 @@ Apply this one optional freshness step before downloading:
    selected manifest. If the initial partial reports no pending item, do not wait or refresh. A
    later independent user request may obtain a newer current snapshot after synchronization.
 
-This optional freshness refresh is separate from the URL-delivery retry below and does not consume
-that retry. Do not use legacy per-file tools to fill an omitted item, complete Raw Parquet, or
+The bounded materialization recheck, this optional readable-partial freshness refresh, and the one
+fresh-ticket retry after a transient single-use URL failure are three separate bounds. Never
+collapse them into a loop. The freshness refresh does not consume the URL retry. Do not use legacy
+per-file tools to fill an omitted item, complete Raw Parquet, or
 rebuild the selected immutable ZIP. Keep the legacy single-artifact actions only for a user request
 that explicitly asks for one compatibility artifact; they are not bundle-completion tools.
 
@@ -339,12 +357,17 @@ If the URL is unavailable, blocked by local host network policy, expired, or fai
 2. Enforce the 10 MiB ZIP cap and at most 40 chunk calls. Keep every response bound to the same kind, job ID, snapshot revision, filename, content type, size, and whole-object SHA. Never mix revisions or append an old partial.
 3. Require the final call to consume the empty terminal marker. PB's `terminal: true` means PB consumed and validated FM's empty upstream final marker; it is the terminal continuation response, so there is no second public empty chunk to request. Then verify the assembled byte count, whole-ZIP SHA-256, ZIP magic/openability, and safe entry paths before atomic rename. On interruption or any terminal fallback failure, discard only the task-created unverified `.partial` and report that no verified ZIP was saved.
 
-If bundle metadata is `pending`, `not_available`, or `integrity_failure`, stop before URL/chunk/file creation: no URL, no chunk, no fabricated file. Preserve its safe status/reason. Do not save bearer tokens, download URLs, raw service metadata, artifact IDs, admission IDs, credentials, or any other downstream IDs. The only exception is the current `session_id` / `run_id` local-traceability allowlist described above. If the host does not support file writes, report that no local verified ZIP was saved.
+After the bounded materialization recheck when applicable, if the selected bundle metadata is `pending`, `not_available`, or `integrity_failure`, stop before URL/chunk/file creation: no URL, no chunk, no fabricated file. Preserve its safe status/reason. Do not save bearer tokens, download URLs, raw service metadata, artifact IDs, admission IDs, credentials, or any other downstream IDs. The only exception is the current `session_id` / `run_id` local-traceability allowlist described above. If the host does not support file writes, report that no local verified ZIP was saved.
 
 Preserve the verified ZIP as the canonical local output. Do not automatically extract the ZIP,
-delete it, re-ZIP it, or reconstruct a replacement archive from individual files. Do not modify ZIP
-entry timestamps: deterministic entry timestamps belong to the FM-owned archive, and the agent must
-not rebuild the ZIP to change how a file browser displays them.
+delete it, re-ZIP it, rename its entries, synthesize missing files, or reconstruct a replacement
+archive from individual files. Do not modify ZIP entry timestamps: stable entry timestamps belong
+to the FM-owned archive, and the agent must not rebuild the ZIP to change how a file browser
+displays them. Normal logs may be present; when the manifest truthfully omits a log because FM
+detected concrete prohibited credential or storage-topology content, preserve that omission and do
+not bypass it. Do not hardcode an artifact registry, item count, entry-name list, backend commit,
+safe-filename UUID pattern, or FM storage implementation. Existing immutable snapshot revisions
+are not expected to gain later parity fixes; acceptance of those fixes uses a fresh snapshot.
 
 ### Result Insight and Optimization
 
