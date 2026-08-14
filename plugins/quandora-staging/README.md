@@ -36,11 +36,13 @@ The strategy slug is derived from the current user-facing submitted Strategy nam
 
 ## What Paper Trading Does
 
-Quandora Staging Paper Trading helps an agent discover the current user's eligible source
-StrategyRuns, obtain explicit submit/stop confirmation, monitor lifecycle, and read live current
-PnL, position history, fills, funding, equity curves, and bounded strategy code. It also supports
-static independent-sleeve Strategy Portfolio backtests and Paper runs. It does not expose production
-trading, universe overrides, Paper archive/resume, or nonexistent parent aggregate positions/equity.
+Quandora Staging Paper Trading helps an agent discover the current user's eligible sources and
+prepare a bounded optimizer-backed source StrategyVersion from exact factor/version/job references.
+It submits and monitors the source backtest with the Paper-owned source detail, obtains explicit
+Paper submit/stop confirmation, and reads live current PnL, position history, fills, funding, equity
+curves, and bounded strategy code. It also supports static independent-sleeve Strategy Portfolio
+backtests and Paper runs. It does not expose production trading, universe overrides, Paper
+archive/resume, or nonexistent parent aggregate positions/equity.
 
 ## Skills
 
@@ -75,12 +77,13 @@ If the `quandora-staging` connection is unavailable, update or reinstall the sta
 
 ## Paper Trading Release Order
 
-Plugin 1.44 must be published and confirmed installable from every supported staging manifest before
-the Auth service advertises `1.44`. PB and Auth Paper code deploys keep their independent Paper
-gates closed and omit the new Paper OAuth scopes during that interval. A later, separately
-auditable staging rollout enables both gates, adds the Paper scopes, and changes the Auth latest
-label together. Production plugin metadata and production service configuration are outside this
-staging release and remain unchanged.
+Merged prerequisite Plugin 1.44 precedes this semantic superset. Plugin 1.45 must be published and
+confirmed installable from every supported staging manifest before the Auth service advertises
+`1.45`. PB and Auth Paper code deploys keep their independent Paper and versioned-source gates
+closed and omit the eight Paper OAuth scopes during that interval. A later, separately auditable
+staging rollout enables the gates, adds the scopes, and changes the Auth latest label together.
+Production plugin metadata and production service configuration are outside this staging release
+and remain unchanged.
 
 Before publishing the staging package, run the repository-local static contract check:
 
@@ -88,6 +91,7 @@ Before publishing the staging package, run the repository-local static contract 
 python plugins/quandora-staging/scripts/validate-paper-trading.py
 ```
 
-It verifies the nine release-version fields, all 21 Paper tool names, forbidden-tool absence,
-downstream safety reason text, and the eight required prompt-routing scenarios without calling a
-service or performing a mutation.
+It verifies the nine release-version fields, all 27 Paper tool names, all eight documented scopes,
+forbidden-tool absence, downstream safety reason text, required prompt-routing scenarios, and the
+merged Plugin 1.44 Technical/materialization/Strategy-default behavior without calling a service or
+performing a mutation.

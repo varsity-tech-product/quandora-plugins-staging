@@ -104,10 +104,12 @@ quandora-staging@quandora-staging
 
 Quandora Staging Factor Mining lets local agents create `plugin.py`, submit it through the authenticated staging Quandora connection, run a backtest, and save one verified FM-owned Result Bundle ZIP in the local workspace.
 
-Quandora Staging Paper Trading lets agents discover the user's eligible StrategyRun sources, start
-and monitor single-strategy or static-sleeve Strategy Portfolio Paper runs after confirmation, read
-current PnL and historical execution data, and terminally stop selected runs. It is staging-only and
-does not place live-money trades.
+Quandora Staging Paper Trading lets agents discover ordinary eligible sources; create or revise a
+bounded optimizer-backed source StrategyVersion from exact factor/version/job references; submit
+and monitor its source backtest through the Paper-owned source detail; then start and monitor
+single-strategy or static-sleeve Strategy Portfolio Paper runs after confirmation. It also reads
+current PnL and historical execution data and terminally stops selected runs. It is staging-only
+and does not place live-money trades.
 
 ## Install
 
@@ -321,9 +323,10 @@ or terminal stop. Lifecycle monitoring uses Paper detail rather than repeatedly 
 live portfolio. Strategy Portfolio Paper is presented as ordered, static independent sleeves; no
 parent aggregate position or parent Paper equity capability is implied.
 
-Release invariant: publish and verify staging plugin 1.44 as installable before the Auth staging
-service advertises it. Paper service gates and OAuth scopes are enabled only in a separate rollout;
-production plugin and service configuration remain unchanged.
+Release invariant: merged prerequisite Plugin 1.44 precedes this semantic Paper superset. Publish
+and verify the unique staging Plugin 1.45 artifact as installable before the Auth staging service
+advertises `1.45`. Paper service gates and all eight Paper OAuth scopes are enabled only in a
+separate rollout; production plugin and service configuration remain unchanged.
 
 ## License
 

@@ -12,9 +12,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 PLUGIN = ROOT / "plugins" / "quandora-staging"
 SKILL = PLUGIN / "skills" / "paper-trading" / "SKILL.md"
-RELEASE = "1.44"
+RELEASE = "1.45"
 
 EXPECTED_TOOLS = {
+    "pt_create_source_strategy",
     "pt_create_strategy_portfolio",
     "pt_get_code",
     "pt_get_equity",
@@ -23,6 +24,9 @@ EXPECTED_TOOLS = {
     "pt_get_portfolio_backtest_result",
     "pt_get_portfolio_paper",
     "pt_get_run",
+    "pt_get_source",
+    "pt_get_source_strategy",
+    "pt_get_source_strategy_version",
     "pt_get_strategy_portfolio",
     "pt_get_strategy_portfolio_version",
     "pt_list_fills",
@@ -31,11 +35,24 @@ EXPECTED_TOOLS = {
     "pt_list_runs",
     "pt_list_sources",
     "pt_revise_strategy_portfolio",
+    "pt_revise_source_strategy",
     "pt_stop_portfolio_paper",
     "pt_stop_run",
     "pt_submit_portfolio_backtest",
     "pt_submit_portfolio_paper",
     "pt_submit_run",
+    "pt_submit_source_backtest",
+}
+
+EXPECTED_SCOPES = {
+    "paper_trading:sources.read",
+    "paper_trading:sources.write",
+    "paper_trading:runs.read",
+    "paper_trading:runs.create",
+    "paper_trading:runs.stop",
+    "paper_trading:code.read",
+    "paper_trading:portfolios.read",
+    "paper_trading:portfolios.write",
 }
 
 VERSION_FIELDS = (
@@ -95,20 +112,44 @@ def main() -> int:
             f"unexpected={sorted(discovered_tools - EXPECTED_TOOLS)}"
         )
 
+    discovered_scopes = set(re.findall(r"`(paper_trading:[a-z.]+)`", text))
+    if discovered_scopes != EXPECTED_SCOPES:
+        failures.append(
+            "Paper scope inventory mismatch: "
+            f"missing={sorted(EXPECTED_SCOPES - discovered_scopes)}, "
+            f"unexpected={sorted(discovered_scopes - EXPECTED_SCOPES)}"
+        )
+
     forbidden_tools = sorted(set(re.findall(r"\bpt_(?:archive|unarchive|resume)[a-z_]*\b", text)))
     if forbidden_tools:
         failures.append(f"forbidden Paper tools are named as callable tools: {forbidden_tools}")
 
     prompt_smokes = {
+        "ordinary source": (
+            "Missing displayed capital does not make an ordinary non-optimizer source ineligible",
+            "omit it from `pt_submit_run`",
+            "FM retains\nits existing default",
+        ),
+        "optimizer preparation": (
+            "pt_create_source_strategy",
+            "pt_submit_source_backtest",
+            "pt_get_source",
+            "request-hash-bound snapshot",
+        ),
         "normal submit": (
             "pt_list_sources",
             "explicit confirmation",
             "pt_submit_run",
         ),
         "optimizer submit": (
-            "source run's exact authoritative FM initial",
+            "exact frozen Product source-run capital",
             "config_source=caller",
-            "new StrategyRun for the same StrategyVersion",
+            "FM remains the final Paper submit",
+        ),
+        "source polling": (
+            "A normal lifecycle is `submitted`",
+            "then `running`, then `completed`",
+            "terminal source states never reopen",
         ),
         "30D curve": ("`30D`", "`1.5h`", "480", "synthetic pre-live"),
         "positions and current PnL": (
@@ -149,6 +190,20 @@ def main() -> int:
     if "operation.paper_trade.submit" not in text or "Do not fetch or cite" not in text:
         failures.append("conflicting FM Paper submit guidance is not explicitly excluded")
 
+    factor_text = (PLUGIN / "skills" / "factor-mining" / "SKILL.md").read_text(encoding="utf-8")
+    strategy_text = (PLUGIN / "skills" / "strategy-building" / "SKILL.md").read_text(
+        encoding="utf-8"
+    )
+    prerequisite_contracts = {
+        "Technical classification": (factor_text, "This includes `Technical`"),
+        "Factor bounded materialization": (factor_text, "reason_code=bundle_materializing"),
+        "Strategy bounded materialization": (strategy_text, "reason_code=bundle_materializing"),
+        "Strategy percent default": (strategy_text, "top 20 percent and short the bottom 20 percent"),
+    }
+    for contract, (skill_text, fragment) in prerequisite_contracts.items():
+        if fragment not in skill_text:
+            failures.append(f"missing Plugin 1.44 prerequisite behavior: {contract}")
+
     if failures:
         print("Paper Trading plugin validation failed:")
         for failure in failures:
@@ -157,7 +212,8 @@ def main() -> int:
 
     print(
         "Paper Trading plugin validation passed: "
-        "9 version fields, 21 tools, 8 prompt smokes, and downstream safety contracts."
+        "9 version fields, 27 tools, 8 scopes, 11 prompt smokes, prerequisite 1.44 behavior, "
+        "and downstream safety contracts."
     )
     return 0
 

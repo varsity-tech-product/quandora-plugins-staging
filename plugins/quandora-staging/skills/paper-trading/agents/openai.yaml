@@ -4,7 +4,7 @@ interface:
   icon_small: "../../../assets/quandora.png"
   icon_large: "../../../assets/quandora.png"
   brand_color: "#F28C00"
-  default_prompt: "Use $paper-trading to select an eligible StrategyRun and start a staging Paper run after confirmation."
+  default_prompt: "Use $paper-trading to prepare or select an eligible source and start a staging Paper run after confirmation."
 
 dependencies:
   tools:

@@ -5,7 +5,7 @@ description: Use when the user asks for simulated trading, paper trading, 模拟
 
 # Quandora Staging Paper Trading
 
-Bundled plugin version: 1.44
+Bundled plugin version: 1.45
 
 Use this skill through the authenticated `quandora-staging` MCP connection. It operates only on
 the current user's product-safe StrategyRun, Paper run, and Strategy Portfolio handles. It is a
@@ -24,7 +24,7 @@ credentials, or any other secret.
 
 On the first entry into any Quandora skill in the current conversation, if the conversation history
 does not already contain one successful `qd_check_plugin_version` call and no earlier version-check
-attempt has occurred, call it once before the business entry point. Pass `1.44` verbatim as
+attempt has occurred, call it once before the business entry point. Pass `1.45` verbatim as
 `installed_version`; treat it as an opaque release label and never parse, order, or normalize it.
 
 - If `update_available=false`, continue silently.
@@ -39,8 +39,10 @@ attempt has occurred, call it once before the business entry point. Pass `1.44` 
 
 Use only the minimum relevant subset of these Paper tools:
 
-- Sources and single runs: `pt_list_sources`, `pt_list_runs`, `pt_get_run`, `pt_submit_run`,
-  `pt_stop_run`.
+- Source preparation and discovery: `pt_list_sources`, `pt_create_source_strategy`,
+  `pt_revise_source_strategy`, `pt_get_source_strategy`, `pt_get_source_strategy_version`,
+  `pt_submit_source_backtest`, `pt_get_source`.
+- Single runs: `pt_list_runs`, `pt_get_run`, `pt_submit_run`, `pt_stop_run`.
 - Single-run data: `pt_get_portfolio`, `pt_list_positions`, `pt_get_equity`, `pt_list_fills`,
   `pt_list_funding`, `pt_get_code`.
 - Strategy Portfolio setup and backtest: `pt_create_strategy_portfolio`,
@@ -56,6 +58,13 @@ that Paper permissions require a fresh staging authorization. Existing and refre
 not gain Paper scopes automatically. Use only the host-native reconnect/browser consent flow; never
 bypass MCP with raw HTTP.
 
+The exact Paper OAuth scope set is `paper_trading:sources.read`,
+`paper_trading:sources.write`, `paper_trading:runs.read`, `paper_trading:runs.create`,
+`paper_trading:runs.stop`, `paper_trading:code.read`, `paper_trading:portfolios.read`, and
+`paper_trading:portfolios.write`. Source create, revise, and source-backtest submit require source
+write; source Strategy, StrategyVersion, list, and lifecycle reads require source read. Tools remain
+invisible when the Paper or versioned-source gate is closed or the token lacks their exact scope.
+
 There is deliberately no Paper archive, unarchive, resume, parent Portfolio list, parent aggregate
 positions, parent net position, or parent Paper equity tool. Never invent or imply these abilities.
 Do not use `sb_submit_run` as a versioned Strategy or Paper substitute; its legacy Strategy behavior
@@ -64,7 +73,9 @@ is separate and unchanged.
 ## Global Safety Rules
 
 - Never request, display, store, or infer FM/QuantAI/provider/account identifiers, raw provider
-  payloads, raw YAML, internal URLs, hostnames, ports, topology, database details, or credentials.
+  payloads, downstream/effective YAML, internal URLs, hostnames, ports, topology, database details,
+  or credentials. The sole YAML input is bounded caller-authored `policy_yaml` for an optimizer
+  source StrategyVersion; send it only to the source create/revise tool and never echo it.
 - Treat `source_strategy_run_id`, `paper_run_id`, Portfolio ids, child Paper handles, and cursors as
   opaque product handles. Return cursors byte-for-byte and never parse them.
 - Never send `symbols`, `universe`, or `universe_policy`, including null or empty values. Quandora
@@ -81,7 +92,38 @@ is separate and unchanged.
 
 ## Single-Strategy Workflow
 
-### 1. Select a Source
+### 1. Prepare an Optimizer Source When Needed
+
+Skip this step for an ordinary source that already exists. When the user explicitly wants a new
+optimizer-backed Paper source, use this bounded sequence only:
+
+1. Obtain the exact eligible `factor_id`, `factor_version_id`, and `job_id` triplets. Reuse exact
+   references already returned in the current workflow. If they are absent, use only the minimum
+   relevant Factor/Strategy reads needed to select and verify those references; do not give a
+   general tutorial, mine/import/retest another factor, or invent an id.
+2. For a new source call `pt_create_source_strategy`. Call `pt_revise_source_strategy` only when the
+   user explicitly revises a returned Strategy using its exact `strategy_id` and base
+   `strategy_version_id`. The specification is CS-only and closed: valid ranking, weighting,
+   strategy type, rebalance bars, exact unique factor references, and optional optimizer version
+   `base` or `pro` with bounded valid caller-authored `policy_yaml` that must not contain
+   `portfolio_value`. Never send symbols, a universe, provider identity, transport identity, or an
+   idempotency field.
+3. Read back with `pt_get_source_strategy` or `pt_get_source_strategy_version` only when needed.
+   These are closed Product projections and never return policy YAML or downstream identifiers.
+4. Call `pt_submit_source_backtest` once with the exact StrategyVersion, a positive canonical
+   Decimal-string `initial_cash`, optional ordered dates, and optional canonical Decimal-string fee
+   rates. Treat a timeout as ambiguous and do not change or repeat the mutation. The successful
+   response returns the owner-local opaque `source_strategy_run_id` and the first source snapshot.
+5. Monitor only that handle with bounded `pt_get_source` reads. A normal lifecycle is `submitted`
+   (shown as accepted), then `running`, then `completed`; terminal source states never reopen. Stop
+   polling when terminal. Never use mature Strategy history to monitor this source lifecycle. A
+   malformed, unavailable, or cross-wired read fails closed and never justifies probing another
+   handle.
+
+After `pt_get_source` reports `completed` and `paper_eligibility=eligible`, continue to explicit
+Paper confirmation. Creating or revising the source never starts Paper automatically.
+
+### 2. Select a Source
 
 If the user did not provide an exact source StrategyRun handle, call `pt_list_sources`. Show a
 compact table with source handle, lifecycle/submit state, strategy kind, initial cash, safe
@@ -107,10 +149,11 @@ revealing raw source parameters:
   eligible. One historical ineligible item does not invalidate the other source-list entries.
 - `optimizer_execution_unavailable`: required optimizer execution evidence is absent or invalid;
   treat the source as `provider_validation_required`, not as caller-configured success.
-- `source_capital_mismatch`: the authoritative FM StrategyRun capital and the local product binding
-  disagree. Do not choose either value or submit until the source binding is repaired.
-- `source_capital_unavailable`: authoritative FM source capital is missing, non-finite, invalid, or
-  cannot be represented safely. Never substitute the local snapshot value.
+- `source_capital_mismatch`: final source/Paper validation rejected the exact capital binding. Do
+  not choose another numeric representation or retry with a rounded value.
+- `source_capital_unavailable`: an optimizer source has no trusted, request-hash-bound exact Product
+  capital snapshot. This is expected for historical or external optimizer sources created outside
+  the bounded PB source-binding path; Agent Paper does not support them and must not guess.
 - `source_validation_unavailable`: the bounded source read failed or exhausted its deadline. Keep
   the item and its list position, describe validation as incomplete, and retry only the read later
   if the user asks.
@@ -118,7 +161,10 @@ revealing raw source parameters:
 Provider fallback is not optimizer success. Unknown reason or execution-evidence values fail
 closed; do not infer their meaning or request downstream payloads.
 
-### 2. Confirm and Submit
+Missing displayed capital does not make an ordinary non-optimizer source ineligible or require
+provider validation. Display capital only when the source projection declares a safe exact source.
+
+### 3. Confirm and Submit
 
 Before `pt_submit_run`, display and obtain explicit confirmation for:
 
@@ -131,18 +177,23 @@ Before `pt_submit_run`, display and obtain explicit confirmation for:
 Send only `source_strategy_run_id`, `start_date`, `initial_balance`, and `leverage`, omitting optional
 fields the user did not choose. Never send an optimizer override.
 
-For an optimizer source, default to and preserve the source run's exact authoritative FM initial
-cash. A local snapshot is only consistency evidence and can never replace that value. Do not
-suggest changing optimizer policy or capital at Paper time. If the user wants different capital,
-explain that they must first complete a new StrategyRun for the same StrategyVersion at that
-capital, then use that new run as the source. Only
+For a PB-bound optimizer source, preserve the exact frozen Product source-run capital from the
+immutable request-hash-bound snapshot. If `initial_balance` is sent, it must be the exact same
+canonical Decimal value; it may otherwise be omitted so PB uses that exact snapshot. Never compare
+or reconstruct it from FM's current binary64 parameters. FM remains the final Paper submit
+authority and rejects an actual source/config/capital mismatch. Do not suggest changing optimizer
+policy or capital at Paper time. If the user wants different capital, first complete a new source
+backtest for the same StrategyVersion at that exact capital, then use its new owner-local source
+handle. Only
 `optimizer_execution.config_source=caller` is eligible; historical `config_source=default`,
 `config_source=default_after_invalid`, provider fallback, or missing evidence is not optimizer
 success.
 
-For a normal non-optimizer strategy, an explicit contract-valid `initial_balance` may be used.
+For an ordinary non-optimizer strategy, an explicit contract-valid `initial_balance` may be used.
+When the caller omits it, omit it from `pt_submit_run` even if display capital is absent; FM retains
+its existing default.
 
-### 3. Observe Lifecycle and Read Data
+### 4. Observe Lifecycle and Read Data
 
 Use the submit response as the first snapshot. For lifecycle monitoring, call `pt_get_run`; never
 poll `pt_get_portfolio`. Keep polling bounded and user-visible, and stop when terminal. If a caller
@@ -162,7 +213,7 @@ Use each data tool for its distinct meaning:
 - Strategy code: use `pt_get_code` only when asked and present only its bounded text/content type.
   Never treat it as raw YAML or expose any rejected internal reference.
 
-### 4. Equity Curves
+### 5. Equity Curves
 
 Choose exactly one mode from the user's intent and never mix their parameters:
 
@@ -184,7 +235,7 @@ Fixed windows return ROI values, `interval`, `total_points`, `live_start_index`,
 point. Explicitly label points before `live_start_index` as synthetic pre-live zero padding. Never
 describe those zeros as observed returns or imply the strategy existed during that interval.
 
-### 5. Stop
+### 6. Stop
 
 Before `pt_stop_run`, show the exact run handle and current known status, state that stop is terminal,
 and obtain explicit confirmation. Make one stop call; do not automatically retry it. Then use
@@ -230,13 +281,15 @@ Explain safe failures as actionable product states without exposing downstream t
 
 - `source_strategy_ineligible`: choose another eligible completed source or complete the missing
   source prerequisite. Use only its returned closed `eligibility_reasons` as described above.
-- `paper_initial_balance_unavailable` or `source_capital_unavailable`: the authoritative source
-  capital cannot be used safely; do not fall back to a local/displayed value.
-- `source_capital_mismatch`: the authoritative source capital disagrees with its local product
-  binding; stop and have the source binding repaired rather than choosing one value.
+- `paper_initial_balance_unavailable`: the requested ordinary Paper balance cannot be used safely;
+  omit an override only when the user intended FM's ordinary default.
+- `source_capital_unavailable`: an optimizer source lacks a trusted exact Product capital binding;
+  use a PB-created versioned source and never guess from FM binary64 parameters.
+- `source_capital_mismatch`: final FM validation rejected the exact bound capital; stop rather than
+  rounding, quantizing, choosing another value, or resubmitting automatically.
 - `optimizer_execution_unavailable` or `optimizer_config_not_caller`: use another completed source
   with closed caller-effective optimizer evidence.
-- `portfolio_optimizer_portfolio_value_mismatch`: create a new source StrategyRun at the desired
+- `portfolio_optimizer_portfolio_value_mismatch`: create a new source backtest at the desired
   capital; do not override Paper capital.
 - `portfolio_optimizer_backtest_config_mismatch`: the frozen source execution does not match the
   approved optimizer intent; use an eligible caller-effective run.
