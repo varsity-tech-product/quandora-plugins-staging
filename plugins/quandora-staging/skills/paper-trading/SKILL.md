@@ -53,10 +53,14 @@ Use only the minimum relevant subset of these Paper tools:
   `pt_stop_portfolio_paper`.
 
 Some hosts prefix names with the server name, for example
-`quandora_staging__pt_get_run`; treat it as the same tool. If no `pt_*` tools are visible, explain
-that Paper permissions require a fresh staging authorization. Existing and refreshed old tokens do
-not gain Paper scopes automatically. Use only the host-native reconnect/browser consent flow; never
-bypass MCP with raw HTTP.
+`quandora_staging__pt_get_run`; treat it as the same tool. If no `pt_*` tools are visible, do not
+infer the cause. Paper/versioned-source service gates or the deployment may not be active, in which
+case OAuth retries cannot fix the absence. Alternatively, when an authoritative safe error or tool signal
+proves those gates are active but the token lacks newly advertised Paper scopes, fresh
+staging consent is required because existing and refreshed old tokens do not gain scopes
+automatically. Without that authoritative signal, state both safe possibilities and do not assert which case occurred.
+Do not loop authorization. Use only the host-native reconnect/browser consent
+flow; never bypass MCP with raw HTTP, inspect credentials, or ask for pasted tokens.
 
 The exact Paper OAuth scope set is `paper_trading:sources.read`,
 `paper_trading:sources.write`, `paper_trading:runs.read`, `paper_trading:runs.create`,
@@ -300,8 +304,8 @@ Explain safe failures as actionable product states without exposing downstream t
 - `quantai_unavailable` or another retryable mutation error: the safe reason may be actionable, but
   the mutation can still be ambiguous. Reconcile authoritatively and never change its idempotency
   identity or blindly submit again.
-- authorization/scope failure: complete fresh staging authorization for the minimum required Paper
-  scopes.
+- authoritative authorization/scope failure with active gates: complete fresh staging consent for
+  the minimum required Paper scopes.
 - rate/freshness response: honor returned cache, stale, and retry-after information.
 
 If the response contains no recognized closed reason, report only the generic safe error code and

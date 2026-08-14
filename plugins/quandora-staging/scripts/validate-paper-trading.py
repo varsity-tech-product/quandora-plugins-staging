@@ -168,11 +168,44 @@ def main() -> int:
             "including null or empty values",
         ),
         "resume request": ("no Paper archive, unarchive, resume", "produces a new Paper run"),
+        "gate versus scope recovery": (
+            "authoritative safe error or tool signal",
+            "OAuth retries cannot fix",
+            "fresh staging consent",
+            "do not assert which case occurred",
+        ),
     }
     for smoke, fragments in prompt_smokes.items():
         missing = [fragment for fragment in fragments if fragment not in text]
         if missing:
             failures.append(f"prompt smoke {smoke!r} lacks contract fragments: {missing}")
+
+    recovery = " ".join(
+        text.split("Some hosts prefix names", 1)[-1]
+        .split("The exact Paper OAuth scope set", 1)[0]
+        .split()
+    )
+    recovery_scenarios = {
+        "absence remains ambiguous": r"If no `pt_\*` tools are visible, do not infer the cause",
+        "inactive service is not repaired by OAuth": (
+            r"service gates or the deployment may not be active, in which case OAuth retries "
+            r"cannot fix"
+        ),
+        "missing scopes require proven active gates": (
+            r"when an authoritative safe error or tool signal proves those gates are active but "
+            r"the token lacks newly advertised Paper scopes, fresh staging consent is required"
+        ),
+        "ambiguous absence states both branches": (
+            r"Without that authoritative signal, state both safe possibilities and do not assert "
+            r"which case occurred"
+        ),
+        "authorization is never looped": r"Do not loop authorization",
+    }
+    for scenario, pattern in recovery_scenarios.items():
+        if re.search(pattern, recovery) is None:
+            failures.append(f"gate/scope recovery scenario failed: {scenario}")
+    if re.search(r"If no `pt_\*` tools are visible.{0,160}fresh staging consent", recovery):
+        failures.append("gate/scope recovery makes consent unconditional on tool absence")
 
     downstream_contract = {
         "historical default optimizer evidence": "config_source=default",
@@ -212,8 +245,8 @@ def main() -> int:
 
     print(
         "Paper Trading plugin validation passed: "
-        "9 version fields, 27 tools, 8 scopes, 11 prompt smokes, prerequisite 1.44 behavior, "
-        "and downstream safety contracts."
+        "9 version fields, 27 tools, 8 scopes, 11 prompt smokes, 5 gate/scope recovery scenarios, "
+        "prerequisite 1.44 behavior, and downstream safety contracts."
     )
     return 0
 
