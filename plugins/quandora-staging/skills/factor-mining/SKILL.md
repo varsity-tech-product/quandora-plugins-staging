@@ -1,11 +1,11 @@
 ---
 name: factor-mining
-description: Use when the user explicitly asks about caller-owned or reusable Factor Mining factor families or history, or asks to construct, submit, backtest, resume, or retrieve artifacts for a Factor Mining plugin.
+description: Use when the user explicitly asks about caller-owned or reusable Factor Mining factor families or history, or asks to construct, submit, backtest, resume, retrieve, or briefly summarize artifacts for a Factor Mining plugin. Route deep diagnosis and optimization of an existing factor result to factor-analysis.
 ---
 
 # Quandora Staging Factor Mining
 
-Bundled plugin version: 1.46
+Bundled plugin version: 1.47
 
 Use this skill to run Factor Mining through the authenticated Quandora Staging connection exposed by the host as `quandora-staging`.
 
@@ -23,7 +23,7 @@ Treat the bundled version as an opaque release label: pass it verbatim and never
 - If `update_available=true`, say exactly: `The latest Quandora plugin version is <latest_version>. Please update the plugin.` Then say: `A Quandora Staging MCP access token is valid for 7 days. After 7 days, use the prompt below to ask your agent to refresh the connection; it should use automatic refresh first and CLI re-authentication only if required.` Then provide this exact copyable prompt in a fenced `text` block: `Refresh the Quandora Staging MCP connection. If automatic refresh fails, re-authenticate it with the CLI.` Then immediately continue the user's original request.
 - If `qd_check_plugin_version` is missing, disabled, invisible, or fails, do not report that the plugin is outdated, do not retry the check anywhere later in the current conversation, and continue the original request without a version message or any change to the business workflow. OAuth or connection failures continue through the existing safe connection-handling path; never bypass MCP with raw HTTP.
 - Never install, update, uninstall, or reload a plugin; execute an update command; ask whether to update; immediately start OAuth or reauthorize merely because of the version result; provide a platform-specific command in the version reminder; or delay the original request. The copyable prompt is information for the user to invoke after 7 days, not permission to run it during the version check.
-- A later entry into Factor Mining, Strategy Building, or Paper Trading in the same conversation recognizes the prior successful version check and does not call it or remind again.
+- A later entry into Factor Mining, Factor Analysis, Strategy Building, Strategy Analysis, or Paper Trading in the same conversation recognizes the prior successful version check and does not call it or remind again.
 - Treat `qd_check_plugin_version` as optional for connection readiness. Its absence alone never triggers connection recovery or changes the required business-tool set.
 
 The version check is not a business action. For a normal Factor Mining workflow, check first when required above and then call `fm_status` under the existing rules. For a bare Strategy factor-list request, check first when required and then make the one business call `sb_list_eligible`. For Strategy composition, check first when required and then call `sb_get_contract` under the existing rules. All other exact call-count, pagination, and mutation constraints remain unchanged.
@@ -379,19 +379,11 @@ are not expected to gain later parity fixes; acceptance of those fixes uses a fr
 
 ### Result Insight and Optimization
 
-Run this section only when the user asks for insight, diagnosis, explanation, or optimization. Do not add long reflection to ordinary mining requests.
-
-When result or grade semantics are needed for that request, follow the approved Guidance rules
-above and call `qd_get_guidance` with `operation.result.read` or
-`metric.backtest.grade` as appropriate.
-
-When interpreting a result:
-
-- Use in-sample IC / Rank IC sign to understand the factor's natural direction. Do not decide to invert a factor only because the realized backtest was poor.
-- Diagnose the economic mechanism first, then the implementation. Consider IC level and stability, ICIR, autocorrelation, group monotonicity, long-short behavior, long-only and short-only legs, drawdown, turnover, and whether the signal decay matches the requested horizon.
-- If optimizing, propose a new hypothesis within the same task or user idea. Avoid merely changing window lengths, renaming the factor, or making a post-hoc sign flip.
-- Use task-memory context to choose a fresher research hypothesis. Before upload, use draft duplicate risk to resolve any concrete overlap with an existing factor; do not reject an economically meaningful, materially distinct candidate solely because its similarity score is high.
-- If the host has general web or research tools and the user asks for broader insight, use them only for public background research. Do not send private factor source, run IDs, credentials, or artifact contents to external tools.
+Give only a brief evidence-based result summary during an ordinary mining workflow. When the user
+asks for deep diagnosis, explanation, comparison, or optimization of an existing factor result,
+route to `$factor-analysis` with the verified canonical ZIP or exact factor/run identity. That skill
+owns metric semantics, chart diagnosis, mechanism alternatives, controlled experiments, and
+Strategy-readiness assessment. Never auto-submit an optimization from either skill.
 
 ## Final Response
 

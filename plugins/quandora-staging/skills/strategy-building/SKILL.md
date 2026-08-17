@@ -1,15 +1,15 @@
 ---
 name: strategy-building
-description: Use when the user asks to list available, eligible, or selectable Strategy factors, including the bare Chinese request “列出可用因子”, or asks to compose, submit, inspect, or archive a cross-sectional Quandora Staging strategy.
+description: Use when the user asks to list available, eligible, or selectable Strategy factors, including the bare Chinese request “列出可用因子”, or asks to compose, submit, resume, retrieve, or archive a cross-sectional Quandora Staging strategy. Route deep result diagnosis and optimization to strategy-analysis.
 ---
 
 # Quandora Staging Strategy Building
 
-Bundled plugin version: 1.46
+Bundled plugin version: 1.47
 
 Use this skill through the authenticated Quandora Staging connection exposed by the host as
 `quandora-staging`. It composes cross-sectional strategies from eligible factor ids and includes
-the complete Strategy Result Bundle workflow.
+the complete Strategy Result Bundle workflow. Use `$strategy-analysis` for deep result diagnosis.
 
 OAuth and all credentials are handled by the host. Quandora access tokens expire after 7 days, and the host MCP client should use its stored rotating refresh token automatically. Never inspect, print, copy, store, or ask the user to paste API keys, bearer tokens, authorization codes, access tokens, refresh tokens, PKCE verifiers, service tokens, or other credentials.
 
@@ -23,7 +23,7 @@ Treat the bundled version as an opaque release label: pass it verbatim and never
 - If `update_available=true`, say exactly: `The latest Quandora plugin version is <latest_version>. Please update the plugin.` Then say: `A Quandora Staging MCP access token is valid for 7 days. After 7 days, use the prompt below to ask your agent to refresh the connection; it should use automatic refresh first and CLI re-authentication only if required.` Then provide this exact copyable prompt in a fenced `text` block: `Refresh the Quandora Staging MCP connection. If automatic refresh fails, re-authenticate it with the CLI.` Then immediately continue the user's original request.
 - If `qd_check_plugin_version` is missing, disabled, invisible, or fails, do not report that the plugin is outdated, do not retry the check anywhere later in the current conversation, and continue the original request without a version message or any change to the business workflow. OAuth or connection failures continue through the existing safe connection-handling path; never bypass MCP with raw HTTP.
 - Never install, update, uninstall, or reload a plugin; execute an update command; ask whether to update; immediately start OAuth or reauthorize merely because of the version result; provide a platform-specific command in the version reminder; or delay the original request. The copyable prompt is information for the user to invoke after 7 days, not permission to run it during the version check.
-- A later entry into Factor Mining, Strategy Building, or Paper Trading in the same conversation recognizes the prior successful version check and does not call it or remind again.
+- A later entry into Factor Mining, Factor Analysis, Strategy Building, Strategy Analysis, or Paper Trading in the same conversation recognizes the prior successful version check and does not call it or remind again.
 - Treat `qd_check_plugin_version` as optional for connection readiness. Its absence alone never triggers connection recovery or changes the required business-tool set.
 
 The version check is not a business action. For a normal Factor Mining workflow, check first when required above and then call `fm_status` under the existing rules. For a bare Strategy factor-list request, check first when required and then make the one business call `sb_list_eligible`. For Strategy composition, check first when required and then call `sb_get_contract` under the existing rules. All other exact call-count, pagination, and mutation constraints remain unchanged.
@@ -35,7 +35,7 @@ The version check is not a business action. For a normal Factor Mining workflow,
 Before starting, confirm that the Quandora Staging connection is authenticated and check only the
 actions needed for the requested path. A normal list, composition, submit, observe, and Result
 Bundle workflow uses the relevant subset of `sb_get_contract`, `sb_list_eligible`,
-`sb_factor_detail`, `sb_shared_list`, `sb_shared_add`, `sb_submit_run`, `sb_get_run`,
+`sb_factor_detail`, `sb_shared_list`, `sb_shared_add`, `sb_submit_run`, `sb_list_runs`, `sb_get_run`,
 `sb_resume_run`, `sb_bundle_ticket`, and `sb_bundle_chunk`. `sb_get_artifact` and `sb_file_ticket`
 remain legacy single-artifact compatibility actions. Use `qd_get_guidance` only for one of the
 documented guidance branches below.
