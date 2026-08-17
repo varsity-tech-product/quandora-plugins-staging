@@ -4,13 +4,13 @@
     "name": "Varsity Tech Product"
   },
   "metadata": {
-    "description": "Quandora staging plugin marketplace for pre-release Factor Mining and Strategy Building testing."
+    "description": "Quandora staging plugin marketplace for pre-release Factor Mining, Strategy Building, and Paper Trading testing."
   },
   "plugins": [
     {
       "name": "quandora-staging",
       "source": "plugins/quandora-staging",
-      "description": "Staging Quandora plugin with Factor Mining and Strategy Building skills for pre-release workflow testing."
+      "description": "Staging Quandora plugin with Factor Mining, Strategy Building, and Paper Trading skills for pre-release workflow testing."
     }
   ]
 }

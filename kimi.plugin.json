@@ -1,12 +1,13 @@
 {
   "name": "quandora-staging",
-  "version": "1.45",
-  "description": "Staging Quandora plugin with Factor Mining and Strategy Building skills for pre-release workflow testing.",
+  "version": "1.46",
+  "description": "Staging Quandora plugin with Factor Mining, Strategy Building, and Paper Trading skills for pre-release workflow testing.",
   "keywords": [
     "quandora",
     "factor-mining",
     "backtesting",
     "strategy",
+    "paper-trading",
     "quant"
   ],
   "author": {
@@ -26,7 +27,7 @@
   "interface": {
     "displayName": "Quandora Staging",
     "shortDescription": "Use staging Quandora services from Kimi Code.",
-    "longDescription": "Quandora Staging packages Factor Mining and Strategy Building skills with an authenticated staging MCP connection.",
+    "longDescription": "Quandora Staging packages Factor Mining, Strategy Building, and Paper Trading skills with an authenticated staging MCP connection.",
     "developerName": "Varsity Tech Product",
     "websiteURL": "https://github.com/varsity-tech-product/quandora-plugins-staging"
   }
