@@ -5,26 +5,25 @@ description: Use when the user asks for simulated trading, paper trading, 模拟
 
 # Quandora Staging Paper Trading
 
-Bundled plugin version: 1.46
+Bundled plugin version: 1.47
 
 Use this skill through the authenticated `quandora-staging` MCP connection. It operates only on
 the current user's product-safe StrategyRun, Paper run, and Strategy Portfolio handles. It is a
 staging capability and must never be described as production or live-money trading.
 
-When the user asks for “模拟盘”, “纸交易”, “paper trading”, current Paper assets/PnL, Paper
-history, or Portfolio Paper, route here directly. Do not repeat Factor Mining or mature Strategy
-Building introductions and do not call their tools unless the user separately asks for those
-workflows.
+Route requests for “模拟盘”, “纸交易”, “paper trading”, current Paper assets/PnL, Paper history,
+or Portfolio Paper here directly. Do not repeat Factor Mining or mature Strategy Building
+introductions and do not call their tools unless the user separately asks for those workflows.
 
 OAuth and credentials are host-managed. Never inspect, print, copy, store, or ask the user to paste
-API keys, bearer/access/refresh tokens, authorization codes, PKCE verifiers, service tokens, account
-credentials, or any other secret.
+API keys, bearer/access/refresh tokens, authorization codes, PKCE verifiers, service tokens,
+account credentials, or any other secret.
 
 ## Plugin Version Reminder
 
 On the first entry into any Quandora skill in the current conversation, if the conversation history
 does not already contain one successful `qd_check_plugin_version` call and no earlier version-check
-attempt has occurred, call it once before the business entry point. Pass `1.46` verbatim as
+attempt has occurred, call it once before the business entry point. Pass `1.47` verbatim as
 `installed_version`; treat it as an opaque release label and never parse, order, or normalize it.
 
 - If `update_available=false`, continue silently.
@@ -55,19 +54,19 @@ Use only the minimum relevant subset of these Paper tools:
 Some hosts prefix names with the server name, for example
 `quandora_staging__pt_get_run`; treat it as the same tool. If no `pt_*` tools are visible, do not
 infer the cause. Paper/versioned-source service gates or the deployment may not be active, in which
-case OAuth retries cannot fix the absence. Alternatively, when an authoritative safe error or tool signal
-proves those gates are active but the token lacks newly advertised Paper scopes, fresh
-staging consent is required because existing and refreshed old tokens do not gain scopes
-automatically. Without that authoritative signal, state both safe possibilities and do not assert which case occurred.
-Do not loop authorization. Use only the host-native reconnect/browser consent
-flow; never bypass MCP with raw HTTP, inspect credentials, or ask for pasted tokens.
+case OAuth retries cannot fix the absence. When an authoritative safe error or tool signal proves
+the gates are active but the token lacks newly advertised Paper scopes, fresh staging consent is
+required because refreshed old tokens do not gain scopes automatically. Without that signal, state
+both safe possibilities and do not assert which occurred. Do not loop authorization. Use only the
+host-native reconnect/browser consent flow; never bypass MCP with raw HTTP, inspect credentials, or
+ask for pasted tokens.
 
 The exact Paper OAuth scope set is `paper_trading:sources.read`,
 `paper_trading:sources.write`, `paper_trading:runs.read`, `paper_trading:runs.create`,
 `paper_trading:runs.stop`, `paper_trading:code.read`, `paper_trading:portfolios.read`, and
 `paper_trading:portfolios.write`. Source create, revise, and source-backtest submit require source
 write; source Strategy, StrategyVersion, list, and lifecycle reads require source read. Tools remain
-invisible when the Paper or versioned-source gate is closed or the token lacks their exact scope.
+invisible when the relevant gate is closed or the token lacks their exact scope.
 
 There is deliberately no Paper archive, unarchive, resume, parent Portfolio list, parent aggregate
 positions, parent net position, or parent Paper equity tool. Never invent or imply these abilities.
@@ -77,17 +76,16 @@ is separate and unchanged.
 ## Global Safety Rules
 
 - Never request, display, store, or infer FM/QuantAI/provider/account identifiers, raw provider
-  payloads, downstream/effective YAML, internal URLs, hostnames, ports, topology, database details,
-  or credentials. The sole YAML input is bounded caller-authored `policy_yaml` for an optimizer
-  source StrategyVersion; send it only to the source create/revise tool and never echo it.
+  payloads, downstream configuration, internal URLs, hostnames, ports, topology, database details,
+  or credentials.
 - Treat `source_strategy_run_id`, `paper_run_id`, Portfolio ids, child Paper handles, and cursors as
   opaque product handles. Return cursors byte-for-byte and never parse them.
 - Never send `symbols`, `universe`, or `universe_policy`, including null or empty values. Quandora
   chooses and freezes the Paper universe downstream.
-- Money, leverage, optimizer capital, component weights, and allocated cash are exact decimal
-  strings. Never convert them through a binary float or send them as JSON numbers.
-- Never automatically stop, reopen, resubmit, change a strategy, change capital, change an
-  optimizer, mine another factor, or trigger another module because of losses or performance.
+- Money, leverage, component weights, and allocated cash are exact decimal strings. Never convert
+  them through a binary float or send them as JSON numbers.
+- Never automatically stop, reopen, resubmit, change a strategy, change capital, mine another
+  factor, or trigger another module because of losses or performance.
 - A mutation timeout or ambiguous response is not proof of failure. Do not issue a fresh mutation
   or altered request. If a product handle was returned, reconcile with its get tool. If none was
   returned, report the ambiguity and stop; the user must decide after authoritative reconciliation.
@@ -96,10 +94,9 @@ is separate and unchanged.
 
 ## Single-Strategy Workflow
 
-### 1. Prepare an Optimizer Source When Needed
+### 1. Prepare an Ordinary Source When Needed
 
-Skip this step for an ordinary source that already exists. When the user explicitly wants a new
-optimizer-backed Paper source, use this bounded sequence only:
+Skip this step when the user already has an eligible source. Otherwise use this bounded sequence:
 
 1. Obtain the exact eligible `factor_id`, `factor_version_id`, and `job_id` triplets. Reuse exact
    references already returned in the current workflow. If they are absent, use only the minimum
@@ -108,12 +105,10 @@ optimizer-backed Paper source, use this bounded sequence only:
 2. For a new source call `pt_create_source_strategy`. Call `pt_revise_source_strategy` only when the
    user explicitly revises a returned Strategy using its exact `strategy_id` and base
    `strategy_version_id`. The specification is CS-only and closed: valid ranking, weighting,
-   strategy type, rebalance bars, exact unique factor references, and optional optimizer version
-   `base` or `pro` with bounded valid caller-authored `policy_yaml` that must not contain
-   `portfolio_value`. Never send symbols, a universe, provider identity, transport identity, or an
-   idempotency field.
+   strategy type, rebalance bars, and exact unique factor references. Never send symbols, a
+   universe, provider identity, transport identity, or an idempotency field.
 3. Read back with `pt_get_source_strategy` or `pt_get_source_strategy_version` only when needed.
-   These are closed Product projections and never return policy YAML or downstream identifiers.
+   These are closed Product projections and never return downstream identifiers.
 4. Call `pt_submit_source_backtest` once with the exact StrategyVersion, a positive canonical
    Decimal-string `initial_cash`, optional ordered dates, and optional canonical Decimal-string fee
    rates. Treat a timeout as ambiguous and do not change or repeat the mutation. The successful
@@ -131,8 +126,8 @@ Paper confirmation. Creating or revising the source never starts Paper automatic
 
 If the user did not provide an exact source StrategyRun handle, call `pt_list_sources`. Show a
 compact table with source handle, lifecycle/submit state, strategy kind, initial cash, safe
-strategy/version information, whether it is optimizer-backed, `paper_eligibility`, and the returned
-closed `eligibility_reasons`.
+strategy/version information, `paper_eligibility`, and the returned closed
+`eligibility_reasons`.
 
 Ask the user to select one exact returned source. Never probe guessed handles. Explain eligibility
 without downstream internals:
@@ -141,61 +136,28 @@ without downstream internals:
   belongs to FM.
 - `provider_validation_required`: source validation could not be completed; it is not guaranteed
   eligible.
-- `ineligible`: use the returned closed reason codes, such as incomplete/unsubmitted source,
-  unsupported strategy kind, missing semantic lineage, or non-caller optimizer configuration.
+- `ineligible`: use only the returned closed reason codes, such as incomplete/unsubmitted source,
+  unsupported strategy kind, or missing semantic lineage.
 
 A source must ultimately be owner-scoped, completed, successfully submitted, cross-sectional, and
-semantically reconstructable. Interpret the additional closed reasons without asking for or
-revealing raw source parameters:
-
-- `optimizer_config_not_caller`: `optimizer_execution.config_source=default` is safe historical
-  evidence but remains ineligible, as does `config_source=default_after_invalid`. Only `caller` is
-  eligible. One historical ineligible item does not invalidate the other source-list entries.
-- `optimizer_execution_unavailable`: required optimizer execution evidence is absent or invalid;
-  treat the source as `provider_validation_required`, not as caller-configured success.
-- `source_capital_mismatch`: final source/Paper validation rejected the exact capital binding. Do
-  not choose another numeric representation or retry with a rounded value.
-- `source_capital_unavailable`: an optimizer source has no trusted, request-hash-bound exact Product
-  capital snapshot. This is expected for historical or external optimizer sources created outside
-  the bounded PB source-binding path; Agent Paper does not support them and must not guess.
-- `source_validation_unavailable`: the bounded source read failed or exhausted its deadline. Keep
-  the item and its list position, describe validation as incomplete, and retry only the read later
-  if the user asks.
-
-Provider fallback is not optimizer success. Unknown reason or execution-evidence values fail
-closed; do not infer their meaning or request downstream payloads.
-
-Missing displayed capital does not make an ordinary non-optimizer source ineligible or require
-provider validation. Display capital only when the source projection declares a safe exact source.
+semantically reconstructable. `source_validation_unavailable` means the bounded source read failed
+or exhausted its deadline. Describe validation as incomplete and retry only the read later if the
+user asks. Unknown reason values fail closed; do not infer their meaning or request downstream
+payloads. Missing displayed capital does not by itself make an ordinary source ineligible.
 
 ### 3. Confirm and Submit
 
 Before `pt_submit_run`, display and obtain explicit confirmation for:
 
 - exact source StrategyRun handle and safe strategy/version label;
-- exact `initial_balance` (when present or required);
+- exact `initial_balance` when the user supplies one;
 - optional ISO `start_date`;
-- optional exact `leverage`;
-- whether the source is optimizer-backed.
+- optional exact `leverage`.
 
 Send only `source_strategy_run_id`, `start_date`, `initial_balance`, and `leverage`, omitting optional
-fields the user did not choose. Never send an optimizer override.
-
-For a PB-bound optimizer source, preserve the exact frozen Product source-run capital from the
-immutable request-hash-bound snapshot. If `initial_balance` is sent, it must be the exact same
-canonical Decimal value; it may otherwise be omitted so PB uses that exact snapshot. Never compare
-or reconstruct it from FM's current binary64 parameters. FM remains the final Paper submit
-authority and rejects an actual source/config/capital mismatch. Do not suggest changing optimizer
-policy or capital at Paper time. If the user wants different capital, first complete a new source
-backtest for the same StrategyVersion at that exact capital, then use its new owner-local source
-handle. Only
-`optimizer_execution.config_source=caller` is eligible; historical `config_source=default`,
-`config_source=default_after_invalid`, provider fallback, or missing evidence is not optimizer
-success.
-
-For an ordinary non-optimizer strategy, an explicit contract-valid `initial_balance` may be used.
-When the caller omits it, omit it from `pt_submit_run` even if display capital is absent; FM retains
-its existing default.
+fields the user did not choose. When the caller omits `initial_balance`, omit it from the tool call;
+FM retains its existing default. Creating or revising a source, completing its backtest, and
+submitting Paper are separate mutations and each requires the appropriate explicit confirmation.
 
 ### 4. Observe Lifecycle and Read Data
 
@@ -215,7 +177,7 @@ Use each data tool for its distinct meaning:
 - Execution records: use `pt_list_fills` for fills and `pt_list_funding` for funding cash flows.
   Do not infer closed-position semantics from fills.
 - Strategy code: use `pt_get_code` only when asked and present only its bounded text/content type.
-  Never treat it as raw YAML or expose any rejected internal reference.
+  Never expose a rejected internal reference.
 
 ### 5. Equity Curves
 
@@ -284,33 +246,16 @@ children and is terminal, and obtain explicit confirmation. Call stop once, then
 Explain safe failures as actionable product states without exposing downstream text:
 
 - `source_strategy_ineligible`: choose another eligible completed source or complete the missing
-  source prerequisite. Use only its returned closed `eligibility_reasons` as described above.
-- `paper_initial_balance_unavailable`: the requested ordinary Paper balance cannot be used safely;
-  omit an override only when the user intended FM's ordinary default.
-- `source_capital_unavailable`: an optimizer source lacks a trusted exact Product capital binding;
-  use a PB-created versioned source and never guess from FM binary64 parameters.
-- `source_capital_mismatch`: final FM validation rejected the exact bound capital; stop rather than
-  rounding, quantizing, choosing another value, or resubmitting automatically.
-- `optimizer_execution_unavailable` or `optimizer_config_not_caller`: use another completed source
-  with closed caller-effective optimizer evidence.
-- `portfolio_optimizer_portfolio_value_mismatch`: create a new source backtest at the desired
-  capital; do not override Paper capital.
-- `portfolio_optimizer_backtest_config_mismatch`: the frozen source execution does not match the
-  approved optimizer intent; use an eligible caller-effective run.
-- `portfolio_optimizer_paper_config_mismatch`: the Paper execution does not match the source run's
-  frozen optimizer configuration; reconcile with the run detail and do not resubmit automatically.
+  source prerequisite. Use only its returned closed `eligibility_reasons`.
+- `paper_initial_balance_unavailable`: the requested Paper balance cannot be used safely; omit an
+  override only when the user intended FM's default.
 - `source_validation_unavailable`: source discovery could not complete its bounded FM validation;
-  keep the item visible as `provider_validation_required` and do not describe it as eligible.
-- `quantai_unavailable` or another retryable mutation error: the safe reason may be actionable, but
-  the mutation can still be ambiguous. Reconcile authoritatively and never change its idempotency
-  identity or blindly submit again.
-- authoritative authorization/scope failure with active gates: complete fresh staging consent for
+  do not describe the source as eligible.
+- `quantai_unavailable` or another retryable mutation error: the mutation can still be ambiguous.
+  Reconcile authoritatively and never change its idempotency identity or blindly submit again.
+- Authoritative authorization/scope failure with active gates: complete fresh staging consent for
   the minimum required Paper scopes.
-- rate/freshness response: honor returned cache, stale, and retry-after information.
+- Rate/freshness response: honor returned cache, stale, and retry-after information.
 
 If the response contains no recognized closed reason, report only the generic safe error code and
 retryability. Never quote, reinterpret, or ask for a hidden provider message.
-
-Do not fetch or cite `operation.paper_trade.submit` or an optimizer Paper guidance entry in this
-release. Its upstream catalog wording may conflict with the current implementation. The tools,
-current product contract, and this skill are authoritative until that catalog is corrected.

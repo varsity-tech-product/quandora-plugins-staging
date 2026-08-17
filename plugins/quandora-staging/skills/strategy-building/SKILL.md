@@ -5,7 +5,7 @@ description: Use when the user asks to list available, eligible, or selectable S
 
 # Quandora Staging Strategy Building
 
-Bundled plugin version: 1.46
+Bundled plugin version: 1.47
 
 Use this skill through the authenticated Quandora Staging connection exposed by the host as
 `quandora-staging`. It composes cross-sectional strategies from eligible factor ids and includes
