@@ -12,7 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 PLUGIN = ROOT / "plugins" / "quandora-staging"
 SKILL = PLUGIN / "skills" / "paper-trading" / "SKILL.md"
-RELEASE = "1.45"
+RELEASE = "1.46"
 
 EXPECTED_TOOLS = {
     "pt_create_source_strategy",
