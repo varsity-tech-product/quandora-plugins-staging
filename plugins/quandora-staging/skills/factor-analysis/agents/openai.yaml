@@ -1,7 +1,7 @@
 interface:
   display_name: "Factor Analysis"
-  short_description: "Diagnose Quandora factor results safely"
-  default_prompt: "Use $factor-analysis to diagnose this factor result and propose controlled improvements."
+  short_description: "Diagnose factor health, ratings, and results"
+  default_prompt: "Use $factor-analysis to check this factor's health and rating evidence, diagnose the result, and propose controlled improvements."
 
 dependencies:
   tools:

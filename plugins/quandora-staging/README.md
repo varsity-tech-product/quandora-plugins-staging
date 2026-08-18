@@ -39,7 +39,8 @@ The strategy slug is derived from the current user-facing submitted Strategy nam
 Factor Analysis and Strategy Analysis validate canonical Result Bundles without executing archive
 content, diagnose product-safe metrics and charts, separate observations from inference, and
 propose controlled experiments. Strategy Analysis pairs the Product Backend run snapshot with the
-bundle and can assess Paper readiness, but neither analysis skill submits or mutates a run.
+bundle and can assess Paper readiness. Factor Analysis reads embedded Factor Health and rating gates
+before economic interpretation. Neither analysis skill submits or mutates a run.
 
 ## What Paper Trading Does
 
@@ -86,11 +87,8 @@ If the `quandora-staging` connection is unavailable, update or reinstall the sta
 
 ## Release Order
 
-Merged prerequisite Plugin 1.44 precedes this semantic superset. Plugin 1.47 must be published and
+Plugin 1.48 is a Factor Analysis semantic update on merged Plugin 1.47. It must be published and
 confirmed installable from every supported staging manifest before the Auth service advertises
-`1.47`. The Strategy history tool reuses `strategy:runs.read`, so it adds no OAuth scope or consent
-rollout. PB and Auth Paper code deploys keep their independent Paper and versioned-source gates
-closed and omit the eight Paper OAuth scopes during that interval. A later, separately auditable
-staging rollout enables the gates, adds the scopes, and changes the Auth latest label together.
-Production plugin metadata and production service configuration are outside this staging release
-and remain unchanged.
+`1.48`. It reuses the existing Result Bundle tools and authorization scopes, so it adds no MCP
+capability, OAuth scope, or reconsent rollout. Product Backend, Auth runtime, Factor Mining runtime,
+production plugin metadata, and production service configuration remain unchanged.

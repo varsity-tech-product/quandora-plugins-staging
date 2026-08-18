@@ -5,7 +5,7 @@ description: Analyze, diagnose, compare, and propose controlled improvements for
 
 # Strategy Analysis
 
-Bundled plugin version: 1.47
+Bundled plugin version: 1.48
 
 Analyze one exact cross-sectional Strategy run as a read-only research workflow. Pair Product
 Backend's canonical run snapshot with the immutable Strategy Result Bundle whenever remote access is

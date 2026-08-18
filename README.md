@@ -106,7 +106,8 @@ Quandora Staging Factor Mining lets local agents create `plugin.py`, submit it t
 
 Quandora Staging Factor Analysis and Strategy Analysis validate canonical Result Bundles, diagnose
 metrics and charts, separate evidence from inference, and propose controlled improvements without
-automatically submitting a factor, Strategy, or Paper run.
+automatically submitting a factor, Strategy, or Paper run. Factor Analysis checks embedded Factor
+Health and rating gates before interpreting economic performance.
 
 Quandora Staging Paper Trading lets agents discover ordinary eligible sources; create or revise a
 bounded ordinary source StrategyVersion from exact factor/version/job references; submit
@@ -287,9 +288,9 @@ items.
 ```
 
 The skill resolves one exact factor run or uses a supplied canonical ZIP, validates the bundle
-without executing `plugin.py`, and returns an evidence-based diagnosis with controlled experiment
-ideas. It is read-only and hands confirmed follow-up construction back to Factor Mining or Strategy
-Building.
+without executing `plugin.py`, checks embedded Health and rating evidence, and returns an
+evidence-based diagnosis with controlled experiment ideas. It is read-only and hands confirmed
+follow-up construction back to Factor Mining or Strategy Building.
 
 ## Use Strategy Building
 
@@ -349,14 +350,12 @@ or terminal stop. Lifecycle monitoring uses Paper detail rather than repeatedly 
 live portfolio. Strategy Portfolio Paper is presented as ordered, static independent sleeves; no
 parent aggregate position or parent Paper equity capability is implied.
 
-Release invariant: merged prerequisite Plugin 1.44 precedes this semantic superset. Publish and
-verify the unique staging Plugin 1.47 artifact as installable from every supported staging manifest
-before the Auth staging service advertises `1.47`.
-The new Strategy history tool reuses `strategy:runs.read`, so it adds no OAuth scope or consent
-rollout. PB and Auth Paper code deploys keep their independent Paper and versioned-source gates
-closed and omit the eight Paper OAuth scopes during that interval. A later, separately auditable
-staging rollout enables the gates, adds the scopes, and changes the Auth latest label together.
-Production plugin metadata and production service configuration remain unchanged.
+Release invariant: Plugin 1.48 is a Factor Analysis semantic update on merged Plugin 1.47. Publish
+and verify the unique staging Plugin 1.48 artifact as installable from every supported staging
+manifest before the Auth staging service advertises `1.48`. It reuses the existing Result Bundle
+tools and authorization scopes, so it adds no MCP capability, OAuth scope, or reconsent rollout.
+Product Backend, Auth runtime, Factor Mining runtime, production plugin metadata, and production
+service configuration remain unchanged.
 
 ## License
 

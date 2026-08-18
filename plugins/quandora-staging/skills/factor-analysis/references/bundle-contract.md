@@ -36,12 +36,26 @@ A Factor bundle can contain:
 Do not require every optional item. A partial bundle is valid evidence when its manifest truthfully
 records omissions. Failed or cancelled runs may have less evidence.
 
+## Embedded Health Evidence
+
+`factor_card_is.json` may contain the QuantAI Factor Card `health_check` section and its nullable
+fields. Factor Health is embedded compatibility evidence delivered through the existing canonical
+bundle; it is not a separately invocable MCP or typed standalone capability. Use the preserved
+values, thresholds, window, and basis without recomputing or filling omissions.
+
+The card may also expose `cs_success`, `cs_fail_reasons`, `status`, `grade`, and `grade_score` for
+rating-gate tracing. Do not require internal-only check collections that are absent from the
+product-safe projection. External-agent evidence remains IS-only even if an upstream provider has
+internal OOS or ALL cards.
+
 ## Trust Rules
 
 - The external-agent Factor bundle is IS-only. Do not label any member OOS or ALL.
 - Product JSON is a safe projection, not necessarily the provider's raw object.
 - `plugin.py` is evidence of the executed factor source but must never be imported or executed.
 - Missing, unavailable, and null values are not zero.
+- Missing `health_check` or `health_check.passed=null` is not a pass. Preserve the distinction
+  between an unknown Health outcome and any fail-closed outer rating behavior recorded by the card.
 - Legacy loose files or extracted directories lack the complete immutable-bundle proof. State that
   limitation and narrow conclusions accordingly.
 - Do not live-fetch a provider, storage URL, or internal service to fill an omission.
