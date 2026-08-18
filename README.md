@@ -323,10 +323,11 @@ or terminal stop. Lifecycle monitoring uses Paper detail rather than repeatedly 
 live portfolio. Strategy Portfolio Paper is presented as ordered, static independent sleeves; no
 parent aggregate position or parent Paper equity capability is implied.
 
-Release invariant: merged prerequisite Plugin 1.44 precedes this semantic Paper superset. Publish
-and verify the staging Plugin 1.46 artifact as installable before the Auth staging service
-advertises `1.46`. Paper service gates and all eight Paper OAuth scopes are enabled only in a
-separate rollout; production plugin and service configuration remain unchanged.
+Release invariant: merged prerequisite Plugin 1.44 precedes this semantic Paper superset. Plugin
+1.47 aligns the staging manifests with the Auth staging latest-version label already configured as
+`1.47`; publish and verify the artifact before relying on that reminder. Paper service gates and
+all eight Paper OAuth scopes remain independently controlled; production plugin and service
+configuration remain unchanged.
 
 ## License
 
