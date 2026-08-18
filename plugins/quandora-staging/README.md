@@ -37,7 +37,7 @@ The strategy slug is derived from the current user-facing submitted Strategy nam
 ## What Paper Trading Does
 
 Quandora Staging Paper Trading helps an agent discover the current user's eligible sources and
-prepare a bounded optimizer-backed source StrategyVersion from exact factor/version/job references.
+prepare a bounded ordinary source StrategyVersion from exact factor/version/job references.
 It submits and monitors the source backtest with the Paper-owned source detail, obtains explicit
 Paper submit/stop confirmation, and reads live current PnL, position history, fills, funding, equity
 curves, and bounded strategy code. It also supports static independent-sleeve Strategy Portfolio
@@ -84,14 +84,3 @@ closed and omit the eight Paper OAuth scopes during that interval. A later, sepa
 staging rollout enables the gates, adds the scopes, and changes the Auth latest label together.
 Production plugin metadata and production service configuration are outside this staging release
 and remain unchanged.
-
-Before publishing the staging package, run the repository-local static contract check:
-
-```bash
-python plugins/quandora-staging/scripts/validate-paper-trading.py
-```
-
-It verifies the nine release-version fields, all 27 Paper tool names, all eight documented scopes,
-forbidden-tool absence, downstream safety reason text, required prompt-routing scenarios, and the
-merged Plugin 1.44 Technical/materialization/Strategy-default behavior without calling a service or
-performing a mutation.

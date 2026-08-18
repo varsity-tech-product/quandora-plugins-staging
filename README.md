@@ -105,7 +105,7 @@ quandora-staging@quandora-staging
 Quandora Staging Factor Mining lets local agents create `plugin.py`, submit it through the authenticated staging Quandora connection, run a backtest, and save one verified FM-owned Result Bundle ZIP in the local workspace.
 
 Quandora Staging Paper Trading lets agents discover ordinary eligible sources; create or revise a
-bounded optimizer-backed source StrategyVersion from exact factor/version/job references; submit
+bounded ordinary source StrategyVersion from exact factor/version/job references; submit
 and monitor its source backtest through the Paper-owned source detail; then start and monitor
 single-strategy or static-sleeve Strategy Portfolio Paper runs after confirmation. It also reads
 current PnL and historical execution data and terminally stops selected runs. It is staging-only
@@ -324,7 +324,7 @@ live portfolio. Strategy Portfolio Paper is presented as ordered, static indepen
 parent aggregate position or parent Paper equity capability is implied.
 
 Release invariant: merged prerequisite Plugin 1.44 precedes this semantic Paper superset. Publish
-and verify the unique staging Plugin 1.46 artifact as installable before the Auth staging service
+and verify the staging Plugin 1.46 artifact as installable before the Auth staging service
 advertises `1.46`. Paper service gates and all eight Paper OAuth scopes are enabled only in a
 separate rollout; production plugin and service configuration remain unchanged.
 
