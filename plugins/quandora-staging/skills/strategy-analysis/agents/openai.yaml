@@ -1,6 +1,9 @@
 interface:
   display_name: "Strategy Analysis"
   short_description: "Diagnose Quandora strategy results safely"
+  icon_small: "./assets/strategy-analysis.png"
+  icon_large: "./assets/strategy-analysis.png"
+  brand_color: "#F28C00"
   default_prompt: "Use $strategy-analysis to diagnose this strategy result and propose controlled improvements."
 
 dependencies:

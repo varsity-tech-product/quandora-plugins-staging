@@ -1,6 +1,9 @@
 interface:
   display_name: "Factor Analysis"
   short_description: "Diagnose factor health, ratings, and results"
+  icon_small: "./assets/factor-analysis.png"
+  icon_large: "./assets/factor-analysis.png"
+  brand_color: "#F28C00"
   default_prompt: "Use $factor-analysis to check this factor's health and rating evidence, diagnose the result, and propose controlled improvements."
 
 dependencies:
