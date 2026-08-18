@@ -44,7 +44,7 @@ bundle and can assess Paper readiness, but neither analysis skill submits or mut
 ## What Paper Trading Does
 
 Quandora Staging Paper Trading helps an agent discover the current user's eligible sources and
-prepare a bounded optimizer-backed source StrategyVersion from exact factor/version/job references.
+prepare a bounded ordinary source StrategyVersion from exact factor/version/job references.
 It submits and monitors the source backtest with the Paper-owned source detail, obtains explicit
 Paper submit/stop confirmation, and reads live current PnL, position history, fills, funding, equity
 curves, and bounded strategy code. It also supports static independent-sleeve Strategy Portfolio

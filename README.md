@@ -109,7 +109,7 @@ metrics and charts, separate evidence from inference, and propose controlled imp
 automatically submitting a factor, Strategy, or Paper run.
 
 Quandora Staging Paper Trading lets agents discover ordinary eligible sources; create or revise a
-bounded optimizer-backed source StrategyVersion from exact factor/version/job references; submit
+bounded ordinary source StrategyVersion from exact factor/version/job references; submit
 and monitor its source backtest through the Paper-owned source detail; then start and monitor
 single-strategy or static-sleeve Strategy Portfolio Paper runs after confirmation. It also reads
 current PnL and historical execution data and terminally stops selected runs. It is staging-only
@@ -350,10 +350,13 @@ live portfolio. Strategy Portfolio Paper is presented as ordered, static indepen
 parent aggregate position or parent Paper equity capability is implied.
 
 Release invariant: merged prerequisite Plugin 1.44 precedes this semantic superset. Publish and
-verify the unique staging Plugin 1.47 artifact before the Auth staging service advertises `1.47`.
+verify the unique staging Plugin 1.47 artifact as installable from every supported staging manifest
+before the Auth staging service advertises `1.47`.
 The new Strategy history tool reuses `strategy:runs.read`, so it adds no OAuth scope or consent
-rollout. Paper service gates and all eight Paper OAuth scopes remain separately controlled;
-production plugin and service configuration remain unchanged.
+rollout. PB and Auth Paper code deploys keep their independent Paper and versioned-source gates
+closed and omit the eight Paper OAuth scopes during that interval. A later, separately auditable
+staging rollout enables the gates, adds the scopes, and changes the Auth latest label together.
+Production plugin metadata and production service configuration remain unchanged.
 
 ## License
 
