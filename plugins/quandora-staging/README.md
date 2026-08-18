@@ -77,9 +77,9 @@ If the `quandora-staging` connection is unavailable, update or reinstall the sta
 
 ## Paper Trading Release Order
 
-Merged prerequisite Plugin 1.44 precedes this semantic superset. Plugin 1.47 must be published and
+Merged prerequisite Plugin 1.44 precedes this semantic superset. Plugin 1.46 must be published and
 confirmed installable from every supported staging manifest before the Auth service advertises
-`1.47`. PB and Auth Paper code deploys keep their independent Paper and versioned-source gates
+`1.46`. PB and Auth Paper code deploys keep their independent Paper and versioned-source gates
 closed and omit the eight Paper OAuth scopes during that interval. A later, separately auditable
 staging rollout enables the gates, adds the scopes, and changes the Auth latest label together.
 Production plugin metadata and production service configuration are outside this staging release

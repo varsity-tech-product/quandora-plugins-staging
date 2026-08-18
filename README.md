@@ -324,8 +324,8 @@ live portfolio. Strategy Portfolio Paper is presented as ordered, static indepen
 parent aggregate position or parent Paper equity capability is implied.
 
 Release invariant: merged prerequisite Plugin 1.44 precedes this semantic Paper superset. Publish
-and verify the unique staging Plugin 1.47 artifact as installable before the Auth staging service
-advertises `1.47`. Paper service gates and all eight Paper OAuth scopes are enabled only in a
+and verify the staging Plugin 1.46 artifact as installable before the Auth staging service
+advertises `1.46`. Paper service gates and all eight Paper OAuth scopes are enabled only in a
 separate rollout; production plugin and service configuration remain unchanged.
 
 ## License
