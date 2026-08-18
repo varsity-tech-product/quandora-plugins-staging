@@ -104,6 +104,10 @@ quandora-staging@quandora-staging
 
 Quandora Staging Factor Mining lets local agents create `plugin.py`, submit it through the authenticated staging Quandora connection, run a backtest, and save one verified FM-owned Result Bundle ZIP in the local workspace.
 
+Quandora Staging Factor Analysis and Strategy Analysis validate canonical Result Bundles, diagnose
+metrics and charts, separate evidence from inference, and propose controlled improvements without
+automatically submitting a factor, Strategy, or Paper run.
+
 Quandora Staging Paper Trading lets agents discover ordinary eligible sources; create or revise a
 bounded ordinary source StrategyVersion from exact factor/version/job references; submit
 and monitor its source backtest through the Paper-owned source detail; then start and monitor
@@ -191,7 +195,7 @@ In a new Cursor Desktop Agent chat, enter the complete host command:
 /add-plugin quandora-staging@https://github.com/varsity-tech-product/quandora-plugins-staging
 ```
 
-After Cursor Desktop installs the plugin, authenticate the plugin-provided `quandora-staging` remote MCP server and complete Quandora Staging authorization in the browser. Then start a new Agent chat before invoking the Factor Mining, Strategy Building, or Paper Trading skill.
+After Cursor Desktop installs the plugin, authenticate the plugin-provided `quandora-staging` remote MCP server and complete Quandora Staging authorization in the browser. Then start a new Agent chat before invoking a Factor Mining, Factor Analysis, Strategy Building, Strategy Analysis, or Paper Trading skill.
 
 ### CodeBuddy CLI
 
@@ -247,7 +251,7 @@ Start a new session, authorize the plugin-provided staging MCP server, and verif
 /mcp
 ```
 
-Complete Quandora Staging authorization in the browser when prompted. After authorization, start a new session before invoking the Factor Mining, Strategy Building, or Paper Trading skill.
+Complete Quandora Staging authorization in the browser when prompted. After authorization, start a new session before invoking a Factor Mining, Factor Analysis, Strategy Building, Strategy Analysis, or Paper Trading skill.
 
 ## Use Factor Mining
 
@@ -268,13 +272,24 @@ When the host supports local files, the verified FM-owned archive is saved with 
 from the current user-facing factor name:
 
 ```text
-Quandora staging result/<factor_slug>.zip
+Quandora staging result/factor/<factor_slug>.zip
 ```
 
 The remote filename remains transport metadata. The verified ZIP is retained as the canonical local
 output and is not automatically extracted, deleted, or rebuilt. A readable partial ZIP remains
 downloadable; its runtime manifest is authoritative for the exact included, pending, and omitted
 items.
+
+## Use Factor Analysis
+
+```text
+/quandora-staging:factor-analysis analyze my latest factor result
+```
+
+The skill resolves one exact factor run or uses a supplied canonical ZIP, validates the bundle
+without executing `plugin.py`, and returns an evidence-based diagnosis with controlled experiment
+ideas. It is read-only and hands confirmed follow-up construction back to Factor Mining or Strategy
+Building.
 
 ## Use Strategy Building
 
@@ -296,10 +311,21 @@ When a completed Strategy Result Bundle is saved locally, its path is derived fr
 user-facing submitted Strategy name:
 
 ```text
-Quandora staging result/<strategy_slug>.zip
+Quandora staging result/strategy/<strategy_slug>.zip
 ```
 
 The verified FM-owned Strategy ZIP is retained without automatic extraction or reconstruction.
+
+## Use Strategy Analysis
+
+```text
+/quandora-staging:strategy-analysis analyze my latest strategy result
+```
+
+The skill discovers one bounded newest-first page when no exact run is supplied, pairs the
+Product Backend canonical run snapshot with the Strategy Result Bundle, analyzes the retained
+six-chart data, and proposes controlled experiments. Paper readiness is advisory; actual Paper
+operations remain in the Paper Trading skill.
 
 ## Use Paper Trading
 
@@ -323,10 +349,14 @@ or terminal stop. Lifecycle monitoring uses Paper detail rather than repeatedly 
 live portfolio. Strategy Portfolio Paper is presented as ordered, static independent sleeves; no
 parent aggregate position or parent Paper equity capability is implied.
 
-Release invariant: merged prerequisite Plugin 1.44 precedes this semantic Paper superset. Publish
-and verify the staging Plugin 1.46 artifact as installable before the Auth staging service
-advertises `1.46`. Paper service gates and all eight Paper OAuth scopes are enabled only in a
-separate rollout; production plugin and service configuration remain unchanged.
+Release invariant: merged prerequisite Plugin 1.44 precedes this semantic superset. Publish and
+verify the unique staging Plugin 1.47 artifact as installable from every supported staging manifest
+before the Auth staging service advertises `1.47`.
+The new Strategy history tool reuses `strategy:runs.read`, so it adds no OAuth scope or consent
+rollout. PB and Auth Paper code deploys keep their independent Paper and versioned-source gates
+closed and omit the eight Paper OAuth scopes during that interval. A later, separately auditable
+staging rollout enables the gates, adds the scopes, and changes the Auth latest label together.
+Production plugin metadata and production service configuration remain unchanged.
 
 ## License
 
