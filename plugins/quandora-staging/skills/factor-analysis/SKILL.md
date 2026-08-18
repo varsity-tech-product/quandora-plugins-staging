@@ -1,11 +1,11 @@
 ---
 name: factor-analysis
-description: Analyze, diagnose, compare, and propose controlled improvements for existing Quandora Factor Mining results. Use when a user asks why a factor worked or failed, requests a deep reading of a Factor Result Bundle or Factor Card, wants optimization ideas grounded in evidence, or asks whether a factor is ready for Strategy Building. Do not use for creating or submitting a new factor; route those requests to factor-mining.
+description: Analyze, diagnose, compare, and propose controlled improvements for existing Quandora Factor Mining results. Use when a user asks why a factor or rating passed or failed, requests a Factor Card Health Check or data-quality diagnosis, wants a deep reading of a Factor Result Bundle or Factor Card, wants optimization ideas grounded in evidence, or asks whether a factor is ready for Strategy Building. Do not use for creating or submitting a new factor; route those requests to factor-mining.
 ---
 
 # Factor Analysis
 
-Bundled plugin version: 1.47
+Bundled plugin version: 1.48
 
 Analyze one exact factor result as a read-only research workflow. Separate observed evidence from
 inference, alternative explanations, and proposed experiments. Never turn an optimization idea into
@@ -61,6 +61,7 @@ mutation constraint below.
 Use this skill for deep diagnosis of an existing factor result, including:
 
 - performance, stability, coverage, turnover, decay, and style interpretation;
+- Factor Card Health Check, rating-gate, missingness, and applicability diagnosis;
 - mechanism hypotheses and plausible alternative explanations;
 - prioritized, controlled factor improvement experiments;
 - readiness assessment for handing a factor to Strategy Building.
@@ -82,6 +83,11 @@ after the user explicitly chooses a proposed Strategy experiment.
 - Preserve missing and null values as unavailable. Never convert them to zero.
 - Never fabricate a missing metric, chart, correlation, ablation, or causal explanation.
 - Report a grade or score only as relayed QuantAI evidence, not as a promotion or research verdict.
+- Do not treat a missing Health Check or `health_check.passed=null` as a pass. Report it as not run
+  or unknown evidence, then use the surrounding artifact to narrow the interpretation.
+- Do not infer that a final F means poor Sharpe, IC, or `grade_score`. Trace the actual gate evidence.
+- Do not automatically classify intentional factor NaNs as source-data loss or exempt them from the
+  artifact's Health Check. Test whether factor applicability and the check basis are aligned.
 
 ## Workflow
 
@@ -133,7 +139,8 @@ Read evidence in this order:
 
 1. `artifact_manifest.json` for availability and omissions;
 2. `run_summary.json` for exact run identity, window, status, and scope;
-3. `factor_card_is.json` for product-safe IS metrics and relayed grade evidence;
+3. `factor_card_is.json` for product-safe IS metrics, `health_check`, `cs_success`,
+   `cs_fail_reasons`, `status`, `grade`, and `grade_score`;
 4. the three IS charts for visual diagnostics;
 5. `signal_raw.parquet` only when it is included and a specific claim requires it;
 6. `plugin.py` only as inert source text when the mechanism cannot be understood otherwise.
@@ -145,12 +152,29 @@ Do not execute source. Do not infer absent artifacts from expected filenames.
 Use the interpretation rules in [metric-semantics.md](references/metric-semantics.md) and
 [diagnosis-and-experiments.md](references/diagnosis-and-experiments.md). Evaluate:
 
+- the Health Check before economic interpretation: record `passed`, `message`, `failed_metrics`,
+  `window`, `coverage_basis`, artifact-provided `thresholds`, and available `null_ratio`,
+  `zero_ratio`, `coverage_ratio`, and `outlier_ratio_3sigma` values;
+- rating propagation from `health_check` through `cs_success` and `cs_fail_reasons` to `status` and
+  `grade`, while keeping the continuous `grade_score` separate from the final grade;
 - headline return and risk with their exact window and sampling scope;
 - cross-sectional spread, monotonicity, long and short leg behavior, and daily stability;
 - drawdown depth and concentration in time;
 - turnover, signal persistence, and likely cost sensitivity;
 - universe coverage, missingness, and whether small cross sections weaken the evidence;
 - plausible style, liquidity, market, or implementation confounds.
+
+Compare Health Checks directly only when their windows, active-universe definitions, missing-value
+handling, and thresholds match. Never substitute `coverage_mean` for
+`health_check.metrics.coverage_ratio`; their denominators and aggregation can differ.
+
+When Health fails, continue reading the remaining evidence for diagnosis but lower confidence and
+separate data availability, factor design, applicability, and statistical-basis explanations. Read
+`plugin.py` only as inert source when needed to identify intentional NaNs from filters, warm-up,
+invalid denominators, or explicit abstention. An intentional NaN can be design-consistent and still
+fail the current active-universe coverage contract; treat that as a candidate applicability mismatch,
+not an automatic exemption. Claim that Health caused the final grade only when `cs_fail_reasons` or
+another authoritative artifact field establishes the propagation.
 
 For every important conclusion, label it as one of:
 
@@ -180,11 +204,12 @@ order:
 
 1. exact factor and run identity, IS scope, and evidence quality;
 2. concise result summary;
-3. metric and chart diagnosis;
-4. mechanism interpretation with alternatives;
-5. risks and evidence gaps;
-6. prioritized controlled experiments;
-7. decision: reject, investigate, revise, or hand off for a user-confirmed Strategy test.
+3. Factor Health and rating gates, including missing or unknown Health evidence;
+4. metric and chart diagnosis;
+5. mechanism interpretation with alternatives;
+6. risks and evidence gaps;
+7. prioritized controlled experiments;
+8. decision: reject, investigate, revise, or hand off for a user-confirmed Strategy test.
 
 Use the user's language for the answer even though this skill package is written in English.
 
