@@ -5,7 +5,7 @@ description: Analyze, diagnose, compare, and propose controlled improvements for
 
 # Factor Analysis
 
-Bundled plugin version: 1.50
+Bundled plugin version: 1.51
 
 Analyze one exact factor result as a read-only research workflow. Use Quandora's owner-scoped,
 server-persisted Factor Card, chart data, and job-linked source. Separate observed evidence from
@@ -20,7 +20,7 @@ tokens, refresh tokens, PKCE verifiers, service tokens, or other credentials.
 ## Plugin Version Reminder
 
 On the first entry into any Quandora skill in the current conversation, if the conversation history
-does not already contain one successful `qd_check_plugin_version` call and no earlier version-check
+does not already contain one successful `qd_plugin_ver` call and no earlier version-check
 attempt has occurred, call it once before the business entry point. Pass the bundled plugin version
 declared by the current skill verbatim as `installed_version`; never infer it from memory, the
 remote latest version, or the host name.
@@ -36,7 +36,7 @@ normalize it.
   copyable prompt in a fenced `text` block: `Refresh the Quandora Staging MCP connection. If
   automatic refresh fails, re-authenticate it with the CLI.` Then immediately continue the user's
   original request.
-- If `qd_check_plugin_version` is missing, disabled, invisible, or fails, do not report that the
+- If `qd_plugin_ver` is missing, disabled, invisible, or fails, do not report that the
   plugin is outdated, do not retry the check anywhere later in the current conversation, and
   continue the original request without a version message or any change to the business workflow.
   OAuth or connection failures continue through the existing safe connection-handling path; never
@@ -49,7 +49,7 @@ normalize it.
 - A later entry into Factor Mining, Factor Analysis, Strategy Building, Strategy Analysis, or Paper
   Trading in the same conversation recognizes the prior successful version check and does not call
   it or remind again.
-- Treat `qd_check_plugin_version` as optional for connection readiness. Its absence alone never
+- Treat `qd_plugin_ver` as optional for connection readiness. Its absence alone never
   triggers connection recovery or changes the required business-tool set.
 
 The version check is not a business action and does not change any exact call-count, pagination, or

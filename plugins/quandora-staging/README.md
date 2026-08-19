@@ -93,3 +93,10 @@ publishing Plugin 1.50. After the unique staging Plugin 1.50 artifact is confirm
 every supported manifest, advertise `1.50` through the separate Auth staging version configuration.
 No new tool or OAuth scope is required. Factor Mining runtime, production plugin metadata, and
 production service configuration remain unchanged.
+
+Plugin 1.51 preserves the five Plugin 1.50 skills, uses the bounded Paper/version-check MCP names,
+and consumes nullable owner-scoped Paper strategy names with a bounded mixed-rollout fallback.
+Deploy FM, Auth, and PB in that order before publishing Plugin 1.51. Keep the Auth latest-version
+label unchanged until the 1.51 artifact is confirmed installable from every supported manifest,
+then advance the label through a separate reviewed staging configuration change. OAuth scopes and
+production remain unchanged.
