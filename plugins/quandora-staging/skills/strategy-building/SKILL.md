@@ -5,7 +5,7 @@ description: Use when the user asks to list available, eligible, or selectable S
 
 # Quandora Staging Strategy Building
 
-Bundled plugin version: 1.51
+Bundled plugin version: 1.52
 
 Use this skill through the authenticated Quandora Staging connection exposed by the host as
 `quandora-staging`. It composes cross-sectional strategies from eligible factor ids and includes
@@ -110,13 +110,25 @@ returned `source_kind` and `shared` values:
 
 Never infer source from factor name, id, category, author, or the current query. Do not make another
 list or detail call merely to classify source. An **Official** factor is read-only product
-inventory: it cannot be edited, archived, or deleted by the user, but when `sb_list_eligible`
-returns it, it is fully selectable for Strategy composition using the returned exact `factor_id`.
-Source never overrides eligibility, rating, or selector identity.
+inventory: it cannot be edited, archived, or deleted by the user. Its top-level `factor_id` is the
+canonical factor identity, but an executable versioned Strategy must bind the exact admitted
+lineage from `admission.factor_id`, `admission.factor_version_id`, and `admission.job_id`. Never send
+an Official factor through the legacy `sb_submit_run` selector path and never put its selector in
+`specification.factor_ids`.
+
+When the user selects any Official factor, route the composition to the Paper Trading skill's
+versioned source-preparation path. Pass the exact admission triples as top-level
+`factor_references` to `pt_src_create`; then pass only the returned `strategy_version_id` plus the
+closed run configuration to `pt_src_bt_submit`. Do not mix this branch with legacy factor ids or
+weights. If the required versioned-source tools are unavailable, stop before mutation and explain
+that the current MCP surface cannot safely submit Official factors; do not fall back to
+`sb_submit_run`. Source never overrides eligibility or rating.
 
 ### 1. Prepare a Valid Submission
 
-- For composition and submission operations, call `sb_get_contract` exactly once. Treat its
+- The remainder of this section is the legacy `sb_submit_run` path for selections containing no
+  Official factor. For those composition and submission operations, call `sb_get_contract` exactly
+  once. Treat its
   `contract` as the current capability boundary and its separately labeled `product_defaults` as
   the effective defaults used when corresponding submit fields are omitted. A bare factor-list
   request does not call this action.
@@ -335,7 +347,13 @@ For a terminal failure, use only the safe `failureDiagnostics` envelope when it 
 - When it is `unavailable`, or no `failureDiagnostics` envelope is returned, state that the
   server supplied no safe terminal diagnostic.
 
-Do not infer a source-code repair from a diagnostic and do not automatically resubmit a failed run.
+Treat a terminal run as immutable. In particular, `quantai_strategy_infra_timeout` with
+`retryable: true` means the user may explicitly choose to create a new Strategy run; it never means
+that the same terminal run can be resumed or revived. Do not call `sb_resume_run` for a terminal
+failure and do not create a replacement run without the user's informed request. For compile
+failures, attribute a factor only when the returned bounded `affectedFactors` contains that exact
+factor; an empty array means attribution is unavailable. Do not infer a source-code repair from a
+diagnostic and do not automatically resubmit a failed run.
 
 ### 3. Save the Strategy Result Bundle
 

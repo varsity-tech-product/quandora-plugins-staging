@@ -5,7 +5,7 @@ description: Use when the user asks for simulated trading, paper trading, 模拟
 
 # Quandora Staging Paper Trading
 
-Bundled plugin version: 1.51
+Bundled plugin version: 1.52
 
 Use this skill through the authenticated `quandora-staging` MCP connection. It operates only on
 the current user's product-safe StrategyRun, Paper run, and Strategy Portfolio handles. It is a
@@ -23,7 +23,7 @@ account credentials, or any other secret.
 
 On the first entry into any Quandora skill in the current conversation, if the conversation history
 does not already contain one successful `qd_plugin_ver` call and no earlier version-check
-attempt has occurred, call it once before the business entry point. Pass `1.51` verbatim as
+attempt has occurred, call it once before the business entry point. Pass `1.52` verbatim as
 `installed_version`; treat it as an opaque release label and never parse, order, or normalize it.
 
 - If `update_available=false`, continue silently.
@@ -102,17 +102,21 @@ is separate and unchanged.
 Skip this step when the user already has an eligible source. Otherwise use this bounded sequence:
 
 1. Obtain the exact eligible `factor_id`, `factor_version_id`, and `job_id` triplets. Reuse exact
-   references already returned in the current workflow. If they are absent, use only the minimum
-   relevant Factor/Strategy reads needed to select and verify those references; do not give a
-   general tutorial, mine/import/retest another factor, or invent an id.
+   references already returned in the current workflow. For every `source_kind=official` row, read
+   these values from `admission.factor_id`, `admission.factor_version_id`, and `admission.job_id`;
+   its top-level factor id alone is not sufficient version evidence. If the references are absent,
+   use only the minimum relevant Factor/Strategy reads needed to select and verify them; do not give
+   a general tutorial, mine/import/retest another factor, or invent an id.
 2. For a new source call `pt_src_create`. Call `pt_src_revise` only when the
    user explicitly revises a returned Strategy using its exact `strategy_id` and base
    `strategy_version_id`. The specification is CS-only and closed: valid ranking, weighting,
-   strategy type, rebalance bars, and exact unique factor references. Never send symbols, a
-   universe, provider identity, transport identity, or an idempotency field.
+   strategy type, rebalance bars, and exact unique factor references. Send those references only as
+   the tool's top-level `factor_references`; never put them in `specification.factor_ids`. Never
+   send symbols, a universe, provider identity, transport identity, or an idempotency field.
 3. Read back with `pt_src_def_get` or `pt_src_ver_get` only when needed.
    These are closed Product projections and never return downstream identifiers.
-4. Call `pt_src_bt_submit` once with the exact StrategyVersion, a positive canonical
+4. Call `pt_src_bt_submit` once with only the exact `strategy_version_id` and the closed run
+   configuration: a positive canonical
    Decimal-string `initial_cash`, optional ordered dates, and optional canonical Decimal-string fee
    rates. Treat a timeout as ambiguous and do not change or repeat the mutation. The successful
    response returns the owner-local opaque `source_strategy_run_id` and the first source snapshot.
@@ -181,9 +185,13 @@ Use each data tool for its distinct meaning:
   `retry_after_s`; explain cached or stale data without forcing refresh. This is a live manual
   collection protected by a PB 60-second per-run guard, and failed downstream attempts also consume
   that window.
-- Historical positions: call `pt_list_pos`. Honor symbol, side, open/close time filters,
-  sort/order, bounded limit, and opaque cursor exactly. Closed-position realized return and current
-  PnL are different semantics; never rename or derive one from the other.
+- Historical positions: call `pt_list_pos`. This is a history of closed net-position lifecycles
+  only: an item appears after the net position returns from nonzero to zero. Open positions and
+  positions that were partially closed but remain nonzero are absent from this history and remain
+  visible only through the current `pt_get_portfolio` snapshot. Honor symbol, side, open/close time
+  filters, sort/order, bounded limit, and opaque cursor exactly. Closed-position realized return
+  and current PnL are different semantics; never rename or derive one from the other, and never
+  describe this list as arbitrary point-in-time portfolio replay.
 - Execution records: use `pt_list_fills` for fills and `pt_list_funding` for funding cash flows.
   Do not infer closed-position semantics from fills.
 - Strategy code: use `pt_get_code` only when asked and present only its bounded text/content type.
