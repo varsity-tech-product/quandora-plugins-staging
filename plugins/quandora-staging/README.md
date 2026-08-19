@@ -1,6 +1,6 @@
 # Quandora Staging
 
-Quandora Staging is the public staging plugin package for pre-release Quandora agent workflow testing. It includes Factor Mining, Strategy Building, and Paper Trading skills, points to staging services, and is not the production plugin.
+Quandora Staging is the public staging plugin package for pre-release Quandora agent workflow testing. It includes Factor Mining, Factor Analysis, Strategy Building, Strategy Analysis, and Paper Trading skills, points to staging services, and is not the production plugin.
 
 ## What Factor Mining Does
 
@@ -34,6 +34,14 @@ Completed Strategy bundles use the dedicated Strategy subdirectory:
 
 The strategy slug is derived from the current user-facing submitted Strategy name.
 
+## What Analysis Does
+
+Factor Analysis and Strategy Analysis read owner-scoped server-persisted evidence, diagnose
+product-safe metrics and charts, separate observations from inference, and propose controlled
+experiments. Strategy Analysis pairs the Product Backend run snapshot with retained artifacts and
+bounded six-chart data and can assess Paper readiness. Factor Analysis reads the server Factor Card,
+chart data, and inert job-linked source when needed. Neither analysis skill submits or mutates a run.
+
 ## What Paper Trading Does
 
 Quandora Staging Paper Trading helps an agent discover the current user's eligible sources and
@@ -48,14 +56,16 @@ archive/resume, or nonexistent parent aggregate positions/equity.
 
 ```text
 skills/
+  factor-analysis/
   factor-mining/
   paper-trading/
+  strategy-analysis/
   strategy-building/
 ```
 
 ## CodeBuddy and the WorkBuddy China edition
 
-The CodeBuddy-compatible plugin manifest registers all three skills and the plugin-managed `quandora-staging` remote HTTP MCP server. CodeBuddy and the WorkBuddy China edition handle the MCP connection and browser OAuth authorization natively. The package requires no local MCP process, Python, Node.js, API key, or credential-paste flow.
+The CodeBuddy-compatible plugin manifest registers all five skills and the plugin-managed `quandora-staging` remote HTTP MCP server. CodeBuddy and the WorkBuddy China edition handle the MCP connection and browser OAuth authorization natively. MCP setup and analysis require no local process, Python, Node.js, API key, credential-paste flow, or local Result Bundle inspection.
 
 ## Claude Desktop Code OAuth launchers
 
@@ -75,10 +85,11 @@ The Windows path is statically validated; smoke-test it on Windows 10/11 x64 and
 
 If the `quandora-staging` connection is unavailable, update or reinstall the staging plugin, reconnect the plugin-managed Remote MCP server, and complete the host-native browser authorization flow again. The host owns OAuth and credentials; agents never request API keys, bearer tokens, authorization codes, access tokens, refresh tokens, PKCE verifiers, or pasted credentials.
 
-## Paper Trading Release Order
+## Release Order
 
-Merged prerequisite Plugin 1.44 precedes this semantic superset. Plugin 1.47 aligns every supported
-staging manifest with the Auth staging latest-version label already configured as `1.47`; verify the
-artifact is installable before relying on that reminder. PB and Auth retain independent Paper and
-versioned-source gates and OAuth-scope controls. Production plugin metadata and production service
-configuration are outside this staging release and remain unchanged.
+Plugin 1.50 adds authoritative Official/Mine source labels to eligible Strategy factor lists on
+merged Plugin 1.49. Deploy the Product Backend projection and Auth public MCP normalization before
+publishing Plugin 1.50. After the unique staging Plugin 1.50 artifact is confirmed installable from
+every supported manifest, advertise `1.50` through the separate Auth staging version configuration.
+No new tool or OAuth scope is required. Factor Mining runtime, production plugin metadata, and
+production service configuration remain unchanged.

@@ -4,19 +4,21 @@
     "name": "Varsity Tech Product",
     "url": "https://github.com/varsity-tech-product"
   },
-  "description": "Quandora Staging plugin marketplace for Factor Mining, Strategy Building, and Paper Trading.",
-  "version": "1.47",
+  "description": "Quandora Staging marketplace for Factor Mining, Factor Analysis, Strategy Building, Strategy Analysis, and Paper Trading.",
+  "version": "1.50",
   "plugins": [
     {
       "name": "quandora-staging",
-      "description": "Quandora Staging plugin with Factor Mining, Strategy Building, and Paper Trading skills.",
-      "version": "1.47",
+      "description": "Quandora Staging plugin with Factor and Strategy creation, analysis, and Paper Trading skills.",
+      "version": "1.50",
       "source": "./plugins/quandora-staging",
       "category": "Productivity",
       "tags": [
         "quandora",
         "factor-mining",
+        "factor-analysis",
         "strategy-building",
+        "strategy-analysis",
         "paper-trading",
         "quant"
       ],
