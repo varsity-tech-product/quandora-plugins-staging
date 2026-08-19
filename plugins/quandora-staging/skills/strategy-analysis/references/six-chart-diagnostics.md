@@ -1,7 +1,7 @@
 # Six-Chart Diagnostics
 
-Use the retained PNGs for visual evidence and `artifacts/six_charts_data.json` for available numeric
-series. JSON null remains missing data.
+Use `sb_analysis_data` for retained six-chart numerical evidence. Start with `chart: "overview"`,
+then request only the chart pages needed for the user's question. JSON null remains missing data.
 
 ## Adaptive Diagnostic Groups
 
@@ -54,10 +54,10 @@ Diagnostic grouping is separate from actual portfolio selection:
 - Relate spikes to exposure changes, rebalance cadence, or regime transitions.
 - Use the retained EMA only as a smoother; do not replace the raw series with it.
 
-## Retained Numeric Schema
+## Retained Numeric Projection
 
-The current schema-v1 object includes `available`, `schema_version`, `generated_at`, `window`,
-`params`, `cross_section`, `missing_styles`, and six chart objects. Each chart contains an `x` axis,
-named numeric-or-null `series`, a `plot` order, legend, colors, and metadata. Dynamic quantile names,
-style names, and EMA suffixes are provider data; do not hard-code a series set beyond the trusted
-artifact.
+The overview projection includes `available`, `schema_version`, `generated_at`, `window`, `params`,
+`cross_section`, `missing_styles`, and a six-chart catalog. Each paged chart response contains an
+`x` axis page, named numeric-or-null `series`, a `plot` order, legend, colors, and metadata. Dynamic
+quantile names, style names, and EMA suffixes are provider data; do not hard-code a series set beyond
+the trusted response.

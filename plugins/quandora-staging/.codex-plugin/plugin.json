@@ -1,6 +1,6 @@
 {
   "name": "quandora-staging",
-  "version": "1.48",
+  "version": "1.49",
   "description": "Staging Quandora plugin with Factor and Strategy creation, analysis, and Paper Trading skills.",
   "author": {
     "name": "Varsity Tech Product",
@@ -24,7 +24,7 @@
   "interface": {
     "displayName": "Quandora Staging",
     "shortDescription": "Use staging Quandora services from your agent.",
-    "longDescription": "Quandora Staging packages Factor Mining, Factor Analysis, Strategy Building, Strategy Analysis, and Paper Trading. Analysis validates canonical result bundles, diagnoses Factor Health, ratings, and performance evidence, and proposes controlled experiments without automatic mutation.",
+    "longDescription": "Quandora Staging packages Factor Mining, Factor Analysis, Strategy Building, Strategy Analysis, and Paper Trading. Analysis reads owner-scoped server-persisted evidence, diagnoses Factor Health, ratings, charts, and performance, and proposes controlled experiments without automatic mutation.",
     "developerName": "Varsity Tech Product",
     "category": "Productivity",
     "capabilities": [

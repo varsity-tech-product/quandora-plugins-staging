@@ -5,7 +5,7 @@ description: Use when the user explicitly asks about caller-owned or reusable Fa
 
 # Quandora Staging Factor Mining
 
-Bundled plugin version: 1.48
+Bundled plugin version: 1.49
 
 Use this skill to run Factor Mining through the authenticated Quandora Staging connection exposed by the host as `quandora-staging`.
 
@@ -381,7 +381,8 @@ are not expected to gain later parity fixes; acceptance of those fixes uses a fr
 
 Give only a brief evidence-based result summary during an ordinary mining workflow. When the user
 asks for deep diagnosis, explanation, comparison, or optimization of an existing factor result,
-route to `$factor-analysis` with the verified canonical ZIP or exact factor/run identity. That skill
+route to `$factor-analysis` with the exact factor and run identity. The saved ZIP remains an optional
+export and is not analysis evidence. That skill
 owns metric semantics, chart diagnosis, mechanism alternatives, controlled experiments, and
 Strategy-readiness assessment. Never auto-submit an optimization from either skill.
 

@@ -22,12 +22,12 @@ Useful controlled tests include:
 - rerun with one suspected style control;
 - change one fee assumption to assess implementation fragility.
 
-The current bundle does not guarantee per-factor correlations or automatic ablations. Propose them
+Current server evidence does not guarantee per-factor correlations or automatic ablations. Propose them
 as future controlled runs rather than reporting nonexistent results.
 
 ## Paper Readiness Questions
 
-- Is bundle integrity trustworthy and is the exact run configuration known?
+- Is server evidence integrity trustworthy and is the exact run configuration known?
 - Is performance distributed across time rather than concentrated in one short episode?
 - Is drawdown depth and recovery acceptable for the intended risk budget?
 - Are turnover and modeled costs plausible?
