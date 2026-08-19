@@ -357,6 +357,14 @@ from every supported staging manifest before separately configuring Auth staging
 `1.50`. No new tool or OAuth scope is required. Factor Mining runtime, production plugin metadata,
 and production service configuration remain unchanged.
 
+Plugin 1.51 preserves every Plugin 1.50 skill and switches the Paper surface plus the optional
+version reminder to the bounded public MCP names exposed by the reviewed Auth change. It also uses
+FM/PB's nullable owner-scoped `strategy_name` and keeps a bounded source-detail fallback during a
+rolling deployment. Deploy FM, then Auth, then PB before publishing Plugin 1.51. Keep Auth's latest
+version label unchanged until the 1.51 artifact is confirmed installable from every supported
+manifest; advance that label in a separate reviewed configuration change. No OAuth scope changes
+are required, and production remains unchanged.
+
 ## License
 
 This repository is licensed under the Apache License 2.0. See [LICENSE](LICENSE).
