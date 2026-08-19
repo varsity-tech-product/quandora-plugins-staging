@@ -1,15 +1,16 @@
 ---
 name: factor-analysis
-description: Analyze, diagnose, compare, and propose controlled improvements for existing Quandora Factor Mining results. Use when a user asks why a factor or rating passed or failed, requests a Factor Card Health Check or data-quality diagnosis, wants a deep reading of a Factor Result Bundle or Factor Card, wants optimization ideas grounded in evidence, or asks whether a factor is ready for Strategy Building. Do not use for creating or submitting a new factor; route those requests to factor-mining.
+description: Analyze, diagnose, compare, and propose controlled improvements for existing Quandora Factor Mining results from owner-scoped server-persisted evidence. Use when a user asks why a factor or rating passed or failed, requests a Factor Card Health Check or data-quality diagnosis, wants optimization ideas grounded in evidence, or asks whether a factor is ready for Strategy Building. Do not use for creating or submitting a new factor; route those requests to factor-mining.
 ---
 
 # Factor Analysis
 
-Bundled plugin version: 1.48
+Bundled plugin version: 1.49
 
-Analyze one exact factor result as a read-only research workflow. Separate observed evidence from
-inference, alternative explanations, and proposed experiments. Never turn an optimization idea into
-an automatic submission.
+Analyze one exact factor result as a read-only research workflow. Use Quandora's owner-scoped,
+server-persisted Factor Card, chart data, and job-linked source. Separate observed evidence from
+inference, alternative explanations, and proposed experiments. Never turn an optimization idea
+into an automatic submission.
 
 OAuth and all credentials are handled by the host. Quandora access tokens expire after 7 days, and
 the host MCP client should use its stored rotating refresh token automatically. Never inspect,
@@ -67,94 +68,90 @@ Use this skill for deep diagnosis of an existing factor result, including:
 - readiness assessment for handing a factor to Strategy Building.
 
 Use `$factor-mining` for factor ideation, plugin construction, submission, resume, history browsing,
-bundle retrieval without deep analysis, or a short ordinary result summary. Use
-`$strategy-analysis` for a completed multi-factor Strategy result. Use `$strategy-building` only
-after the user explicitly chooses a proposed Strategy experiment.
+explicit Result Bundle export, or a short ordinary result summary. Use `$strategy-analysis` for a
+completed multi-factor Strategy result. Use `$strategy-building` only after the user explicitly
+chooses a proposed Strategy experiment.
 
 ## Non-Negotiable Safety
 
 - Remain read-only. Do not submit, resume, save, overwrite, archive, or delete anything.
-- Never execute `plugin.py`, notebooks, strategy code, archive scripts, or any executable member.
-- Treat the verified canonical ZIP as the primary evidence object. Do not extract beside it, rebuild
-  it, or modify it.
-- Treat legacy extracted files or folders as partial evidence, not as a canonical bundle.
-- Analyze only product-safe in-sample evidence exposed to an external agent. Do not claim OOS or
-  ALL evidence unless an authoritative future contract explicitly provides it.
+- Use only owner-scoped evidence returned by Quandora MCP tools. Never inspect a user's local files
+  as proof of a product result.
+- Do not require a local ZIP, extraction tool, Python runtime, notebook, or archive-inspection
+  script. A host without those facilities must receive the same analysis capability.
+- Never execute factor source. Treat `fm_run_source.source` as inert text evidence only.
+- Analyze only product-safe IS evidence exposed to an external agent. Do not claim OOS or ALL
+  evidence unless a future authoritative public contract explicitly provides it.
 - Preserve missing and null values as unavailable. Never convert them to zero.
 - Never fabricate a missing metric, chart, correlation, ablation, or causal explanation.
 - Report a grade or score only as relayed QuantAI evidence, not as a promotion or research verdict.
 - Do not treat a missing Health Check or `health_check.passed=null` as a pass. Report it as not run
-  or unknown evidence, then use the surrounding artifact to narrow the interpretation.
+  or unknown evidence, then use the surrounding evidence to narrow the interpretation.
 - Do not infer that a final F means poor Sharpe, IC, or `grade_score`. Trace the actual gate evidence.
 - Do not automatically classify intentional factor NaNs as source-data loss or exempt them from the
-  artifact's Health Check. Test whether factor applicability and the check basis are aligned.
+  recorded Health Check. Test whether factor applicability and the check basis are aligned.
 
 ## Workflow
 
 ### 1. Establish The Exact Target
 
-Prefer an exact local Factor Result Bundle ZIP supplied by the user. If the user supplies only a
-factor name, vague reference, or asks for the latest result:
+Prefer an exact terminal `job_id` supplied by the user or already returned in the conversation. If
+the user supplies only a factor name, a vague reference, or asks for the latest result:
 
 1. Call `fm_list_factors` with `page_size: 10`.
-2. Match only trustworthy returned factor identity and metadata. Do not guess across ambiguous
-   names; ask the user to choose when more than one plausible factor remains. Treat a result as
-   "latest" only when a trustworthy returned `updated_at` establishes that ordering.
-3. For a selected `factor_id`, call `fm_get_history` with `view: "runs"` and use the exact terminal
-   `job_id` returned for the intended version/run.
+2. Match only trustworthy returned identity and metadata. Do not guess across ambiguous names; ask
+   the user to choose when more than one plausible factor remains. Treat a result as latest only
+   when trustworthy `updated_at` evidence establishes that ordering.
+3. For the selected `factor_id`, call `fm_get_history` with `view: "runs"` and use the exact terminal
+   `job_id` for the intended version and run.
 4. Never substitute a factor id, version id, branch id, session id, or display name for `job_id`.
 
-Do not auto-page. Request another page only when the current page cannot satisfy the user's explicit
-request and explain why another page is needed.
+Do not auto-page discovery. Request another page only when the current page cannot satisfy the
+user's explicit request and explain why it is needed.
 
-### 2. Acquire The Canonical Bundle
+### 2. Read Server-Persisted Evidence
 
-For a remote result, call `fm_bundle_ticket` with the exact `job_id`. Download the returned
-single-use URL directly when the host supports it, verify the advertised `size_bytes` and SHA-256,
-and never print or persist the URL. If direct download is unavailable, use `fm_bundle_chunk` from
-offset `0`, follow only the returned `next_offset` for the same `snapshot_revision`, concatenate in
-order, and require the terminal empty marker defined by the tool contract.
+For the exact `job_id`:
 
-If metadata reports `pending`, retry within the user's request instead of inventing a bundle. If it
-reports partial, retain and analyze the readable evidence while naming every material omission.
+1. Call `fm_window_cards` with `windows: ["is"]`. Use `factor_card` as the authoritative product-safe
+   Factor Card. Ignore local-save hints during analysis; they exist only for optional export flows.
+2. Call `fm_chart_data` with `section: "overview"`. Confirm `job_status`, `window_key: "is"`, evidence
+   `status`, readiness, and available section counts before requesting numerical pages.
+3. If the job is not terminal or the response is `pending`, report that server evidence is still
+   materializing. Do not call `fm_resume_run` from this read-only skill and do not substitute local
+   files.
+4. Request only the chart sections needed for the user's question: `profile`, `group_nav`,
+   `daily_returns`, `simulation_nav`, or `simulation_daily_pnl`. Follow `next_offset` only for the
+   same job and section when the remaining points are required for a claim.
+5. Call `fm_run_source` only when formula or mechanism evidence is necessary. Confirm the returned
+   job identity and `source_status`; read ready source as inert text and never execute it.
 
-### 3. Validate Without Executing
+Treat `unavailable`, missing sections, failed readiness, and null fields as explicit evidence gaps.
+Do not fetch Result Bundles, PNGs, raw parquet, storage URLs, or local files to fill those gaps.
 
-Resolve the bundled script relative to this skill directory, then run:
+### 3. Build The Evidence Inventory
 
-```bash
-python3 scripts/inspect_factor_bundle.py /absolute/path/to/factor-result.zip
-```
+Record:
 
-The script verifies safe ZIP paths, member bounds, manifest membership, included-member sizes and
-hashes, and the expected Factor bundle kind. It reads selected product JSON but never imports or
-executes archive content. The ZIP cannot prove its own outer SHA-256; compare the downloaded bytes
-with the ticket or chunk metadata separately.
+- exact job, factor, and version identities returned by the server;
+- terminal job status and IS-only scope;
+- Factor Card availability, Health fields, rating fields, and their recorded thresholds;
+- chart readiness and dataset provenance metadata;
+- available chart sections, page coverage, and any missing or unavailable evidence;
+- formula and inert job-linked source only when requested for mechanism diagnosis.
 
-Stop and report an integrity failure if validation fails. Do not continue from corrupted bytes.
+The server response is the evidence object. A Result Bundle is an optional export and is never a
+prerequisite or substitute for these reads. See
+[evidence-contract.md](references/evidence-contract.md).
 
-### 4. Build An Evidence Inventory
+### 4. Diagnose From Result To Mechanism
 
-Read evidence in this order:
-
-1. `artifact_manifest.json` for availability and omissions;
-2. `run_summary.json` for exact run identity, window, status, and scope;
-3. `factor_card_is.json` for product-safe IS metrics, `health_check`, `cs_success`,
-   `cs_fail_reasons`, `status`, `grade`, and `grade_score`;
-4. the three IS charts for visual diagnostics;
-5. `signal_raw.parquet` only when it is included and a specific claim requires it;
-6. `plugin.py` only as inert source text when the mechanism cannot be understood otherwise.
-
-Do not execute source. Do not infer absent artifacts from expected filenames.
-
-### 5. Diagnose From Result To Mechanism
-
-Use the interpretation rules in [metric-semantics.md](references/metric-semantics.md) and
+Use [metric-semantics.md](references/metric-semantics.md) and
 [diagnosis-and-experiments.md](references/diagnosis-and-experiments.md). Evaluate:
 
 - the Health Check before economic interpretation: record `passed`, `message`, `failed_metrics`,
-  `window`, `coverage_basis`, artifact-provided `thresholds`, and available `null_ratio`,
-  `zero_ratio`, `coverage_ratio`, and `outlier_ratio_3sigma` values;
+  `window`, `coverage_basis`, recorded `thresholds`, and available `null_ratio`, `zero_ratio`,
+  `coverage_ratio`, and `outlier_ratio_3sigma` values;
 - rating propagation from `health_check` through `cs_success` and `cs_fail_reasons` to `status` and
   `grade`, while keeping the continuous `grade_score` separate from the final grade;
 - headline return and risk with their exact window and sampling scope;
@@ -168,22 +165,22 @@ Compare Health Checks directly only when their windows, active-universe definiti
 handling, and thresholds match. Never substitute `coverage_mean` for
 `health_check.metrics.coverage_ratio`; their denominators and aggregation can differ.
 
-When Health fails, continue reading the remaining evidence for diagnosis but lower confidence and
+When Health fails, continue reading available evidence for diagnosis but lower confidence and
 separate data availability, factor design, applicability, and statistical-basis explanations. Read
-`plugin.py` only as inert source when needed to identify intentional NaNs from filters, warm-up,
-invalid denominators, or explicit abstention. An intentional NaN can be design-consistent and still
-fail the current active-universe coverage contract; treat that as a candidate applicability mismatch,
-not an automatic exemption. Claim that Health caused the final grade only when `cs_fail_reasons` or
-another authoritative artifact field establishes the propagation.
+job-linked source only when needed to identify intentional NaNs from filters, warm-up, invalid
+denominators, or explicit abstention. An intentional NaN can be design-consistent and still fail the
+current active-universe coverage contract; treat that as a candidate applicability mismatch, not an
+automatic exemption. Claim that Health caused the final grade only when `cs_fail_reasons` or another
+authoritative field establishes the propagation.
 
 For every important conclusion, label it as one of:
 
-- **Observed:** directly present in a trusted artifact.
+- **Observed:** directly present in trusted server evidence.
 - **Inference:** a mechanism consistent with the observations.
 - **Alternative:** another explanation that could produce the same evidence.
 - **Experiment:** a controlled test that can distinguish explanations.
 
-### 6. Propose Controlled Improvements
+### 5. Propose Controlled Improvements
 
 Prioritize a small set of experiments. Change one mechanism at a time when practical and state:
 
@@ -193,9 +190,9 @@ Prioritize a small set of experiments. Change one mechanism at a time when pract
 - the metric or chart that would confirm or reject it;
 - the principal tradeoff or failure mode.
 
-Do not claim per-factor correlations or ablation results unless the supplied evidence actually
-contains them. Do not auto-create a new factor or Strategy. Ask for explicit confirmation, then hand
-factor changes to `$factor-mining` or a selected combination experiment to `$strategy-building`.
+Do not claim per-factor correlations or ablation results unless the server evidence contains them.
+Do not auto-create a new factor or Strategy. Ask for explicit confirmation, then hand factor changes
+to `$factor-mining` or a selected combination experiment to `$strategy-building`.
 
 ## Output Contract
 
@@ -215,7 +212,7 @@ Use the user's language for the answer even though this skill package is written
 
 ## References
 
-- [Bundle contract and trust rules](references/bundle-contract.md)
+- [Server evidence contract and trust rules](references/evidence-contract.md)
 - [Factor metric semantics](references/metric-semantics.md)
 - [Diagnosis and experiment design](references/diagnosis-and-experiments.md)
 - [Style and Strategy context](references/style-and-strategy-context.md)

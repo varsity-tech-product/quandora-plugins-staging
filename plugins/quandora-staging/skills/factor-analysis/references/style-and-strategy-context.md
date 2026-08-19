@@ -1,6 +1,6 @@
 # Style And Strategy Context
 
-Treat style explanations as hypotheses unless the bundle directly measures them.
+Treat style explanations as hypotheses unless server evidence directly measures them.
 
 ## Common Confounds
 
@@ -19,7 +19,7 @@ interest notional.
 
 A factor is a reasonable candidate for a controlled Strategy test when:
 
-- identity and bundle integrity are trustworthy;
+- identity and server evidence integrity are trustworthy;
 - direction and group ordering are interpretable;
 - performance is not obviously concentrated in one isolated date or group;
 - turnover and coverage are compatible with the proposed use;

@@ -104,10 +104,10 @@ quandora-staging@quandora-staging
 
 Quandora Staging Factor Mining lets local agents create `plugin.py`, submit it through the authenticated staging Quandora connection, run a backtest, and save one verified FM-owned Result Bundle ZIP in the local workspace.
 
-Quandora Staging Factor Analysis and Strategy Analysis validate canonical Result Bundles, diagnose
-metrics and charts, separate evidence from inference, and propose controlled improvements without
-automatically submitting a factor, Strategy, or Paper run. Factor Analysis checks embedded Factor
-Health and rating gates before interpreting economic performance.
+Quandora Staging Factor Analysis and Strategy Analysis read owner-scoped server-persisted evidence,
+diagnose metrics and charts, separate evidence from inference, and propose controlled improvements
+without automatically submitting a factor, Strategy, or Paper run. Factor Analysis checks the
+server Factor Card's Health and rating gates before interpreting economic performance.
 
 Quandora Staging Paper Trading lets agents discover ordinary eligible sources; create or revise a
 bounded ordinary source StrategyVersion from exact factor/version/job references; submit
@@ -287,10 +287,10 @@ items.
 /quandora-staging:factor-analysis analyze my latest factor result
 ```
 
-The skill resolves one exact factor run or uses a supplied canonical ZIP, validates the bundle
-without executing `plugin.py`, checks embedded Health and rating evidence, and returns an
-evidence-based diagnosis with controlled experiment ideas. It is read-only and hands confirmed
-follow-up construction back to Factor Mining or Strategy Building.
+The skill resolves one exact factor run, reads its owner-scoped server Factor Card and bounded chart
+data, checks Health and rating evidence, and reads exact job-linked source only as inert text when
+needed. It requires no local ZIP or Python runtime, remains read-only, and hands confirmed follow-up
+construction back to Factor Mining or Strategy Building.
 
 ## Use Strategy Building
 
@@ -323,10 +323,10 @@ The verified FM-owned Strategy ZIP is retained without automatic extraction or r
 /quandora-staging:strategy-analysis analyze my latest strategy result
 ```
 
-The skill discovers one bounded newest-first page when no exact run is supplied, pairs the
-Product Backend canonical run snapshot with the Strategy Result Bundle, analyzes the retained
-six-chart data, and proposes controlled experiments. Paper readiness is advisory; actual Paper
-operations remain in the Paper Trading skill.
+The skill discovers one bounded newest-first page when no exact run is supplied, pairs the Product
+Backend canonical run snapshot with server-retained artifacts, reads bounded six-chart numerical
+data, and proposes controlled experiments. It requires no local ZIP or Python runtime. Paper
+readiness is advisory; actual Paper operations remain in the Paper Trading skill.
 
 ## Use Paper Trading
 
@@ -350,12 +350,12 @@ or terminal stop. Lifecycle monitoring uses Paper detail rather than repeatedly 
 live portfolio. Strategy Portfolio Paper is presented as ordered, static independent sleeves; no
 parent aggregate position or parent Paper equity capability is implied.
 
-Release invariant: Plugin 1.48 is a Factor Analysis semantic update on merged Plugin 1.47. Publish
-and verify the unique staging Plugin 1.48 artifact as installable from every supported staging
-manifest before the Auth staging service advertises `1.48`. It reuses the existing Result Bundle
-tools and authorization scopes, so it adds no MCP capability, OAuth scope, or reconsent rollout.
-Product Backend, Auth runtime, Factor Mining runtime, production plugin metadata, and production
-service configuration remain unchanged.
+Release invariant: Plugin 1.49 adds server-evidence Factor and Strategy Analysis workflows on merged
+Plugin 1.48. Deploy the Product Backend analysis actions and Auth public MCP tools before publishing
+the unique staging Plugin 1.49 artifact. Confirm it is installable from every supported staging
+manifest before separately configuring Auth staging to advertise `1.49`. The new tools reuse
+existing artifact-read scopes, so no OAuth reconsent is required. Factor Mining runtime, production
+plugin metadata, and production service configuration remain unchanged.
 
 ## License
 

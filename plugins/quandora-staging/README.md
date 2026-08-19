@@ -36,11 +36,11 @@ The strategy slug is derived from the current user-facing submitted Strategy nam
 
 ## What Analysis Does
 
-Factor Analysis and Strategy Analysis validate canonical Result Bundles without executing archive
-content, diagnose product-safe metrics and charts, separate observations from inference, and
-propose controlled experiments. Strategy Analysis pairs the Product Backend run snapshot with the
-bundle and can assess Paper readiness. Factor Analysis reads embedded Factor Health and rating gates
-before economic interpretation. Neither analysis skill submits or mutates a run.
+Factor Analysis and Strategy Analysis read owner-scoped server-persisted evidence, diagnose
+product-safe metrics and charts, separate observations from inference, and propose controlled
+experiments. Strategy Analysis pairs the Product Backend run snapshot with retained artifacts and
+bounded six-chart data and can assess Paper readiness. Factor Analysis reads the server Factor Card,
+chart data, and inert job-linked source when needed. Neither analysis skill submits or mutates a run.
 
 ## What Paper Trading Does
 
@@ -65,7 +65,7 @@ skills/
 
 ## CodeBuddy and the WorkBuddy China edition
 
-The CodeBuddy-compatible plugin manifest registers all five skills and the plugin-managed `quandora-staging` remote HTTP MCP server. CodeBuddy and the WorkBuddy China edition handle the MCP connection and browser OAuth authorization natively. MCP setup requires no local process, Python, Node.js, API key, or credential-paste flow; local bundle inspection uses the host agent's Python runtime.
+The CodeBuddy-compatible plugin manifest registers all five skills and the plugin-managed `quandora-staging` remote HTTP MCP server. CodeBuddy and the WorkBuddy China edition handle the MCP connection and browser OAuth authorization natively. MCP setup and analysis require no local process, Python, Node.js, API key, credential-paste flow, or local Result Bundle inspection.
 
 ## Claude Desktop Code OAuth launchers
 
@@ -87,8 +87,9 @@ If the `quandora-staging` connection is unavailable, update or reinstall the sta
 
 ## Release Order
 
-Plugin 1.48 is a Factor Analysis semantic update on merged Plugin 1.47. It must be published and
-confirmed installable from every supported staging manifest before the Auth service advertises
-`1.48`. It reuses the existing Result Bundle tools and authorization scopes, so it adds no MCP
-capability, OAuth scope, or reconsent rollout. Product Backend, Auth runtime, Factor Mining runtime,
+Plugin 1.49 adds server-evidence Factor and Strategy Analysis workflows on merged Plugin 1.48.
+Deploy the Product Backend analysis actions and Auth public MCP tools before publishing Plugin 1.49.
+After the unique staging Plugin 1.49 artifact is confirmed installable from every supported
+manifest, advertise `1.49` through the separate Auth staging version configuration. The new tools
+reuse existing artifact-read scopes, so no OAuth reconsent is required. Factor Mining runtime,
 production plugin metadata, and production service configuration remain unchanged.

@@ -1,15 +1,15 @@
 ---
 name: strategy-analysis
-description: Analyze, diagnose, compare, and propose controlled improvements for existing Quandora cross-sectional Strategy results. Use when a user asks why a Strategy worked or failed, wants a deep reading of a Strategy Result Bundle or six-chart diagnostics, requests factor-combination optimization ideas, or asks whether a completed backtest is ready for Paper Trading. Do not use to compose or submit a Strategy; route those requests to strategy-building.
+description: Analyze, diagnose, compare, and propose controlled improvements for existing Quandora cross-sectional Strategy results from owner-scoped server-persisted evidence. Use when a user asks why a Strategy worked or failed, wants six-chart diagnostics, requests factor-combination optimization ideas, or asks whether a completed backtest is ready for Paper Trading. Do not use to compose or submit a Strategy; route those requests to strategy-building.
 ---
 
 # Strategy Analysis
 
-Bundled plugin version: 1.48
+Bundled plugin version: 1.49
 
 Analyze one exact cross-sectional Strategy run as a read-only research workflow. Pair Product
-Backend's canonical run snapshot with the immutable Strategy Result Bundle whenever remote access is
-available. Distinguish observed evidence from inference and proposed experiments.
+Backend's canonical run snapshot with owner-scoped retained artifacts and bounded six-chart data.
+Distinguish observed evidence from inference, alternatives, and proposed experiments.
 
 OAuth and all credentials are handled by the host. Quandora access tokens expire after 7 days, and
 the host MCP client should use its stored rotating refresh token automatically. Never inspect,
@@ -66,17 +66,20 @@ Use this skill for:
 - controlled Strategy experiment design;
 - Paper readiness assessment without starting or managing Paper Trading.
 
-Use `$strategy-building` to list eligible factors, compose, submit, resume, retrieve, or archive a
-Strategy. Use `$factor-analysis` for one Factor Mining result. Use `$paper-trading` only after the
-user explicitly asks to start, monitor, inspect, or stop Paper Trading.
+Use `$strategy-building` to list eligible factors, compose, submit, resume, retrieve, explicitly
+export, or archive a Strategy. Use `$factor-analysis` for one Factor Mining result. Use
+`$paper-trading` only after the user explicitly asks to start, monitor, inspect, or stop Paper
+Trading.
 
 ## Non-Negotiable Safety
 
 - Remain read-only. Do not submit, resume, save, overwrite, archive, or mutate any run.
 - Do not automatically create ablations, reruns, or Paper Trading runs.
-- Never execute bundled code, logs, notebooks, scripts, or archive members.
-- Treat the verified canonical ZIP as primary bundle evidence. Do not extract beside it, rebuild it,
-  or modify it.
+- Use only owner-scoped evidence returned by Quandora MCP tools. Never inspect user-local files as
+  proof of a Strategy result.
+- Do not require a local ZIP, extraction tool, Python runtime, notebook, or archive-inspection
+  script. A host without those facilities must receive the same analysis capability.
+- Never execute code, logs, notebooks, scripts, or text artifacts.
 - Preserve null and missing values as unavailable, not zero.
 - Never fabricate factor correlations, contributions, ablations, or causal claims.
 - Treat grade and score as QuantAI-relayed evidence, not as a promotion or research verdict.
@@ -86,8 +89,8 @@ user explicitly asks to start, monitor, inspect, or stop Paper Trading.
 
 ### 1. Establish The Exact Run
 
-Prefer an exact `run_id` or local Strategy Result Bundle supplied by the user. When remote access is
-available and no exact run id is supplied:
+Prefer an exact `run_id` supplied by the user or already returned in the conversation. When no
+exact run id is supplied:
 
 1. Call `sb_list_runs` once with `{}`. It returns the owner's newest-first page with default
    `limit: 10` and `offset: 0`.
@@ -108,45 +111,38 @@ If ranking was omitted at submission, the current Strategy default is neutral To
 `ranking: {mode: "percent", value: 20}` with `strategy_type: "neutral"`. Report the effective
 snapshot returned by `sb_get_run`; do not infer parameters from chart labels.
 
-### 3. Acquire The Canonical Bundle
+If the run is not terminal, report the current state. Do not call `sb_resume_run` from this
+read-only skill and do not substitute local files.
 
-Call `sb_bundle_ticket` with the exact `run_id`. Download the single-use URL directly when supported,
-verify the advertised `size_bytes` and SHA-256, and never print or persist the URL. Otherwise use
-`sb_bundle_chunk` from offset `0`, follow only `next_offset` for the same `snapshot_revision`,
-concatenate in order, and require the terminal empty marker.
+### 3. Read Core Server Artifacts
 
-The canonical bundle is the numerical analysis path and can include `artifacts/six_charts_data.json`.
-Do not request that file through `sb_file_ticket`; the targeted artifact registry intentionally
-keeps it bundle-only.
+Use `sb_get_artifact` for the exact run. Start with `summary` and `performance`, then request only
+the evidence needed for the question:
 
-### 4. Validate Without Executing
+- `equity_curve` and `drawdown_curve` for path, concentration, and recovery;
+- `turnover_curve` and `exposure_curve` for implementation intensity and neutrality;
+- `attribution` and `signal_return_curves` for mechanism claims when available;
+- `status`, `result`, `orders`, or `trades` only when a specific claim requires them.
 
-Resolve the bundled script relative to this skill directory, then run:
+Treat each artifact status independently. Missing, pending, unavailable, or null evidence must stay
+explicitly missing. Do not use `logs` or `code` unless the user explicitly asks for inert text
+review; never execute either.
 
-```bash
-python3 scripts/inspect_strategy_bundle.py /absolute/path/to/strategy-result.zip
-```
+### 4. Read Six-Chart Numerical Evidence
 
-The script validates safe paths, bounds, exact manifest membership, included-member sizes and
-hashes, and the Strategy bundle kind. It summarizes selected product JSON and six-chart series
-without extracting or executing archive content. Verify the whole ZIP separately against MCP
-metadata because the internal manifest cannot contain its own outer digest.
+1. Call `sb_analysis_data` with `chart: "overview"`.
+2. Confirm the exact `run_id`, server artifact identity, status, integrity digest, availability,
+   declared window, parameters, cross-section summary, missing styles, and chart catalog.
+3. Request only the chart pages needed for the diagnosis. Follow `next_offset` only for the same run
+   and chart until the required evidence is complete.
+4. Preserve returned point order, integer values, finite numbers, and nulls exactly.
 
-Stop on integrity failure. A partial bundle remains usable only for the evidence that is actually
-included; name omissions explicitly.
+The six-chart route is the numerical analysis path. Do not request a Result Bundle, PNG, download
+ticket, storage URL, or local file to replace it. On `pending`, `not_available`, `too_large`, or
+`integrity_failed`, report the exact evidence limitation and continue only with independent server
+artifacts that remain trustworthy.
 
-### 5. Pair Snapshot And Bundle
-
-Use both sources:
-
-- `sb_get_run` owns effective composition and parameters;
-- the bundle owns immutable result artifacts and diagnostic evidence.
-
-If only an offline ZIP is available, disclose that saved Strategy name, effective composition, or
-parameters may be incomplete. Never fill them from assumptions. If only a run snapshot is available,
-do not claim chart or performance evidence that requires the bundle.
-
-### 6. Diagnose The Result
+### 5. Diagnose The Result
 
 Read [artifacts-and-metrics.md](references/artifacts-and-metrics.md) and
 [six-chart-diagnostics.md](references/six-chart-diagnostics.md). Evaluate:
@@ -154,16 +150,16 @@ Read [artifacts-and-metrics.md](references/artifacts-and-metrics.md) and
 - headline return, Sharpe, Sortino, drawdown, win/loss behavior, and fees;
 - equity and drawdown shape, time concentration, and recovery;
 - daily turnover using the Strategy single-sided `/2` convention;
-- gross/net exposure and whether nominal neutrality held in practice;
+- gross and net exposure and whether nominal neutrality held in practice;
 - factor composition and whether explicit weights created concentration;
-- all six chart families, including quantile ordering, long/short style, exposure, decay,
+- all available chart families, including quantile ordering, long/short style, exposure, decay,
   prediction-style correlation, and turnover;
 - evidence gaps and plausible market, liquidity, size, or implementation alternatives.
 
 For every consequential conclusion, label it **Observed**, **Inference**, **Alternative**, or
 **Experiment**.
 
-### 7. Keep Portfolio Selection Separate From Diagnostic Buckets
+### 6. Keep Portfolio Selection Separate From Diagnostic Buckets
 
 Actual Strategy selection comes only from `sb_get_run.parameters.ranking`. Six-chart diagnostics use
 an adaptive grouping scheme based on the median daily cross-section:
@@ -177,18 +173,18 @@ an adaptive grouping scheme based on the median daily cross-section:
 `(QN - Q1) / 2`. Do not call these adaptive buckets the actual Top/Bottom 20% portfolio unless the
 effective run snapshot independently confirms a 20% ranking.
 
-### 8. Propose Controlled Experiments
+### 7. Propose Controlled Experiments
 
 Prioritize a small number of changes. Each proposal must state the changed variable, motivating
 evidence, expected effect, confirmation metric, and tradeoff. Favor one-variable changes when
 possible. Examples include factor removal or reweighting, ranking breadth, rebalance cadence, fee
 sensitivity, and one suspected style control.
 
-Do not claim an automatic ablation or correlation matrix: the current bundle does not guarantee
+Do not claim an automatic ablation or correlation matrix: retained evidence does not guarantee
 per-factor correlations or precomputed ablations. Ask for explicit confirmation, then hand the
 chosen test to `$strategy-building`.
 
-### 9. Assess Paper Readiness Without Paper Mutation
+### 8. Assess Paper Readiness Without Paper Mutation
 
 Use [experiments-and-paper-readiness.md](references/experiments-and-paper-readiness.md). State whether
 the evidence supports rejection, further research, a controlled rerun, or consideration for Paper.
@@ -199,7 +195,7 @@ Do not start Paper Trading. After explicit user confirmation, hand actual Paper 
 
 Answer in chat by default. Create a report file only when explicitly requested. Use this order:
 
-1. exact run identity, effective composition/parameters, and evidence quality;
+1. exact run identity, effective composition and parameters, and evidence quality;
 2. concise performance and risk summary;
 3. metric, curve, and six-chart diagnosis;
 4. factor-combination and style mechanism with alternatives;
@@ -211,7 +207,7 @@ Use the user's language for the answer even though this skill package is written
 
 ## References
 
-- [Bundle contract and evidence pairing](references/bundle-contract.md)
+- [Server evidence contract and trust rules](references/evidence-contract.md)
 - [Strategy artifacts and metric semantics](references/artifacts-and-metrics.md)
 - [Six-chart diagnostics](references/six-chart-diagnostics.md)
 - [Experiments and Paper readiness](references/experiments-and-paper-readiness.md)
