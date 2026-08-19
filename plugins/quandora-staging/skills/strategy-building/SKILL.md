@@ -5,7 +5,7 @@ description: Use when the user asks to list available, eligible, or selectable S
 
 # Quandora Staging Strategy Building
 
-Bundled plugin version: 1.49
+Bundled plugin version: 1.50
 
 Use this skill through the authenticated Quandora Staging connection exposed by the host as
 `quandora-staging`. It composes cross-sectional strategies from eligible factor ids and includes
@@ -100,6 +100,20 @@ caller-owned or reusable Factor Mining factor families, stable factor history, b
 or previous factor runs route to `fm_list_factors` through the Factor Mining skill; that
 list is not a substitute for Strategy eligibility.
 
+For every `sb_list_eligible` table, include a compact **Source** column and classify only from the
+returned `source_kind` and `shared` values:
+
+- `source_kind: official` with `shared: false` → **Official**.
+- `source_kind: strategy_factor` with `shared: false` → **Mine**.
+- `shared: true` with `source_kind: strategy_factor` or `factor_version` → **Shared**.
+- `source_kind: library` or an unavailable `source_kind` → **Unavailable**.
+
+Never infer source from factor name, id, category, author, or the current query. Do not make another
+list or detail call merely to classify source. An **Official** factor is read-only product
+inventory: it cannot be edited, archived, or deleted by the user, but when `sb_list_eligible`
+returns it, it is fully selectable for Strategy composition using the returned exact `factor_id`.
+Source never overrides eligibility, rating, or selector identity.
+
 ### 1. Prepare a Valid Submission
 
 - For composition and submission operations, call `sb_get_contract` exactly once. Treat its
@@ -158,7 +172,7 @@ list is not a substitute for Strategy eligibility.
 
 Call `sb_list_eligible` with the requested filters and bounded pagination. Display a
 compact comparison table with only factor id, name, authoritative FM Task category, rating/grade
-status, and exact `cs_sharpe` labeled CS Sharpe when available. Do not include Median Sharpe,
+status, Source, and exact `cs_sharpe` labeled CS Sharpe when available. Do not include Median Sharpe,
 cross-sectional/time-series capability flags, or eligibility status in the default table, and never
 substitute `median_sharpe` for `cs_sharpe`. Treat the returned category as authoritative and an
 unavailable category as unavailable; never infer it from name, type, or tags. Grade F remains

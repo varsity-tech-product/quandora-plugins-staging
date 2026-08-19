@@ -87,9 +87,9 @@ If the `quandora-staging` connection is unavailable, update or reinstall the sta
 
 ## Release Order
 
-Plugin 1.49 adds server-evidence Factor and Strategy Analysis workflows on merged Plugin 1.48.
-Deploy the Product Backend analysis actions and Auth public MCP tools before publishing Plugin 1.49.
-After the unique staging Plugin 1.49 artifact is confirmed installable from every supported
-manifest, advertise `1.49` through the separate Auth staging version configuration. The new tools
-reuse existing artifact-read scopes, so no OAuth reconsent is required. Factor Mining runtime,
-production plugin metadata, and production service configuration remain unchanged.
+Plugin 1.50 adds authoritative Official/Mine source labels to eligible Strategy factor lists on
+merged Plugin 1.49. Deploy the Product Backend projection and Auth public MCP normalization before
+publishing Plugin 1.50. After the unique staging Plugin 1.50 artifact is confirmed installable from
+every supported manifest, advertise `1.50` through the separate Auth staging version configuration.
+No new tool or OAuth scope is required. Factor Mining runtime, production plugin metadata, and
+production service configuration remain unchanged.

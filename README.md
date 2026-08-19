@@ -350,12 +350,12 @@ or terminal stop. Lifecycle monitoring uses Paper detail rather than repeatedly 
 live portfolio. Strategy Portfolio Paper is presented as ordered, static independent sleeves; no
 parent aggregate position or parent Paper equity capability is implied.
 
-Release invariant: Plugin 1.49 adds server-evidence Factor and Strategy Analysis workflows on merged
-Plugin 1.48. Deploy the Product Backend analysis actions and Auth public MCP tools before publishing
-the unique staging Plugin 1.49 artifact. Confirm it is installable from every supported staging
-manifest before separately configuring Auth staging to advertise `1.49`. The new tools reuse
-existing artifact-read scopes, so no OAuth reconsent is required. Factor Mining runtime, production
-plugin metadata, and production service configuration remain unchanged.
+Release invariant: Plugin 1.50 adds authoritative Official/Mine source labels to eligible Strategy
+factor lists on merged Plugin 1.49. Deploy the Product Backend projection and Auth public MCP
+normalization before publishing the unique staging Plugin 1.50 artifact. Confirm it is installable
+from every supported staging manifest before separately configuring Auth staging to advertise
+`1.50`. No new tool or OAuth scope is required. Factor Mining runtime, production plugin metadata,
+and production service configuration remain unchanged.
 
 ## License
 
