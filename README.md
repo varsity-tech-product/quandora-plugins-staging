@@ -365,6 +365,12 @@ version label unchanged until the 1.51 artifact is confirmed installable from ev
 manifest; advance that label in a separate reviewed configuration change. No OAuth scope changes
 are required, and production remains unchanged.
 
+Plugin 1.52 preserves Plugin 1.51's public tool inventory and adds guidance-only alignment for
+safe terminal Strategy diagnostics, closed Paper position-history semantics, and Official-factor
+versioned source creation. Official factors use their exact admission triples as top-level
+`factor_references`; they never fall back to the legacy Strategy selector path. No backend API,
+tool, OAuth scope, or deployment configuration changes are introduced by this plugin release.
+
 ## License
 
 This repository is licensed under the Apache License 2.0. See [LICENSE](LICENSE).

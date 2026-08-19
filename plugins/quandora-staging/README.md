@@ -100,3 +100,9 @@ Deploy FM, Auth, and PB in that order before publishing Plugin 1.51. Keep the Au
 label unchanged until the 1.51 artifact is confirmed installable from every supported manifest,
 then advance the label through a separate reviewed staging configuration change. OAuth scopes and
 production remain unchanged.
+
+Plugin 1.52 keeps the same tools and scopes while aligning Agent decisions with the deployed FM/PB
+contracts: terminal retryability creates a new run rather than reviving a failed one, Paper
+position history contains only closed net-position lifecycles, and Official-factor Strategy sources
+use exact admission triples through top-level `factor_references`. No backend or deployment change
+is part of this plugin release.
