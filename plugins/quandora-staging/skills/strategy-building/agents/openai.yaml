@@ -4,7 +4,7 @@ interface:
   icon_small: "./assets/strategy-building.png"
   icon_large: "./assets/strategy-building.png"
   brand_color: "#F28C00"
-  default_prompt: "Use $strategy-building to combine existing Quandora factors into a cross-sectional strategy."
+  default_prompt: "Use $strategy-building to choose Official, Mine, or Shared Quandora factors and create or backtest a cross-sectional Strategy."
 
 dependencies:
   tools:

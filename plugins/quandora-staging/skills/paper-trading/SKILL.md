@@ -1,6 +1,6 @@
 ---
 name: paper-trading
-description: Use when the user asks for simulated trading, paper trading, 模拟盘, 纸交易, current Paper PnL or assets, Paper positions/fills/funding/equity/code, stopping a Paper run, or a Strategy Portfolio Paper workflow on Quandora Staging.
+description: Use when the user asks for simulated trading, paper trading, 模拟盘, 纸交易, current Paper PnL or assets, Paper positions/fills/funding/equity/code, stopping a Paper run, or a Strategy Portfolio Paper workflow on Quandora Staging. Use strategy-building for factor selection and Strategy creation or backtests.
 ---
 
 # Quandora Staging Paper Trading
@@ -12,8 +12,10 @@ the current user's product-safe StrategyRun, Paper run, and Strategy Portfolio h
 staging capability and must never be described as production or live-money trading.
 
 Route requests for “模拟盘”, “纸交易”, “paper trading”, current Paper assets/PnL, Paper history,
-or Portfolio Paper here directly. Do not repeat Factor Mining or mature Strategy Building
-introductions and do not call their tools unless the user separately asks for those workflows.
+or Portfolio Paper here directly. Factor selection, Strategy composition or revision, and Strategy
+backtests always belong to `$strategy-building`, even though the current versioned-source tool names
+begin with `pt_`. If no eligible source exists, hand off to Strategy Building; do not prepare one in
+this skill.
 
 OAuth and credentials are host-managed. Never inspect, print, copy, store, or ask the user to paste
 API keys, bearer/access/refresh tokens, authorization codes, PKCE verifiers, service tokens,
@@ -41,9 +43,7 @@ Route read-only diagnosis of a completed Strategy result or Paper-readiness asse
 
 Use only the minimum relevant subset of these Paper tools:
 
-- Source preparation and discovery: `pt_list_sources`, `pt_src_create`,
-  `pt_src_revise`, `pt_src_def_get`, `pt_src_ver_get`,
-  `pt_src_bt_submit`, `pt_get_source`.
+- Existing-source discovery: `pt_list_sources`, `pt_get_source`.
 - Single runs: `pt_list_runs`, `pt_get_run`, `pt_submit_run`, `pt_stop_run`.
 - Single-run data: `pt_get_portfolio`, `pt_list_pos`, `pt_get_equity`, `pt_list_fills`,
   `pt_list_funding`, `pt_get_code`.
@@ -53,6 +53,11 @@ Use only the minimum relevant subset of these Paper tools:
   `pt_sp_bt_get`, `pt_sp_bt_result`.
 - Portfolio Paper: `pt_sp_run_submit`, `pt_sp_run_get`,
   `pt_sp_run_stop`.
+
+The currently exposed `pt_src_create`, `pt_src_revise`, `pt_src_def_get`, `pt_src_ver_get`, and
+`pt_src_bt_submit` names are versioned Strategy implementation tools owned by `$strategy-building`.
+Their `pt_` prefix and Paper-related OAuth scopes are compatibility details, not permission for this
+skill to create, revise, inspect, or backtest a Strategy.
 
 Some hosts prefix names with the server name, for example
 `quandora_staging__pt_get_run`; treat it as the same tool. If no `pt_*` tools are visible, do not
@@ -67,9 +72,11 @@ ask for pasted tokens.
 The exact Paper OAuth scope set is `paper_trading:sources.read`,
 `paper_trading:sources.write`, `paper_trading:runs.read`, `paper_trading:runs.create`,
 `paper_trading:runs.stop`, `paper_trading:code.read`, `paper_trading:portfolios.read`, and
-`paper_trading:portfolios.write`. Source create, revise, and source-backtest submit require source
-write; source Strategy, StrategyVersion, list, and lifecycle reads require source read. Tools remain
-invisible when the relevant gate is closed or the token lacks their exact scope.
+`paper_trading:portfolios.write`. This skill uses source read only to discover and monitor an
+existing Paper-eligible source. The current deployment still scopes versioned Strategy preparation
+under source read/write, but those tools remain owned by Strategy Building. Tool visibility does not
+change the workflow boundary. Tools remain invisible when the relevant gate is closed or the token
+lacks their exact scope.
 
 There is deliberately no Paper archive, unarchive, resume, parent Portfolio list, parent aggregate
 positions, parent net position, or parent Paper equity tool. Never invent or imply these abilities.
@@ -97,37 +104,18 @@ is separate and unchanged.
 
 ## Single-Strategy Workflow
 
-### 1. Prepare an Ordinary Source When Needed
+### 1. Require an Existing Eligible Source
 
-Skip this step when the user already has an eligible source. Otherwise use this bounded sequence:
+Paper Trading begins with an exact existing source StrategyRun supplied by the user or returned by
+`pt_list_sources`. This skill must not list or choose factors, create or revise a Strategy, inspect a
+prepared StrategyVersion, or submit a Strategy backtest.
 
-1. Obtain the exact eligible `factor_id`, `factor_version_id`, and `job_id` triplets. Reuse exact
-   references already returned in the current workflow. For every `source_kind=official` row, read
-   these values from `admission.factor_id`, `admission.factor_version_id`, and `admission.job_id`;
-   its top-level factor id alone is not sufficient version evidence. If the references are absent,
-   use only the minimum relevant Factor/Strategy reads needed to select and verify them; do not give
-   a general tutorial, mine/import/retest another factor, or invent an id.
-2. For a new source call `pt_src_create`. Call `pt_src_revise` only when the
-   user explicitly revises a returned Strategy using its exact `strategy_id` and base
-   `strategy_version_id`. The specification is CS-only and closed: valid ranking, weighting,
-   strategy type, rebalance bars, and exact unique factor references. Send those references only as
-   the tool's top-level `factor_references`; never put them in `specification.factor_ids`. Never
-   send symbols, a universe, provider identity, transport identity, or an idempotency field.
-3. Read back with `pt_src_def_get` or `pt_src_ver_get` only when needed.
-   These are closed Product projections and never return downstream identifiers.
-4. Call `pt_src_bt_submit` once with only the exact `strategy_version_id` and the closed run
-   configuration: a positive canonical
-   Decimal-string `initial_cash`, optional ordered dates, and optional canonical Decimal-string fee
-   rates. Treat a timeout as ambiguous and do not change or repeat the mutation. The successful
-   response returns the owner-local opaque `source_strategy_run_id` and the first source snapshot.
-5. Monitor only that handle with bounded `pt_get_source` reads. A normal lifecycle is `submitted`
-   (shown as accepted), then `running`, then `completed`; terminal source states never reopen. Stop
-   polling when terminal. Never use mature Strategy history to monitor this source lifecycle. A
-   malformed, unavailable, or cross-wired read fails closed and never justifies probing another
-   handle.
-
-After `pt_get_source` reports `completed` and `paper_eligibility=eligible`, continue to explicit
-Paper confirmation. Creating or revising the source never starts Paper automatically.
+If no suitable eligible source exists, or the user asks to create, change, or backtest a Strategy,
+hand that work to `$strategy-building` and stop before any Paper mutation. Strategy Building may use
+the current `pt_src_*` versioned-source tools internally; that does not start Paper and does not move
+Strategy ownership into this skill. After Strategy Building produces a completed source with
+`paper_eligibility=eligible`, continue only when the user still wants Paper, then select the exact
+source and obtain the separate Paper confirmation below.
 
 ### 2. Select a Source
 
