@@ -13,9 +13,8 @@ staging capability and must never be described as production or live-money tradi
 
 Route requests for “模拟盘”, “纸交易”, “paper trading”, current Paper assets/PnL, Paper history,
 or Portfolio Paper here directly. Factor selection, Strategy composition or revision, and Strategy
-backtests always belong to `$strategy-building`, even though the current versioned-source tool names
-begin with `pt_`. If no eligible source exists, hand off to Strategy Building; do not prepare one in
-this skill.
+backtests always belong to `$strategy-building` and use its `sb_*` tools. If no eligible source
+exists, hand off to Strategy Building; do not prepare one in this skill.
 
 OAuth and credentials are host-managed. Never inspect, print, copy, store, or ask the user to paste
 API keys, bearer/access/refresh tokens, authorization codes, PKCE verifiers, service tokens,
@@ -54,11 +53,6 @@ Use only the minimum relevant subset of these Paper tools:
 - Portfolio Paper: `pt_sp_run_submit`, `pt_sp_run_get`,
   `pt_sp_run_stop`.
 
-The currently exposed `pt_src_create`, `pt_src_revise`, `pt_src_def_get`, `pt_src_ver_get`, and
-`pt_src_bt_submit` names are versioned Strategy implementation tools owned by `$strategy-building`.
-Their `pt_` prefix and Paper-related OAuth scopes are compatibility details, not permission for this
-skill to create, revise, inspect, or backtest a Strategy.
-
 Some hosts prefix names with the server name, for example
 `quandora_staging__pt_get_run`; treat it as the same tool. If no `pt_*` tools are visible, do not
 infer the cause. Paper/versioned-source service gates or the deployment may not be active, in which
@@ -73,15 +67,14 @@ The exact Paper OAuth scope set is `paper_trading:sources.read`,
 `paper_trading:sources.write`, `paper_trading:runs.read`, `paper_trading:runs.create`,
 `paper_trading:runs.stop`, `paper_trading:code.read`, `paper_trading:portfolios.read`, and
 `paper_trading:portfolios.write`. This skill uses source read only to discover and monitor an
-existing Paper-eligible source. The current deployment still scopes versioned Strategy preparation
-under source read/write, but those tools remain owned by Strategy Building. Tool visibility does not
-change the workflow boundary. Tools remain invisible when the relevant gate is closed or the token
-lacks their exact scope.
+existing Paper-eligible source. Tool visibility does not authorize this skill to compose, create,
+revise, or backtest a Strategy. Tools remain invisible when the relevant gate is closed or the
+token lacks their exact scope.
 
 There is deliberately no Paper archive, unarchive, resume, parent Portfolio list, parent aggregate
 positions, parent net position, or parent Paper equity tool. Never invent or imply these abilities.
-Do not use `sb_submit_run` as a versioned Strategy or Paper substitute; its legacy Strategy behavior
-is separate and unchanged.
+Do not call `sb_submit_run` from this skill. Hand Strategy work to `$strategy-building`; use Paper
+tools here only after an eligible source exists.
 
 ## Global Safety Rules
 
@@ -111,11 +104,10 @@ Paper Trading begins with an exact existing source StrategyRun supplied by the u
 prepared StrategyVersion, or submit a Strategy backtest.
 
 If no suitable eligible source exists, or the user asks to create, change, or backtest a Strategy,
-hand that work to `$strategy-building` and stop before any Paper mutation. Strategy Building may use
-the current `pt_src_*` versioned-source tools internally; that does not start Paper and does not move
-Strategy ownership into this skill. After Strategy Building produces a completed source with
-`paper_eligibility=eligible`, continue only when the user still wants Paper, then select the exact
-source and obtain the separate Paper confirmation below.
+hand that work to `$strategy-building` and stop before any Paper mutation. Strategy Building uses
+only its `sb_*` tools. After it produces a completed source with `paper_eligibility=eligible`,
+continue only when the user still wants Paper, then select the exact source and obtain the separate
+Paper confirmation below.
 
 ### 2. Select a Source
 
