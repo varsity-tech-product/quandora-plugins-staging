@@ -10,8 +10,9 @@ Bundled plugin version: 1.52
 Use this skill through the authenticated Quandora Staging connection exposed by the host as
 `quandora-staging`. It owns factor selection, Strategy creation or revision, and Strategy backtests
 for Official, Mine, and Shared factors, and includes the complete Strategy Result Bundle workflow.
-Some versioned-source actions currently have a `pt_` prefix, but they remain part of this Strategy
-workflow and never start Paper. Use `$strategy-analysis` for deep result diagnosis.
+Every factor composition and Strategy backtest uses only the Strategy tools listed below. Never use
+Paper Trading tools to compose or backtest a Strategy. Use `$strategy-analysis` for deep result
+diagnosis.
 
 OAuth and all credentials are handled by the host. Quandora access tokens expire after 7 days, and the host MCP client should use its stored rotating refresh token automatically. Never inspect, print, copy, store, or ask the user to paste API keys, bearer tokens, authorization codes, access tokens, refresh tokens, PKCE verifiers, service tokens, or other credentials.
 
@@ -42,11 +43,9 @@ Bundle workflow uses the relevant subset of `sb_get_contract`, `sb_list_eligible
 remain legacy single-artifact compatibility actions. Use `qd_get_guidance` only for one of the
 documented guidance branches below.
 
-When a composition contains an Official factor, the same Strategy workflow also uses the relevant
-subset of `pt_src_create`, `pt_src_revise`, `pt_src_def_get`, `pt_src_ver_get`, `pt_src_bt_submit`,
-and `pt_get_source`. Their current prefix and OAuth grouping are compatibility details. Do not load
-the Paper Trading skill, present this as Paper preparation, or call `pt_submit_run` unless the user
-later makes a separate Paper Trading request.
+Official, Mine, and Shared selections use the same `sb_submit_run` path. Do not load the Paper
+Trading skill or present Strategy composition as Paper preparation. A later Paper Trading request
+is a separate workflow.
 
 The normal Strategy workflow must not require or call `sb_import_factor`. Import-only actions are
 not global prerequisites, and an ordinary Strategy task must continue when they are absent. Check
@@ -124,46 +123,15 @@ Mine merely because the user supplied it.
 Never infer source from factor name, id, category, author, or the current query. Do not make another
 list or detail call merely to classify source. An **Official** factor is read-only product
 inventory: it cannot be edited, archived, or deleted by the user. Its top-level `factor_id` is the
-canonical factor identity, but an executable versioned Strategy must bind the exact admitted
-lineage from `admission.factor_id`, `admission.factor_version_id`, and `admission.job_id`. Never send
-an Official factor through the legacy `sb_submit_run` selector path and never put its selector in
-`specification.factor_ids`.
-
-#### Versioned Strategy Branch When Any Official Factor Is Selected
-
-Remain in Strategy Building. Do not hand the workflow to Paper Trading. A composition containing at
-least one Official factor must use the versioned-source tools and must not use `sb_submit_run`.
-
-For every selected Official, Mine, or Shared row in this mixed or Official-only composition,
-require exact admitted lineage from its non-null `admission.factor_id`,
-`admission.factor_version_id`, and `admission.job_id`. The top-level factor id is not sufficient for
-this branch. If any selected row lacks complete admitted lineage, stop before mutation; do not omit
-that factor, guess a reference, or fall back to the legacy selector path.
-
-Before `pt_src_create`, show the selected factors, exact Strategy name, ranking, weighting,
-direction, and rebalance configuration and obtain confirmation. Call it once with the closed CS
-`specification` and the exact admission triples as top-level `factor_references`; never put them in
-`specification.factor_ids`. Use `pt_src_revise` only for an explicit revision of an exact returned
-Strategy and base StrategyVersion. Read back with `pt_src_def_get` or `pt_src_ver_get` only when
-needed.
-
-Treat source creation and backtest submission as separate mutations. Before `pt_src_bt_submit`,
-show and confirm the exact StrategyVersion, positive canonical Decimal-string `initial_cash`,
-optional ordered dates, and optional canonical Decimal-string fee rates. Call it once with only
-those closed fields. A timeout is ambiguous: do not change or repeat the mutation. Monitor only the
-returned `source_strategy_run_id` with bounded `pt_get_source` reads until terminal.
-
-This creates and backtests a normal saved Strategy. It does not start Paper. After a completed
-source reports `paper_eligibility=eligible`, report that readiness and stop; a later Paper run
-requires separate user intent, separate confirmation, and the Paper Trading skill. If the required
-versioned-source tools are unavailable, stop before mutation and explain that the current MCP
-surface cannot safely submit Official factors. Source never overrides eligibility or rating.
+canonical selector identity used by `sb_submit_run`, exactly like the returned `factor_id` for Mine
+and Shared factors. `admission` and rating fields are evidence only and are never request fields.
+Use only the listed Strategy tools during factor selection, composition, submission, and backtest
+monitoring.
 
 ### 1. Prepare a Valid Submission
 
-- The remainder of this section is the legacy `sb_submit_run` path for selections containing no
-  Official factor. For those composition and submission operations, call `sb_get_contract` exactly
-  once. Treat its
+- For every Official, Mine, Shared, or mixed composition, call `sb_get_contract` exactly once.
+  Treat its
   `contract` as the current capability boundary and its separately labeled `product_defaults` as
   the effective defaults used when corresponding submit fields are omitted. A bare factor-list
   request does not call this action.
