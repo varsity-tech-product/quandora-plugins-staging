@@ -56,6 +56,26 @@ Write-StateFile -Payload ([ordered]@{
     completedAt = $null
 })
 
+$null = & $resolvedClaude mcp help login 2>$null
+if ($LASTEXITCODE -ne 0) {
+    Write-StateFile -Payload ([ordered]@{
+        status = 'incompatible_cli'
+        processId = $PID
+        inputRedirected = [Console]::IsInputRedirected
+        outputRedirected = [Console]::IsOutputRedirected
+        errorRedirected = [Console]::IsErrorRedirected
+        exitCode = 69
+        completedAt = [DateTime]::UtcNow.ToString('o')
+    })
+    [ordered]@{
+        processId = $PID
+        stateDirectory = $stateDirectory
+        statusFile = $statusFile
+        mcpIdentity = $mcpIdentity
+    } | ConvertTo-Json -Compress
+    exit 69
+}
+
 $childScript = @'
 $ErrorActionPreference = 'Stop'
 $mcpIdentity = 'plugin:quandora-staging:quandora-staging'
@@ -93,7 +113,8 @@ try {
     Write-ChildState -Status 'running' -ExitCode $null -CompletedAt $null
     & $claudePath mcp login $mcpIdentity
     $loginExitCode = $LASTEXITCODE
-    Write-ChildState -Status 'completed' -ExitCode $loginExitCode -CompletedAt ([DateTime]::UtcNow.ToString('o'))
+    $completionStatus = if ($loginExitCode -eq 0) { 'completed' } else { 'failed' }
+    Write-ChildState -Status $completionStatus -ExitCode $loginExitCode -CompletedAt ([DateTime]::UtcNow.ToString('o'))
     exit $loginExitCode
 }
 catch {
