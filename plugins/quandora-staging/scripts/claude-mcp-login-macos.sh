@@ -59,6 +59,12 @@ if [ ! -x /usr/bin/script ]; then
   exit 69
 fi
 
+if ! "$claude_bin" mcp help login >/dev/null 2>&1; then
+  completed_at="\"$(/bin/date -u '+%Y-%m-%dT%H:%M:%SZ')\""
+  write_status 'incompatible_cli' 69 "$completed_at"
+  exit 69
+fi
+
 write_status 'running' null null
 
 set +e
@@ -69,10 +75,12 @@ exit_code=$?
 set -e
 
 completed_at="\"$(/bin/date -u '+%Y-%m-%dT%H:%M:%SZ')\""
-if [ "$exit_code" -eq 70 ]; then
+if [ "$exit_code" -eq 0 ]; then
+  write_status 'completed' "$exit_code" "$completed_at"
+elif [ "$exit_code" -eq 70 ]; then
   write_status 'no_interactive_pty' "$exit_code" "$completed_at"
 else
-  write_status 'completed' "$exit_code" "$completed_at"
+  write_status 'failed' "$exit_code" "$completed_at"
 fi
 
 exit "$exit_code"
