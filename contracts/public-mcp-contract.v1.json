@@ -1,0 +1,4182 @@
+{
+  "conformance": {
+    "expected_failures": "contracts/mcp-conformance-expected-failures.yaml",
+    "package": "@modelcontextprotocol/conformance@0.1.16"
+  },
+  "contract_revision": "2026-08-21.stage1",
+  "hosts": [
+    {
+      "name": "Codex",
+      "path": "modern_with_legacy_fallback"
+    },
+    {
+      "name": "Claude",
+      "path": "legacy_supported"
+    },
+    {
+      "name": "Cursor",
+      "path": "legacy_supported"
+    },
+    {
+      "name": "CodeBuddy/WorkBuddy",
+      "path": "legacy_supported"
+    },
+    {
+      "name": "Kimi",
+      "path": "legacy_supported"
+    }
+  ],
+  "owner": "quandora-auth-service",
+  "protocol": {
+    "legacy": [
+      "2025-11-25",
+      "2025-06-18",
+      "2025-03-26"
+    ],
+    "legacy_transport": "signed-session-compatibility-path",
+    "modern": [
+      "2026-07-28"
+    ],
+    "modern_transport": "official-python-sdk-2.0.0-stateless-http"
+  },
+  "public_namespace_policy": {
+    "factor_mining": "fm_*",
+    "paper_trading": "pt_*",
+    "platform": "qd_*",
+    "strategy": "sb_*"
+  },
+  "schema_version": "quandora.mcp.public-contract.v1",
+  "tool_error_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "error": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "details": {
+            "type": "object"
+          },
+          "retryable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "retryable"
+        ],
+        "type": "object"
+      }
+    },
+    "required": [
+      "error"
+    ],
+    "type": "object"
+  },
+  "tools": [
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Factor Mining Status"
+      },
+      "compatibility_alias": "<server-name>__fm_status",
+      "deprecated": false,
+      "description": "Report Remote MCP gateway and tool readiness. This does not probe live Factor Mining, embedding, dedup, or every downstream dependency.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
+      "name": "fm_status",
+      "oauth_scope": "factor_mining:status",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "factor_mining.status",
+        "authority": "factor_mining",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Factor Mining Status"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Factor Mining List Tasks"
+      },
+      "compatibility_alias": "<server-name>__fm_list_tasks",
+      "deprecated": false,
+      "description": "Return FM-owned public tasks with each task's authoritative canonical category and structured research context. This is the classification reference to consult before fm_custom_sess.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
+      "name": "fm_list_tasks",
+      "oauth_scope": "factor_mining:tasks.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "factor_mining.list_public_tasks",
+        "authority": "factor_mining",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Factor Mining List Tasks"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Factor Mining Get Contract"
+      },
+      "compatibility_alias": "<server-name>__fm_get_contract",
+      "deprecated": false,
+      "description": "Return the server-provided plugin.py construction contract. For a normal custom-factor workflow, after fm_status call with {} to read the global construction/data-column contract, select only exact returned data-column names, call fm_custom_sess, then call again with only the returned session_id. Treat that scoped contract as authoritative when writing and validating plugin.py. Do not send a hand-built custom task_payload or multiple selectors in this workflow. Do not retry an identical non-retryable request or silently change the user's research mechanism after a non-retryable validation error. For public tasks, use one exact task_id or the created session_id.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "maxProperties": 1,
+        "properties": {
+          "session_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "task_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "task_payload": {
+            "minProperties": 1,
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "name": "fm_get_contract",
+      "oauth_scope": "factor_mining:plugins.upload",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "factor_mining.get_plugin_contract",
+        "authority": "factor_mining",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Factor Mining Get Contract"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Factor Mining Task Session"
+      },
+      "compatibility_alias": "<server-name>__fm_task_session",
+      "deprecated": false,
+      "description": "Create a Factor Mining session from a public task.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "task_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id"
+        ],
+        "type": "object"
+      },
+      "name": "fm_task_session",
+      "oauth_scope": "factor_mining:sessions.create",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "factor_mining.create_task_session",
+        "authority": "factor_mining",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Factor Mining Task Session"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Factor Mining Custom Session"
+      },
+      "compatibility_alias": "<server-name>__fm_custom_sess",
+      "deprecated": false,
+      "description": "Create a custom Factor Mining session with the single canonical flat payload. allowed_data must contain exact column names returned by the immediately preceding global fm_get_contract call with {}.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "allowed_data": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 64,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "category": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "description": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "fwd_period": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "title": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "description",
+          "category",
+          "allowed_data",
+          "fwd_period"
+        ],
+        "type": "object"
+      },
+      "name": "fm_custom_sess",
+      "oauth_scope": "factor_mining:sessions.create",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "factor_mining.create_custom_session",
+        "authority": "factor_mining",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Factor Mining Custom Session"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Factor Mining Validate"
+      },
+      "compatibility_alias": "<server-name>__fm_validate",
+      "deprecated": false,
+      "description": "Validate inline Factor Mining plugin Python source. Use session_id for the normal public or custom workflow; session_id, task_id, task_payload and direct allowed_data are mutually exclusive validation contexts.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "session_id"
+                  ]
+                },
+                {
+                  "required": [
+                    "task_id"
+                  ]
+                },
+                {
+                  "required": [
+                    "task_payload"
+                  ]
+                },
+                {
+                  "required": [
+                    "allowed_data"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "task_id"
+                  ]
+                },
+                {
+                  "required": [
+                    "task_payload"
+                  ]
+                },
+                {
+                  "required": [
+                    "allowed_data"
+                  ]
+                }
+              ]
+            },
+            "required": [
+              "session_id"
+            ]
+          },
+          {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "session_id"
+                  ]
+                },
+                {
+                  "required": [
+                    "task_payload"
+                  ]
+                },
+                {
+                  "required": [
+                    "allowed_data"
+                  ]
+                }
+              ]
+            },
+            "required": [
+              "task_id"
+            ]
+          },
+          {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "session_id"
+                  ]
+                },
+                {
+                  "required": [
+                    "task_id"
+                  ]
+                },
+                {
+                  "required": [
+                    "allowed_data"
+                  ]
+                }
+              ]
+            },
+            "required": [
+              "task_payload"
+            ]
+          },
+          {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "session_id"
+                  ]
+                },
+                {
+                  "required": [
+                    "task_id"
+                  ]
+                },
+                {
+                  "required": [
+                    "task_payload"
+                  ]
+                }
+              ]
+            },
+            "required": [
+              "allowed_data"
+            ]
+          }
+        ],
+        "properties": {
+          "allowed_data": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 64,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "filename": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "plugin_source": {
+            "description": "Inline Factor Mining plugin Python source.",
+            "maxLength": 262144,
+            "minLength": 1,
+            "type": "string"
+          },
+          "session_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "task_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "task_payload": {
+            "minProperties": 1,
+            "type": "object"
+          }
+        },
+        "required": [
+          "plugin_source"
+        ],
+        "type": "object"
+      },
+      "name": "fm_validate",
+      "oauth_scope": "factor_mining:plugins.upload",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "factor_mining.validate_plugin_source",
+        "authority": "factor_mining",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Factor Mining Validate"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Factor Mining Dedup Context"
+      },
+      "compatibility_alias": "<server-name>__fm_dedup_context",
+      "deprecated": false,
+      "description": "Return Factor Mining research-memory context. Call with session_id after session creation to inspect task_memory_pressure. Call again with a concrete draft that includes a valid plugin source and/or non-empty description or formula before upload to inspect draft_duplicate_risk. The legacy duplicate_risk field is compatibility-only; use the mode-specific fields for decisions.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "maxLength": 4000,
+            "type": "string"
+          },
+          "formula": {
+            "maxLength": 4000,
+            "type": "string"
+          },
+          "limit": {
+            "maximum": 25,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "session_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "source": {
+            "maxLength": 200000,
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "name": "fm_dedup_context",
+      "oauth_scope": "factor_mining:sessions.create",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "factor_mining.request_dedup_context",
+        "authority": "factor_mining",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Factor Mining Dedup Context"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Factor Mining Run Backtest"
+      },
+      "compatibility_alias": "<server-name>__fm_run_backtest",
+      "deprecated": false,
+      "description": "Upload inline plugin source, submit a backtest, and wait within the configured backend budget. The session contract supplies fwd_period; do not send a separate horizon.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "plugin_source": {
+            "description": "Inline Factor Mining plugin Python source.",
+            "maxLength": 262144,
+            "minLength": 1,
+            "type": "string"
+          },
+          "session_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "plugin_source"
+        ],
+        "type": "object"
+      },
+      "name": "fm_run_backtest",
+      "oauth_scope": "factor_mining:backtests.create",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "factor_mining.upload_backtest_wait",
+        "authority": "factor_mining",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Factor Mining Run Backtest"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Factor Mining Resume Run"
+      },
+      "compatibility_alias": "<server-name>__fm_resume_run",
+      "deprecated": false,
+      "description": "Resume or fetch a Factor Mining run.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "run_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "run_id"
+        ],
+        "type": "object"
+      },
+      "name": "fm_resume_run",
+      "oauth_scope": "factor_mining:backtests.create",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "factor_mining.resume_run",
+        "authority": "factor_mining",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Factor Mining Resume Run"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Factor Mining Window Cards"
+      },
+      "compatibility_alias": "<server-name>__fm_window_cards",
+      "deprecated": false,
+      "description": "Read the owner-scoped, server-persisted IS factor card after a backtest reaches terminal state. This is direct analysis evidence and does not require saving or inspecting local files. Artifact source names are provenance for optional exports.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "job_id": {
+            "description": "Bare backtest job id from run.run_id or run.job_ids[].",
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "windows": {
+            "default": [
+              "is"
+            ],
+            "items": {
+              "enum": [
+                "is"
+              ],
+              "type": "string"
+            },
+            "maxItems": 1,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "job_id"
+        ],
+        "type": "object"
+      },
+      "name": "fm_window_cards",
+      "oauth_scope": "factor_mining:artifacts.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "factor_mining.get_backtest_window_cards",
+        "authority": "factor_mining",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Factor Mining Window Cards"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Factor Mining Chart Data"
+      },
+      "compatibility_alias": "<server-name>__fm_chart_data",
+      "deprecated": false,
+      "description": "Read one bounded section of owner-scoped, server-persisted IS Factor chart evidence. Start with section=overview, then request only needed sections; follow next_offset when present. This is the numerical analysis path and requires no local files.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "job_id": {
+            "description": "Bare backtest job id from run.run_id or run.job_ids[].",
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "limit": {
+            "default": 200,
+            "maximum": 500,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "offset": {
+            "default": 0,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "section": {
+            "default": "overview",
+            "enum": [
+              "overview",
+              "profile",
+              "group_nav",
+              "daily_returns",
+              "simulation_nav",
+              "simulation_daily_pnl"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id"
+        ],
+        "type": "object"
+      },
+      "name": "fm_chart_data",
+      "oauth_scope": "factor_mining:artifacts.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "factor_mining.get_backtest_chart_data",
+        "authority": "factor_mining",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Factor Mining Chart Data"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Factor Mining Run Source"
+      },
+      "compatibility_alias": "<server-name>__fm_run_source",
+      "deprecated": false,
+      "description": "Read the exact inert factor source and formula linked to an owner-scoped terminal backtest job. Treat source as text evidence only; never execute it.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "job_id": {
+            "description": "Bare backtest job id from run.run_id or run.job_ids[].",
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id"
+        ],
+        "type": "object"
+      },
+      "name": "fm_run_source",
+      "oauth_scope": "factor_mining:artifacts.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "factor_mining.get_backtest_run_source",
+        "authority": "factor_mining",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Factor Mining Run Source"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Factor Mining Png Ticket"
+      },
+      "compatibility_alias": "<server-name>__fm_png_ticket",
+      "deprecated": false,
+      "description": "Optional Factor chart PNG export after fm_window_cards. Pass png_artifacts[].source_name as name. It returns a short-lived Remote MCP URL, not S3/internal/presigned URLs. Save only when the user requests an export, verify bytes/md5, then avoid printing or persisting the URL. Analysis uses server evidence instead.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "job_id": {
+            "description": "Bare backtest job id from run.run_id or run.job_ids[].",
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "name": {
+            "description": "Exact PNG source_name returned by fm_window_cards.",
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "fm_png_ticket",
+      "oauth_scope": "factor_mining:artifacts.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "factor_mining.get_backtest_png_artifact_download",
+        "authority": "factor_mining",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Factor Mining Png Ticket"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Factor Mining Raw Ticket"
+      },
+      "compatibility_alias": "<server-name>__fm_raw_ticket",
+      "deprecated": false,
+      "description": "Optional export after a backtest reaches terminal state: request the raw signal parquet artifact. Pass name=step4/signal_raw.parquet when provided. Download the returned short-lived Remote MCP URL to signal_raw.parquet, verify size_bytes and sha256_hex, then avoid printing or persisting the URL. Missing raw parquet should be recorded as unavailable, not treated as a failed run. Do not use local parquet or a Python runtime as analysis evidence.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "job_id": {
+            "description": "Bare backtest job id from run.run_id or run.job_ids[].",
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "name": {
+            "description": "Raw signal artifact name. Use step4/signal_raw.parquet.",
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id"
+        ],
+        "type": "object"
+      },
+      "name": "fm_raw_ticket",
+      "oauth_scope": "factor_mining:artifacts.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "factor_mining.get_backtest_raw_artifact_download",
+        "authority": "factor_mining",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Factor Mining Raw Ticket"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Factor Mining Bundle Ticket"
+      },
+      "compatibility_alias": "<server-name>__fm_bundle_ticket",
+      "deprecated": false,
+      "description": "Create a short-lived single-use URL for the immutable Factor Result Bundle as an optional export. Analysis uses fm_window_cards, fm_chart_data, and fm_run_source instead. Use fm_bundle_chunk automatically if the export URL cannot be downloaded.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "job_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id"
+        ],
+        "type": "object"
+      },
+      "name": "fm_bundle_ticket",
+      "oauth_scope": "factor_mining:artifacts.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "factor_mining.get_result_bundle_metadata",
+        "authority": "factor_mining",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Factor Mining Bundle Ticket"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Factor Mining Bundle Chunk"
+      },
+      "compatibility_alias": "<server-name>__fm_bundle_chunk",
+      "deprecated": false,
+      "description": "Bounded fallback for an explicitly requested Factor Result Bundle export. It is not an analysis evidence path. Start at offset 0, use at most 262144 bytes, and follow validated next_offset for the same snapshot_revision.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "job_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "limit": {
+            "maximum": 262144,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "offset": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "snapshot_revision": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "job_id",
+          "snapshot_revision"
+        ],
+        "type": "object"
+      },
+      "name": "fm_bundle_chunk",
+      "oauth_scope": "factor_mining:artifacts.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "factor_mining.get_result_bundle_chunk",
+        "authority": "factor_mining",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Factor Mining Bundle Chunk"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Factor Mining Png Chunk"
+      },
+      "compatibility_alias": "<server-name>__fm_png_chunk",
+      "deprecated": false,
+      "description": "Optional Factor chart PNG export fallback after fm_window_cards when a download ticket is unavailable or fails. Pass png_artifacts[].source_name as name. Loop offset=0, limit<=262144: decode content_b64, append bytes, then continue with next_offset until next_offset is null. Verify size_bytes and md5_hex when possible. Do not use this for numerical analysis.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "job_id": {
+            "description": "Bare backtest job id from run.run_id or run.job_ids[].",
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "limit": {
+            "description": "Maximum 262144 bytes.",
+            "maximum": 262144,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "name": {
+            "description": "Exact PNG source_name returned by fm_window_cards.",
+            "maxLength": 512,
+            "minLength": 1,
+            "type": "string"
+          },
+          "offset": {
+            "description": "Byte offset, start at 0.",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "job_id",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "fm_png_chunk",
+      "oauth_scope": "factor_mining:artifacts.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "factor_mining.get_backtest_png_artifact_chunk",
+        "authority": "factor_mining",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Factor Mining Png Chunk"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Factor Mining List Factors"
+      },
+      "compatibility_alias": "<server-name>__fm_list_factors",
+      "deprecated": false,
+      "description": "List caller-owned reusable Factor Mining factor families with compact safe summaries; this is not the Strategy eligible/selectable factor pool. Omit page_size unless pagination is needed; when present it must be an integer from 1 through 20. A failed call is an error, not an empty list: claim zero factors only when a successful response contains an empty items array. After an error, stop this read workflow and do not call fm_get_history as a fallback. Use sb_list_eligible for bare available/eligible/selectable-factor or Strategy-pool requests, and do not call both lists for those requests.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "include_archived": {
+            "type": "boolean"
+          },
+          "page_size": {
+            "maximum": 20,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page_token": {
+            "maxLength": 4096,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "name": "fm_list_factors",
+      "oauth_scope": "factor_mining:factors.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "factor_mining.list_canonical_factors",
+        "authority": "factor_mining",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Factor Mining List Factors"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Factor Mining Get History"
+      },
+      "compatibility_alias": "<server-name>__fm_get_history",
+      "deprecated": false,
+      "description": "Read one caller-owned reusable Factor Mining factor family's summary, branches, versions, or run metadata. Use only an exact factor_id returned by a successful fm_list_factors response for the current caller. Never call after a list error. Never substitute a backtest run_id, job_id, plugin_id, session_id, PB intake_result.factor.factor_id, Strategy top-level compatibility selector, Strategy admission ID, or any locally cached ID. Summary has no selectors or pagination; the input schema expresses the valid selector/pagination combinations for every view.",
+      "feature_gate": null,
+      "input_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "factor_id": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "view": {
+                "default": "summary",
+                "enum": [
+                  "summary"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "factor_id"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "factor_id": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "page_size": {
+                "maximum": 20,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "page_token": {
+                "maxLength": 4096,
+                "type": "string"
+              },
+              "view": {
+                "enum": [
+                  "branches"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "factor_id",
+              "view"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "branch_id": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "factor_id": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "view": {
+                "enum": [
+                  "branches"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "factor_id",
+              "view"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "factor_id": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "page_size": {
+                "maximum": 20,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "page_token": {
+                "maxLength": 4096,
+                "type": "string"
+              },
+              "view": {
+                "enum": [
+                  "versions"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "factor_id",
+              "view"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "branch_id": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "factor_id": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "page_size": {
+                "maximum": 20,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "page_token": {
+                "maxLength": 4096,
+                "type": "string"
+              },
+              "view": {
+                "enum": [
+                  "versions"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "factor_id",
+              "view"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "factor_id": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "version_id": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "view": {
+                "enum": [
+                  "versions"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "factor_id",
+              "view"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "factor_id": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "page_size": {
+                "maximum": 20,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "page_token": {
+                "maxLength": 4096,
+                "type": "string"
+              },
+              "version_id": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "view": {
+                "enum": [
+                  "runs"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "factor_id",
+              "view"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "name": "fm_get_history",
+      "oauth_scope": "factor_mining:factors.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "factor_mining.get_factor_history",
+        "authority": "factor_mining",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Factor Mining Get History"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Quandora Get Guidance"
+      },
+      "compatibility_alias": "<server-name>__qd_get_guidance",
+      "deprecated": false,
+      "description": "Read one approved, known Guidance item through PB's Remote MCP capability boundary. mcp_invocation, when present, is the request-shape authority; upstream service-level transport concepts are not MCP tool arguments.",
+      "feature_gate": null,
+      "input_schema": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "guide_id": {
+                "enum": [
+                  "operation.factor.history.read",
+                  "operation.result.read",
+                  "operation.strategy.result.read"
+                ],
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "if_guide_revision": {
+                "maxLength": 256,
+                "type": "string"
+              },
+              "sections": {
+                "items": {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 20,
+                "minItems": 1,
+                "type": "array",
+                "uniqueItems": true
+              }
+            },
+            "required": [
+              "guide_id"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "guide_id": {
+                "enum": [
+                  "operation.strategy.factor.import",
+                  "operation.strategy.factor.shared_admission",
+                  "metric.backtest.grade"
+                ],
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "if_guide_revision": {
+                "maxLength": 256,
+                "type": "string"
+              }
+            },
+            "required": [
+              "guide_id"
+            ],
+            "type": "object"
+          }
+        ],
+        "type": "object"
+      },
+      "name": "qd_get_guidance",
+      "oauth_scope": "quandora:guidance.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "quandora.get_guidance",
+        "authority": "product_backend",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Quandora Get Guidance"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Quandora Plugin Ver"
+      },
+      "compatibility_alias": "<server-name>__qd_plugin_ver",
+      "deprecated": false,
+      "description": "Report whether the installed opaque Quandora plugin release label exactly matches the current environment's designated release. This read-only check does not order versions, update, install, authorize, or discover releases over the network.",
+      "feature_gate": "REMOTE_MCP_PLUGIN_VERSION_NOTICE_ENABLED",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "installed_version": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "installed_version"
+        ],
+        "type": "object"
+      },
+      "name": "qd_plugin_ver",
+      "oauth_scope": "authenticated",
+      "output_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "latest_version": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "update_available": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "latest_version",
+          "update_available"
+        ],
+        "type": "object"
+      },
+      "output_schema_status": "typed",
+      "product_backend": {
+        "action": null,
+        "authority": "auth",
+        "transport": "auth_local"
+      },
+      "stability": "stable",
+      "title": "Quandora Plugin Ver"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Strategy Get Contract"
+      },
+      "compatibility_alias": "<server-name>__sb_get_contract",
+      "deprecated": false,
+      "description": "Return the cross-sectional Strategy capability contract and separately labeled product defaults. contract.submission is the machine-readable MCP input mapping; idempotency is managed by Auth/gateway.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
+      "name": "sb_get_contract",
+      "oauth_scope": "strategy:factors.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "strategy.get_contract",
+        "authority": "factor_mining.strategy",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Strategy Get Contract"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Strategy List Eligible"
+      },
+      "compatibility_alias": "<server-name>__sb_list_eligible",
+      "deprecated": false,
+      "description": "List currently eligible/selectable cross-sectional Strategy factors. Bare requests for 列出可用因子, 可用因子, available factors, eligible factors, selectable factors, 可用于策略的因子, or the Strategy factor pool route here by default. Do not ask a clarification question and do not also call fm_list_factors. Use fm_list_factors only for explicit requests about 我的 Factor Mining 因子, caller-owned/reusable Factor Mining factor families, stable factor history, branches, versions, or previous factor runs.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "factor_type": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "filters": {
+            "additionalProperties": false,
+            "properties": {
+              "bar_id": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "status": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "task_id": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              },
+              "universe_id": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "include_factor_ids": {
+            "items": {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "page_size": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page_token": {
+            "maxLength": 4096,
+            "type": "string"
+          },
+          "query": {
+            "maxLength": 4000,
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "maxLength": 128,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array",
+            "uniqueItems": true
+          }
+        },
+        "type": "object"
+      },
+      "name": "sb_list_eligible",
+      "oauth_scope": "strategy:factors.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "strategy.list_eligible_factors",
+        "authority": "factor_mining.strategy",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Strategy List Eligible"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Strategy Factor Detail"
+      },
+      "compatibility_alias": "<server-name>__sb_factor_detail",
+      "deprecated": false,
+      "description": "Read safe detail for one currently eligible cross-sectional factor.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "factor_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "factor_id"
+        ],
+        "type": "object"
+      },
+      "name": "sb_factor_detail",
+      "oauth_scope": "strategy:factors.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "strategy.get_eligible_factor_detail",
+        "authority": "factor_mining.strategy",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Strategy Factor Detail"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Strategy Shared List"
+      },
+      "compatibility_alias": "<server-name>__sb_shared_list",
+      "deprecated": false,
+      "description": "List shared factors not yet admitted to the caller's strategy pool.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
+      "name": "sb_shared_list",
+      "oauth_scope": "strategy:factors.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "strategy.list_shared_factor_candidates",
+        "authority": "factor_mining.strategy",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Strategy Shared List"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Strategy Shared Add"
+      },
+      "compatibility_alias": "<server-name>__sb_shared_add",
+      "deprecated": false,
+      "description": "Admit one exact shared factor version and verified run to the caller's pool.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "factor_backtest_run_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "factor_version_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "factor_version_id",
+          "factor_backtest_run_id"
+        ],
+        "type": "object"
+      },
+      "name": "sb_shared_add",
+      "oauth_scope": "strategy:factors.write",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "strategy.add_shared_factor_to_pool",
+        "authority": "factor_mining.strategy",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Strategy Shared Add"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Strategy Import Factor"
+      },
+      "compatibility_alias": "<server-name>__sb_import_factor",
+      "deprecated": false,
+      "description": "Import inline plugin.py source for strategy use and return the existing Factor Mining resume lifecycle identifiers. Omitted filename defaults to plugin.py; omitted params_json defaults to the JSON-object string {}. Idempotency is generated by Auth and is never a tool argument.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "agent_id": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "client_run_id": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "decision_summary": {
+            "maxLength": 512,
+            "type": "string"
+          },
+          "expected_effect": {
+            "maxLength": 512,
+            "type": "string"
+          },
+          "factor_name": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "factor_type": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "filename": {
+            "default": "plugin.py",
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "fwd_period": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "params_json": {
+            "default": "{}",
+            "description": "A string that parses as a finite JSON object.",
+            "maxLength": 16384,
+            "minLength": 1,
+            "type": "string"
+          },
+          "parent_client_run_id": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "plugin_source": {
+            "maxLength": 262144,
+            "minLength": 1,
+            "type": "string"
+          },
+          "research_session_id": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "session_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "submitter_label": {
+            "maxLength": 128,
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "plugin_source",
+          "factor_type",
+          "factor_name",
+          "fwd_period"
+        ],
+        "type": "object"
+      },
+      "name": "sb_import_factor",
+      "oauth_scope": "strategy:factors.write",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "strategy.import_factor",
+        "authority": "factor_mining.strategy",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Strategy Import Factor"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Strategy Submit Run"
+      },
+      "compatibility_alias": "<server-name>__sb_submit_run",
+      "deprecated": false,
+      "description": "Submit a cross-sectional strategy run using exactly one of factor_ids (equal weighting) or factor_weights (custom weighting). The endpoint fixes kind to cs and Auth manages idempotency; neither is a caller field.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "not": {
+              "required": [
+                "factor_weights"
+              ]
+            },
+            "required": [
+              "factor_ids"
+            ]
+          },
+          {
+            "not": {
+              "required": [
+                "factor_ids"
+              ]
+            },
+            "required": [
+              "factor_weights"
+            ]
+          }
+        ],
+        "properties": {
+          "attribution": {
+            "type": "boolean"
+          },
+          "end_date": {
+            "format": "date",
+            "maxLength": 10,
+            "minLength": 10,
+            "type": "string"
+          },
+          "factor_ids": {
+            "items": {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "factor_weights": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "factor_id": {
+                  "maxLength": 256,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "weight": {
+                  "exclusiveMinimum": 0,
+                  "maximum": 1,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "factor_id",
+                "weight"
+              ],
+              "type": "object"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": "array"
+          },
+          "initial_cash": {
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740992,
+            "type": "number"
+          },
+          "maker_fee_rate": {
+            "maximum": 0.01,
+            "minimum": 0,
+            "type": "number"
+          },
+          "name": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          },
+          "ranking": {
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "mode": {
+                    "enum": [
+                      "N"
+                    ],
+                    "type": "string"
+                  },
+                  "value": {
+                    "maximum": 9007199254740992,
+                    "minimum": 1,
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "mode",
+                  "value"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "mode": {
+                    "enum": [
+                      "percent"
+                    ],
+                    "type": "string"
+                  },
+                  "value": {
+                    "exclusiveMinimum": 0,
+                    "maximum": 50,
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "mode",
+                  "value"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "rebalance_bars": {
+            "maximum": 10000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "start_date": {
+            "format": "date",
+            "maxLength": 10,
+            "minLength": 10,
+            "type": "string"
+          },
+          "strategy_type": {
+            "enum": [
+              "long_only",
+              "short_only",
+              "neutral"
+            ],
+            "type": "string"
+          },
+          "taker_fee_rate": {
+            "maximum": 0.01,
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "name": "sb_submit_run",
+      "oauth_scope": "strategy:runs.create",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "strategy.submit_run",
+        "authority": "factor_mining.strategy",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Strategy Submit Run"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Strategy List Runs"
+      },
+      "compatibility_alias": "<server-name>__sb_list_runs",
+      "deprecated": false,
+      "description": "List one bounded owner-scoped page of Strategy runs, newest first. Omitted limit and offset default to 10 and 0. Use an exact returned run id with sb_get_run to read the canonical composition and parameters; do not auto-page unless the user asks.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "default": 10,
+            "maximum": 200,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "offset": {
+            "default": 0,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "name": "sb_list_runs",
+      "oauth_scope": "strategy:runs.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "strategy.list_runs",
+        "authority": "factor_mining.strategy",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Strategy List Runs"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Strategy Get Run"
+      },
+      "compatibility_alias": "<server-name>__sb_get_run",
+      "deprecated": false,
+      "description": "Fetch the latest snapshot for a strategy run.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "run_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "run_id"
+        ],
+        "type": "object"
+      },
+      "name": "sb_get_run",
+      "oauth_scope": "strategy:runs.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "strategy.get_run",
+        "authority": "factor_mining.strategy",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Strategy Get Run"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Strategy Resume Run"
+      },
+      "compatibility_alias": "<server-name>__sb_resume_run",
+      "deprecated": false,
+      "description": "Resume a strategy run.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "run_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "run_id"
+        ],
+        "type": "object"
+      },
+      "name": "sb_resume_run",
+      "oauth_scope": "strategy:runs.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "strategy.resume_run",
+        "authority": "factor_mining.strategy",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Strategy Resume Run"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Strategy Get Artifact"
+      },
+      "compatibility_alias": "<server-name>__sb_get_artifact",
+      "deprecated": false,
+      "description": "Read one safe server-persisted Strategy artifact for a run. Use summary, performance, attribution, and signal_return_curves as core analysis evidence.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "artifact": {
+            "enum": [
+              "status",
+              "summary",
+              "equity_curve",
+              "drawdown_curve",
+              "turnover_curve",
+              "exposure_curve",
+              "orders",
+              "charts",
+              "trades",
+              "performance",
+              "attribution",
+              "signal_return_curves",
+              "result",
+              "logs",
+              "code"
+            ],
+            "type": "string"
+          },
+          "run_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "run_id",
+          "artifact"
+        ],
+        "type": "object"
+      },
+      "name": "sb_get_artifact",
+      "oauth_scope": "strategy:artifacts.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "strategy.get_artifact",
+        "authority": "factor_mining.strategy",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Strategy Get Artifact"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Strategy Analysis Data"
+      },
+      "compatibility_alias": "<server-name>__sb_analysis_data",
+      "deprecated": false,
+      "description": "Read a bounded server-side projection of the owner-scoped, FM-retained six-chart Strategy evidence. Start with chart=overview, then request needed chart pages and follow next_offset. No Result Bundle download or local runtime is required.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "chart": {
+            "default": "overview",
+            "enum": [
+              "overview",
+              "chart1_prediction_decile",
+              "chart2_style_long_short",
+              "chart3_style_exposure",
+              "chart4_decile_autocorr",
+              "chart5_prediction_style_corr",
+              "chart6_daily_turnover"
+            ],
+            "type": "string"
+          },
+          "limit": {
+            "default": 200,
+            "maximum": 500,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "offset": {
+            "default": 0,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "run_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "run_id"
+        ],
+        "type": "object"
+      },
+      "name": "sb_analysis_data",
+      "oauth_scope": "strategy:artifacts.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "strategy.get_analysis_data",
+        "authority": "factor_mining.strategy",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Strategy Analysis Data"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Strategy File Ticket"
+      },
+      "compatibility_alias": "<server-name>__sb_file_ticket",
+      "deprecated": false,
+      "description": "Create a short-lived single-use download ticket for one retained Strategy artifact. Download the returned Remote MCP URL directly, verify size_bytes and sha256_hex, then do not print or persist the URL.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "artifact": {
+            "enum": [
+              "status",
+              "summary",
+              "equity_curve",
+              "drawdown_curve",
+              "turnover_curve",
+              "exposure_curve",
+              "orders",
+              "charts",
+              "trades",
+              "performance",
+              "attribution",
+              "signal_return_curves",
+              "result",
+              "logs",
+              "code",
+              "chart1_prediction_decile.png",
+              "chart2_style_long_short.png",
+              "chart3_style_exposure.png",
+              "chart4_decile_autocorr.png",
+              "chart5_prediction_style_corr.png",
+              "chart6_daily_turnover.png"
+            ],
+            "type": "string"
+          },
+          "run_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "run_id",
+          "artifact"
+        ],
+        "type": "object"
+      },
+      "name": "sb_file_ticket",
+      "oauth_scope": "strategy:artifacts.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "strategy.get_artifact_download_metadata",
+        "authority": "factor_mining.strategy",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Strategy File Ticket"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Strategy Bundle Ticket"
+      },
+      "compatibility_alias": "<server-name>__sb_bundle_ticket",
+      "deprecated": false,
+      "description": "Create a short-lived single-use URL for the immutable Strategy Result Bundle as an optional export. Analysis uses sb_get_run, sb_get_artifact, and sb_analysis_data instead. Use sb_bundle_chunk automatically if the export URL cannot be downloaded.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "run_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "run_id"
+        ],
+        "type": "object"
+      },
+      "name": "sb_bundle_ticket",
+      "oauth_scope": "strategy:artifacts.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "strategy.get_result_bundle_metadata",
+        "authority": "factor_mining.strategy",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Strategy Bundle Ticket"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Strategy Bundle Chunk"
+      },
+      "compatibility_alias": "<server-name>__sb_bundle_chunk",
+      "deprecated": false,
+      "description": "Bounded fallback for an explicitly requested Strategy Result Bundle export. It is not an analysis evidence path. Start at offset 0, use at most 262144 bytes, and follow validated next_offset for the same snapshot_revision.",
+      "feature_gate": null,
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "maximum": 262144,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "offset": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "run_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "snapshot_revision": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "run_id",
+          "snapshot_revision"
+        ],
+        "type": "object"
+      },
+      "name": "sb_bundle_chunk",
+      "oauth_scope": "strategy:artifacts.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "strategy.get_result_bundle_chunk",
+        "authority": "factor_mining.strategy",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Strategy Bundle Chunk"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Paper Trading List Sources"
+      },
+      "compatibility_alias": "<server-name>__pt_list_sources",
+      "deprecated": false,
+      "description": "List caller-owned StrategyRun sources and conservative Paper eligibility evidence.",
+      "feature_gate": "REMOTE_MCP_PAPER_TRADING_ENABLED",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "offset": {
+            "maximum": 10000,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "name": "pt_list_sources",
+      "oauth_scope": "paper_trading:sources.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "paper.sources.list",
+        "authority": "factor_mining.paper_trading",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Paper Trading List Sources"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Paper Trading Source Create"
+      },
+      "compatibility_alias": "<server-name>__pt_src_create",
+      "deprecated": false,
+      "description": "Create one bounded CS Strategy source from exact eligible factor references.",
+      "feature_gate": "REMOTE_MCP_PAPER_TRADING_ENABLED",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "factor_references": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "factor_id": {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "factor_version_id": {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "job_id": {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "factor_id",
+                "factor_version_id",
+                "job_id"
+              ],
+              "type": "object"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": "array"
+          },
+          "name": {
+            "maxLength": 255,
+            "type": "string"
+          },
+          "specification": {
+            "additionalProperties": false,
+            "properties": {
+              "ranking": {
+                "oneOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "mode": {
+                        "enum": [
+                          "N"
+                        ],
+                        "type": "string"
+                      },
+                      "value": {
+                        "maximum": 1000000,
+                        "minimum": 1,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "mode",
+                      "value"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "mode": {
+                        "enum": [
+                          "percent"
+                        ],
+                        "type": "string"
+                      },
+                      "value": {
+                        "exclusiveMinimum": 0,
+                        "maximum": 50,
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "mode",
+                      "value"
+                    ],
+                    "type": "object"
+                  }
+                ]
+              },
+              "rebalance_bars": {
+                "maximum": 1000000,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "strategy_kind": {
+                "enum": [
+                  "cs"
+                ],
+                "type": "string"
+              },
+              "strategy_type": {
+                "enum": [
+                  "long_only",
+                  "short_only",
+                  "neutral"
+                ],
+                "type": "string"
+              },
+              "weighting": {
+                "oneOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "mode": {
+                        "enum": [
+                          "equal"
+                        ],
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "mode"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "mode": {
+                        "enum": [
+                          "custom"
+                        ],
+                        "type": "string"
+                      },
+                      "weights": {
+                        "items": {
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        },
+                        "maxItems": 20,
+                        "minItems": 1,
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "mode",
+                      "weights"
+                    ],
+                    "type": "object"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "strategy_kind",
+              "ranking"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "specification",
+          "factor_references"
+        ],
+        "type": "object"
+      },
+      "name": "pt_src_create",
+      "oauth_scope": "paper_trading:sources.write",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "paper.sources.strategy.create",
+        "authority": "factor_mining.paper_trading",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Paper Trading Source Create"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Paper Trading Source Revise"
+      },
+      "compatibility_alias": "<server-name>__pt_src_revise",
+      "deprecated": false,
+      "description": "Revise one bounded CS Strategy source from an exact base StrategyVersion.",
+      "feature_gate": "REMOTE_MCP_PAPER_TRADING_ENABLED",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "base_strategy_version_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "factor_references": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "factor_id": {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "factor_version_id": {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "job_id": {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "factor_id",
+                "factor_version_id",
+                "job_id"
+              ],
+              "type": "object"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": "array"
+          },
+          "specification": {
+            "additionalProperties": false,
+            "properties": {
+              "ranking": {
+                "oneOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "mode": {
+                        "enum": [
+                          "N"
+                        ],
+                        "type": "string"
+                      },
+                      "value": {
+                        "maximum": 1000000,
+                        "minimum": 1,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "mode",
+                      "value"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "mode": {
+                        "enum": [
+                          "percent"
+                        ],
+                        "type": "string"
+                      },
+                      "value": {
+                        "exclusiveMinimum": 0,
+                        "maximum": 50,
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "mode",
+                      "value"
+                    ],
+                    "type": "object"
+                  }
+                ]
+              },
+              "rebalance_bars": {
+                "maximum": 1000000,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "strategy_kind": {
+                "enum": [
+                  "cs"
+                ],
+                "type": "string"
+              },
+              "strategy_type": {
+                "enum": [
+                  "long_only",
+                  "short_only",
+                  "neutral"
+                ],
+                "type": "string"
+              },
+              "weighting": {
+                "oneOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "mode": {
+                        "enum": [
+                          "equal"
+                        ],
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "mode"
+                    ],
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "mode": {
+                        "enum": [
+                          "custom"
+                        ],
+                        "type": "string"
+                      },
+                      "weights": {
+                        "items": {
+                          "exclusiveMinimum": 0,
+                          "type": "number"
+                        },
+                        "maxItems": 20,
+                        "minItems": 1,
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "mode",
+                      "weights"
+                    ],
+                    "type": "object"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "strategy_kind",
+              "ranking"
+            ],
+            "type": "object"
+          },
+          "strategy_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "strategy_id",
+          "base_strategy_version_id",
+          "specification",
+          "factor_references"
+        ],
+        "type": "object"
+      },
+      "name": "pt_src_revise",
+      "oauth_scope": "paper_trading:sources.write",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "paper.sources.strategy.revise",
+        "authority": "factor_mining.paper_trading",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Paper Trading Source Revise"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Paper Trading Source Def Get"
+      },
+      "compatibility_alias": "<server-name>__pt_src_def_get",
+      "deprecated": false,
+      "description": "Read one prepared source Strategy through a closed Product projection.",
+      "feature_gate": "REMOTE_MCP_PAPER_TRADING_ENABLED",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "strategy_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "strategy_id"
+        ],
+        "type": "object"
+      },
+      "name": "pt_src_def_get",
+      "oauth_scope": "paper_trading:sources.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "paper.sources.strategy.get",
+        "authority": "factor_mining.paper_trading",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Paper Trading Source Def Get"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Paper Trading Source Ver Get"
+      },
+      "compatibility_alias": "<server-name>__pt_src_ver_get",
+      "deprecated": false,
+      "description": "Read one exact prepared source StrategyVersion without policy YAML.",
+      "feature_gate": "REMOTE_MCP_PAPER_TRADING_ENABLED",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "strategy_version_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "strategy_version_id"
+        ],
+        "type": "object"
+      },
+      "name": "pt_src_ver_get",
+      "oauth_scope": "paper_trading:sources.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "paper.sources.strategy_version.get",
+        "authority": "factor_mining.paper_trading",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Paper Trading Source Ver Get"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Paper Trading Source Backtest Submit"
+      },
+      "compatibility_alias": "<server-name>__pt_src_bt_submit",
+      "deprecated": false,
+      "description": "Submit one prepared StrategyVersion backtest with exact canonical capital and receive an owner-local source handle.",
+      "feature_gate": "REMOTE_MCP_PAPER_TRADING_ENABLED",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "end_date": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          },
+          "initial_cash": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^(?:0\\.\\d*[1-9]\\d*|[1-9]\\d*(?:\\.\\d+)?)$",
+            "type": "string"
+          },
+          "maker_fee_rate": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": "string"
+          },
+          "start_date": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          },
+          "strategy_version_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "taker_fee_rate": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "strategy_version_id",
+          "initial_cash"
+        ],
+        "type": "object"
+      },
+      "name": "pt_src_bt_submit",
+      "oauth_scope": "paper_trading:sources.write",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "paper.sources.backtest.submit",
+        "authority": "factor_mining.paper_trading",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Paper Trading Source Backtest Submit"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Paper Trading Get Source"
+      },
+      "compatibility_alias": "<server-name>__pt_get_source",
+      "deprecated": false,
+      "description": "Authoritatively monitor one owner-local source lifecycle and Paper eligibility state.",
+      "feature_gate": "REMOTE_MCP_PAPER_TRADING_ENABLED",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "source_strategy_run_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_strategy_run_id"
+        ],
+        "type": "object"
+      },
+      "name": "pt_get_source",
+      "oauth_scope": "paper_trading:sources.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "paper.sources.get",
+        "authority": "factor_mining.paper_trading",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Paper Trading Get Source"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Paper Trading List Runs"
+      },
+      "compatibility_alias": "<server-name>__pt_list_runs",
+      "deprecated": false,
+      "description": "List caller-owned single-strategy Paper runs.",
+      "feature_gate": "REMOTE_MCP_PAPER_TRADING_ENABLED",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "include_archived": {
+            "type": "boolean"
+          },
+          "limit": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "offset": {
+            "maximum": 10000,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "name": "pt_list_runs",
+      "oauth_scope": "paper_trading:runs.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "paper.runs.list",
+        "authority": "factor_mining.paper_trading",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Paper Trading List Runs"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Paper Trading Get Run"
+      },
+      "compatibility_alias": "<server-name>__pt_get_run",
+      "deprecated": false,
+      "description": "Read one Paper lifecycle state. Use this for monitoring; it does not collect the live portfolio.",
+      "feature_gate": "REMOTE_MCP_PAPER_TRADING_ENABLED",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "paper_run_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "paper_run_id"
+        ],
+        "type": "object"
+      },
+      "name": "pt_get_run",
+      "oauth_scope": "paper_trading:runs.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "paper.runs.get",
+        "authority": "factor_mining.paper_trading",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Paper Trading Get Run"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Paper Trading Submit Run"
+      },
+      "compatibility_alias": "<server-name>__pt_submit_run",
+      "deprecated": false,
+      "description": "Start one Paper run from an exact source StrategyRun after user confirmation. Do not send a universe override.",
+      "feature_gate": "REMOTE_MCP_PAPER_TRADING_ENABLED",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "initial_balance": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^(?:0\\.\\d*[1-9]\\d*|[1-9]\\d*(?:\\.\\d+)?)$",
+            "type": "string"
+          },
+          "leverage": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^(?:0\\.\\d*[1-9]\\d*|[1-9]\\d*(?:\\.\\d+)?)$",
+            "type": "string"
+          },
+          "source_strategy_run_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "start_date": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_strategy_run_id"
+        ],
+        "type": "object"
+      },
+      "name": "pt_submit_run",
+      "oauth_scope": "paper_trading:runs.create",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "paper.runs.submit",
+        "authority": "factor_mining.paper_trading",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Paper Trading Submit Run"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Paper Trading Get Portfolio"
+      },
+      "compatibility_alias": "<server-name>__pt_get_portfolio",
+      "deprecated": false,
+      "description": "Read the live portfolio and current PnL through the server freshness/cache guard. Do not poll it for lifecycle.",
+      "feature_gate": "REMOTE_MCP_PAPER_TRADING_ENABLED",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "paper_run_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "paper_run_id"
+        ],
+        "type": "object"
+      },
+      "name": "pt_get_portfolio",
+      "oauth_scope": "paper_trading:runs.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "paper.portfolio.get",
+        "authority": "factor_mining.paper_trading",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Paper Trading Get Portfolio"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Paper Trading List Pos"
+      },
+      "compatibility_alias": "<server-name>__pt_list_pos",
+      "deprecated": false,
+      "description": "Read position history with filters and an opaque cursor.",
+      "feature_gate": "REMOTE_MCP_PAPER_TRADING_ENABLED",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "closed_from": {
+            "maximum": 9007199254740992,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "closed_to": {
+            "maximum": 9007199254740992,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "cursor": {
+            "maxLength": 2048,
+            "type": "string"
+          },
+          "limit": {
+            "maximum": 200,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "opened_from": {
+            "maximum": 9007199254740992,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "opened_to": {
+            "maximum": 9007199254740992,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "order": {
+            "enum": [
+              "asc",
+              "desc"
+            ],
+            "type": "string"
+          },
+          "paper_run_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "side": {
+            "enum": [
+              "long",
+              "short"
+            ],
+            "type": "string"
+          },
+          "sort_by": {
+            "enum": [
+              "opened_at",
+              "closed_at",
+              "net_realized_pnl"
+            ],
+            "type": "string"
+          },
+          "symbol": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "paper_run_id"
+        ],
+        "type": "object"
+      },
+      "name": "pt_list_pos",
+      "oauth_scope": "paper_trading:runs.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "paper.positions.list",
+        "authority": "factor_mining.paper_trading",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Paper Trading List Pos"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Paper Trading Get Equity"
+      },
+      "compatibility_alias": "<server-name>__pt_get_equity",
+      "deprecated": false,
+      "description": "Read a legacy, bounded, or fixed-lookback return curve; modes are mutually exclusive.",
+      "feature_gate": "REMOTE_MCP_PAPER_TRADING_ENABLED",
+      "input_schema": {
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "limit"
+                  ]
+                },
+                {
+                  "required": [
+                    "max_points"
+                  ]
+                },
+                {
+                  "required": [
+                    "started_at"
+                  ]
+                },
+                {
+                  "required": [
+                    "ended_at"
+                  ]
+                }
+              ]
+            },
+            "required": [
+              "lookback"
+            ]
+          },
+          {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "lookback"
+                  ]
+                },
+                {
+                  "required": [
+                    "limit"
+                  ]
+                }
+              ]
+            },
+            "required": [
+              "max_points"
+            ]
+          },
+          {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "lookback"
+                  ]
+                },
+                {
+                  "required": [
+                    "max_points"
+                  ]
+                },
+                {
+                  "required": [
+                    "started_at"
+                  ]
+                },
+                {
+                  "required": [
+                    "ended_at"
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "properties": {
+          "ended_at": {
+            "maximum": 9007199254740992,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "limit": {
+            "maximum": 500,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "lookback": {
+            "enum": [
+              "7D",
+              "30D",
+              "90D",
+              "180D",
+              "1Y",
+              "3Y"
+            ],
+            "type": "string"
+          },
+          "max_points": {
+            "maximum": 500,
+            "minimum": 2,
+            "type": "integer"
+          },
+          "paper_run_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "started_at": {
+            "maximum": 9007199254740992,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "paper_run_id"
+        ],
+        "type": "object"
+      },
+      "name": "pt_get_equity",
+      "oauth_scope": "paper_trading:runs.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "paper.equity.get",
+        "authority": "factor_mining.paper_trading",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Paper Trading Get Equity"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Paper Trading List Fills"
+      },
+      "compatibility_alias": "<server-name>__pt_list_fills",
+      "deprecated": false,
+      "description": "Read a closed projection of Paper fills.",
+      "feature_gate": "REMOTE_MCP_PAPER_TRADING_ENABLED",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "maximum": 500,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "paper_run_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "paper_run_id"
+        ],
+        "type": "object"
+      },
+      "name": "pt_list_fills",
+      "oauth_scope": "paper_trading:runs.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "paper.fills.list",
+        "authority": "factor_mining.paper_trading",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Paper Trading List Fills"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Paper Trading List Funding"
+      },
+      "compatibility_alias": "<server-name>__pt_list_funding",
+      "deprecated": false,
+      "description": "Read a closed projection of Paper funding entries.",
+      "feature_gate": "REMOTE_MCP_PAPER_TRADING_ENABLED",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "maximum": 500,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "paper_run_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "paper_run_id"
+        ],
+        "type": "object"
+      },
+      "name": "pt_list_funding",
+      "oauth_scope": "paper_trading:runs.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "paper.funding.list",
+        "authority": "factor_mining.paper_trading",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Paper Trading List Funding"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Paper Trading Get Code"
+      },
+      "compatibility_alias": "<server-name>__pt_get_code",
+      "deprecated": false,
+      "description": "Read one bounded Paper strategy code artifact.",
+      "feature_gate": "REMOTE_MCP_PAPER_TRADING_ENABLED",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "paper_run_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "paper_run_id"
+        ],
+        "type": "object"
+      },
+      "name": "pt_get_code",
+      "oauth_scope": "paper_trading:code.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "paper.code.get",
+        "authority": "factor_mining.paper_trading",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Paper Trading Get Code"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Paper Trading Stop Run"
+      },
+      "compatibility_alias": "<server-name>__pt_stop_run",
+      "deprecated": false,
+      "description": "Terminally stop one Paper run after explicit confirmation. Stop is not pause and has no resume.",
+      "feature_gate": "REMOTE_MCP_PAPER_TRADING_ENABLED",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "paper_run_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "paper_run_id"
+        ],
+        "type": "object"
+      },
+      "name": "pt_stop_run",
+      "oauth_scope": "paper_trading:runs.stop",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "paper.runs.stop",
+        "authority": "factor_mining.paper_trading",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Paper Trading Stop Run"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Paper Trading Portfolio Create"
+      },
+      "compatibility_alias": "<server-name>__pt_sp_create",
+      "deprecated": false,
+      "description": "Create a static portfolio of at least two exact StrategyVersion sleeves whose decimal weights sum to 1.",
+      "feature_gate": "REMOTE_MCP_PAPER_TRADING_ENABLED",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "components": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "strategy_version_id": {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "target_weight": {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "pattern": "^(?:0\\.\\d*[1-9]\\d*|[1-9]\\d*(?:\\.\\d+)?)$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "strategy_version_id",
+                "target_weight"
+              ],
+              "type": "object"
+            },
+            "maxItems": 50,
+            "minItems": 2,
+            "type": "array"
+          },
+          "name": {
+            "maxLength": 255,
+            "type": "string"
+          }
+        },
+        "required": [
+          "components"
+        ],
+        "type": "object"
+      },
+      "name": "pt_sp_create",
+      "oauth_scope": "paper_trading:portfolios.write",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "paper.strategy_portfolios.create",
+        "authority": "factor_mining.paper_trading",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Paper Trading Portfolio Create"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Paper Trading Portfolio Revise"
+      },
+      "compatibility_alias": "<server-name>__pt_sp_revise",
+      "deprecated": false,
+      "description": "Create a new static-sleeve portfolio version from an exact base version.",
+      "feature_gate": "REMOTE_MCP_PAPER_TRADING_ENABLED",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "base_portfolio_version_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "components": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "strategy_version_id": {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "target_weight": {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "pattern": "^(?:0\\.\\d*[1-9]\\d*|[1-9]\\d*(?:\\.\\d+)?)$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "strategy_version_id",
+                "target_weight"
+              ],
+              "type": "object"
+            },
+            "maxItems": 50,
+            "minItems": 2,
+            "type": "array"
+          },
+          "portfolio_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "portfolio_id",
+          "base_portfolio_version_id",
+          "components"
+        ],
+        "type": "object"
+      },
+      "name": "pt_sp_revise",
+      "oauth_scope": "paper_trading:portfolios.write",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "paper.strategy_portfolios.revise",
+        "authority": "factor_mining.paper_trading",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Paper Trading Portfolio Revise"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Paper Trading Portfolio Get"
+      },
+      "compatibility_alias": "<server-name>__pt_sp_get",
+      "deprecated": false,
+      "description": "Read one Strategy Portfolio.",
+      "feature_gate": "REMOTE_MCP_PAPER_TRADING_ENABLED",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "portfolio_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "portfolio_id"
+        ],
+        "type": "object"
+      },
+      "name": "pt_sp_get",
+      "oauth_scope": "paper_trading:portfolios.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "paper.strategy_portfolios.get",
+        "authority": "factor_mining.paper_trading",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Paper Trading Portfolio Get"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Paper Trading Portfolio Version"
+      },
+      "compatibility_alias": "<server-name>__pt_sp_version",
+      "deprecated": false,
+      "description": "Read one exact Strategy Portfolio version and sleeve weights.",
+      "feature_gate": "REMOTE_MCP_PAPER_TRADING_ENABLED",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "portfolio_version_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "portfolio_version_id"
+        ],
+        "type": "object"
+      },
+      "name": "pt_sp_version",
+      "oauth_scope": "paper_trading:portfolios.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "paper.strategy_portfolios.get_version",
+        "authority": "factor_mining.paper_trading",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Paper Trading Portfolio Version"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Paper Trading Portfolio Backtest Submit"
+      },
+      "compatibility_alias": "<server-name>__pt_sp_bt_submit",
+      "deprecated": false,
+      "description": "Run a static independent-sleeve portfolio backtest with exact total capital.",
+      "feature_gate": "REMOTE_MCP_PAPER_TRADING_ENABLED",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "end_date": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          },
+          "maker_fee_rate": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": "string"
+          },
+          "portfolio_version_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "start_date": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          },
+          "taker_fee_rate": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": "string"
+          },
+          "total_initial_cash": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^(?:0\\.\\d*[1-9]\\d*|[1-9]\\d*(?:\\.\\d+)?)$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "portfolio_version_id",
+          "total_initial_cash",
+          "start_date",
+          "end_date"
+        ],
+        "type": "object"
+      },
+      "name": "pt_sp_bt_submit",
+      "oauth_scope": "paper_trading:portfolios.write",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "paper.strategy_portfolios.submit_backtest",
+        "authority": "factor_mining.paper_trading",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Paper Trading Portfolio Backtest Submit"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Paper Trading Portfolio Backtest Get"
+      },
+      "compatibility_alias": "<server-name>__pt_sp_bt_get",
+      "deprecated": false,
+      "description": "Read one Strategy Portfolio backtest and ordered sleeve states.",
+      "feature_gate": "REMOTE_MCP_PAPER_TRADING_ENABLED",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "portfolio_run_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "portfolio_run_id"
+        ],
+        "type": "object"
+      },
+      "name": "pt_sp_bt_get",
+      "oauth_scope": "paper_trading:portfolios.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "paper.strategy_portfolios.get_backtest",
+        "authority": "factor_mining.paper_trading",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Paper Trading Portfolio Backtest Get"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Paper Trading Portfolio Backtest Result"
+      },
+      "compatibility_alias": "<server-name>__pt_sp_bt_result",
+      "deprecated": false,
+      "description": "Read the safe aggregate result of a completed Portfolio backtest.",
+      "feature_gate": "REMOTE_MCP_PAPER_TRADING_ENABLED",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "portfolio_run_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "portfolio_run_id"
+        ],
+        "type": "object"
+      },
+      "name": "pt_sp_bt_result",
+      "oauth_scope": "paper_trading:portfolios.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "paper.strategy_portfolios.get_backtest_result",
+        "authority": "factor_mining.paper_trading",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Paper Trading Portfolio Backtest Result"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Paper Trading Portfolio Run Submit"
+      },
+      "compatibility_alias": "<server-name>__pt_sp_run_submit",
+      "deprecated": false,
+      "description": "Start Portfolio Paper from a completed same-capital PortfolioRun after confirmation.",
+      "feature_gate": "REMOTE_MCP_PAPER_TRADING_ENABLED",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "leverage": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^(?:0\\.\\d*[1-9]\\d*|[1-9]\\d*(?:\\.\\d+)?)$",
+            "type": "string"
+          },
+          "portfolio_run_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "start_date": {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "portfolio_run_id",
+          "start_date",
+          "leverage"
+        ],
+        "type": "object"
+      },
+      "name": "pt_sp_run_submit",
+      "oauth_scope": "paper_trading:portfolios.write",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "paper.strategy_portfolios.submit_paper",
+        "authority": "factor_mining.paper_trading",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Paper Trading Portfolio Run Submit"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true,
+        "title": "Paper Trading Portfolio Run Get"
+      },
+      "compatibility_alias": "<server-name>__pt_sp_run_get",
+      "deprecated": false,
+      "description": "Read a Portfolio Paper parent and ordered independent child Paper states.",
+      "feature_gate": "REMOTE_MCP_PAPER_TRADING_ENABLED",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "portfolio_paper_run_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "portfolio_paper_run_id"
+        ],
+        "type": "object"
+      },
+      "name": "pt_sp_run_get",
+      "oauth_scope": "paper_trading:portfolios.read",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "paper.strategy_portfolios.get_paper",
+        "authority": "factor_mining.paper_trading",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Paper Trading Portfolio Run Get"
+    },
+    {
+      "behavior_annotations": {
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false,
+        "title": "Paper Trading Portfolio Run Stop"
+      },
+      "compatibility_alias": "<server-name>__pt_sp_run_stop",
+      "deprecated": false,
+      "description": "Terminally stop a Portfolio Paper parent and its sleeves after explicit confirmation.",
+      "feature_gate": "REMOTE_MCP_PAPER_TRADING_ENABLED",
+      "input_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "portfolio_paper_run_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "portfolio_paper_run_id"
+        ],
+        "type": "object"
+      },
+      "name": "pt_sp_run_stop",
+      "oauth_scope": "paper_trading:portfolios.write",
+      "output_schema": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "output_schema_status": "open_object_compat",
+      "product_backend": {
+        "action": "paper.strategy_portfolios.stop_paper",
+        "authority": "factor_mining.paper_trading",
+        "transport": "remote-mcp-factor-mining-v1"
+      },
+      "stability": "stable",
+      "title": "Paper Trading Portfolio Run Stop"
+    }
+  ]
+}

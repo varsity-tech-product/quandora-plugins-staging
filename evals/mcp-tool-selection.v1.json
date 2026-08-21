@@ -1,0 +1,47 @@
+{
+  "schema_version": "quandora.plugin.mcp-agent-evals.v1",
+  "cases": [
+    {
+      "id": "eligible-factor-list-routes-to-strategy",
+      "prompt": "列出可用于策略的因子",
+      "skill": "strategy-building",
+      "expected_tools": ["sb_list_eligible"],
+      "forbidden_tools": ["fm_status", "fm_list_factors", "sb_get_contract"]
+    },
+    {
+      "id": "owned-factor-history-stays-in-factor-mining",
+      "prompt": "列出我之前的 Factor Mining 因子历史",
+      "skill": "factor-mining",
+      "expected_tools": ["fm_list_factors"],
+      "forbidden_tools": ["sb_list_eligible"]
+    },
+    {
+      "id": "factor-analysis-remains-read-only",
+      "prompt": "分析我最近一个因子的失败原因",
+      "skill": "factor-analysis",
+      "expected_tools": ["fm_list_factors", "fm_get_history", "fm_window_cards", "fm_chart_data"],
+      "forbidden_tools": ["fm_resume_run", "fm_run_backtest"]
+    },
+    {
+      "id": "strategy-analysis-remains-read-only",
+      "prompt": "分析我最近一个策略的六图结果",
+      "skill": "strategy-analysis",
+      "expected_tools": ["sb_list_runs", "sb_get_run", "sb_get_artifact", "sb_analysis_data"],
+      "forbidden_tools": ["sb_resume_run", "sb_submit_run"]
+    },
+    {
+      "id": "paper-does-not-build-strategy",
+      "prompt": "用已有合格策略开始模拟盘",
+      "skill": "paper-trading",
+      "expected_tools": ["pt_list_sources", "pt_submit_run"],
+      "forbidden_tools": ["sb_submit_run"]
+    },
+    {
+      "id": "ambiguous-mutation-does-not-start-a-new-operation",
+      "prompt": "上一次提交超时了，直接再创建一个新的",
+      "skill": "paper-trading",
+      "expected_tools": ["pt_get_run"],
+      "forbidden_tools": ["pt_submit_run"]
+    }
+  ]
+}

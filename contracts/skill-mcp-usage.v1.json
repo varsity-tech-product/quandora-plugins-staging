@@ -1,0 +1,71 @@
+{
+  "schema_version": "quandora.plugin.mcp-usage.v1",
+  "public_contract_revision": "2026-08-21.stage1",
+  "skills": {
+    "factor-analysis": {
+      "allowed_prefixes": ["fm_", "qd_"],
+      "direct_tools": ["fm_chart_data", "fm_get_history", "fm_list_factors", "fm_run_source", "fm_window_cards", "qd_plugin_ver"],
+      "forbidden_tools": ["fm_resume_run"],
+      "required_response_fields": {
+        "fm_chart_data": ["job_status", "window_key", "status", "next_offset"],
+        "fm_get_history": ["items"],
+        "fm_list_factors": ["items"],
+        "fm_run_source": ["source"],
+        "fm_window_cards": ["factor_card"],
+        "qd_plugin_ver": ["latest_version", "update_available"]
+      }
+    },
+    "factor-mining": {
+      "allowed_prefixes": ["fm_", "qd_"],
+      "direct_tools": ["fm_bundle_chunk", "fm_bundle_ticket", "fm_custom_sess", "fm_dedup_context", "fm_get_contract", "fm_get_history", "fm_list_factors", "fm_list_tasks", "fm_resume_run", "fm_run_backtest", "fm_status", "fm_task_session", "fm_validate", "qd_get_guidance", "qd_plugin_ver"],
+      "forbidden_tools": ["sb_get_contract", "sb_list_eligible"],
+      "required_response_fields": {
+        "fm_custom_sess": ["session_id"],
+        "fm_get_contract": ["plugin_contract"],
+        "fm_list_tasks": ["items"],
+        "fm_resume_run": ["status"],
+        "fm_run_backtest": ["status"],
+        "fm_task_session": ["session_id"],
+        "fm_validate": ["valid"],
+        "qd_plugin_ver": ["latest_version", "update_available"]
+      }
+    },
+    "paper-trading": {
+      "allowed_prefixes": ["pt_", "qd_"],
+      "direct_tools": ["pt_get_code", "pt_get_equity", "pt_get_portfolio", "pt_get_run", "pt_get_source", "pt_list_fills", "pt_list_funding", "pt_list_pos", "pt_list_runs", "pt_list_sources", "pt_sp_bt_get", "pt_sp_bt_result", "pt_sp_bt_submit", "pt_sp_create", "pt_sp_get", "pt_sp_revise", "pt_sp_run_get", "pt_sp_run_stop", "pt_sp_run_submit", "pt_sp_version", "pt_stop_run", "pt_submit_run", "qd_plugin_ver"],
+      "forbidden_tools": ["sb_submit_run"],
+      "required_response_fields": {
+        "pt_get_portfolio": ["freshness", "stale"],
+        "pt_get_run": ["status"],
+        "pt_list_sources": ["items"],
+        "pt_sp_run_get": ["status"],
+        "pt_submit_run": ["status"],
+        "qd_plugin_ver": ["latest_version", "update_available"]
+      }
+    },
+    "strategy-analysis": {
+      "allowed_prefixes": ["sb_", "qd_"],
+      "direct_tools": ["qd_plugin_ver", "sb_analysis_data", "sb_get_artifact", "sb_get_run", "sb_list_runs"],
+      "forbidden_tools": ["sb_resume_run"],
+      "required_response_fields": {
+        "qd_plugin_ver": ["latest_version", "update_available"],
+        "sb_analysis_data": ["status"],
+        "sb_get_run": ["run"],
+        "sb_list_runs": ["items"]
+      }
+    },
+    "strategy-building": {
+      "allowed_prefixes": ["sb_", "qd_"],
+      "direct_tools": ["qd_get_guidance", "qd_plugin_ver", "sb_bundle_chunk", "sb_bundle_ticket", "sb_factor_detail", "sb_file_ticket", "sb_get_artifact", "sb_get_contract", "sb_get_run", "sb_import_factor", "sb_list_eligible", "sb_list_runs", "sb_resume_run", "sb_shared_add", "sb_shared_list", "sb_submit_run"],
+      "forbidden_tools": ["fm_list_factors", "fm_status"],
+      "required_response_fields": {
+        "qd_plugin_ver": ["latest_version", "update_available"],
+        "sb_get_contract": ["contract"],
+        "sb_get_run": ["run"],
+        "sb_list_eligible": ["items", "next_page_token"],
+        "sb_list_runs": ["items"],
+        "sb_submit_run": ["run"]
+      }
+    }
+  }
+}
