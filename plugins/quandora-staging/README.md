@@ -60,8 +60,9 @@ Quandora Staging Paper Trading helps an agent discover the current user's eligib
 prepare a bounded ordinary source StrategyVersion from exact factor/version/job references.
 It submits and monitors the source backtest with the Paper-owned source detail, obtains explicit
 Paper submit/stop confirmation, and reads live current PnL, position history, fills, funding, equity
-curves, and bounded strategy code. It also supports static independent-sleeve Strategy Portfolio
-backtests and Paper runs. It does not expose production trading, universe overrides, Paper
+curves, and bounded strategy code. It also lists the current user's active Strategy Portfolios with
+opaque pagination and supports static independent-sleeve Portfolio backtests and Paper runs. It
+does not expose production trading, universe overrides, Paper
 archive/resume, or nonexistent parent aggregate positions/equity.
 
 ## Skills

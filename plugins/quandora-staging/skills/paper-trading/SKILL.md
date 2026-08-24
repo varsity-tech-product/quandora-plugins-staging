@@ -31,7 +31,7 @@ Use only the minimum relevant subset of these Paper tools:
 - Single runs: `pt_list_runs`, `pt_get_run`, `pt_submit_run`, `pt_stop_run`.
 - Single-run data: `pt_get_portfolio`, `pt_list_pos`, `pt_get_equity`, `pt_list_fills`,
   `pt_list_funding`, `pt_get_code`.
-- Strategy Portfolio setup and backtest: `pt_sp_create`,
+- Strategy Portfolio discovery, setup and backtest: `pt_sp_list`, `pt_sp_create`,
   `pt_sp_revise`, `pt_sp_get`,
   `pt_sp_version`, `pt_sp_bt_submit`,
   `pt_sp_bt_get`, `pt_sp_bt_result`.
@@ -56,8 +56,8 @@ existing Paper-eligible source. Tool visibility does not authorize this skill to
 revise, or backtest a Strategy. Tools remain invisible when the relevant gate is closed or the
 token lacks their exact scope.
 
-There is deliberately no Paper archive, unarchive, resume, parent Portfolio list, parent aggregate
-positions, parent net position, or parent Paper equity tool. Never invent or imply these abilities.
+There is deliberately no Paper archive, unarchive, resume, parent aggregate positions, parent net
+position, or parent Paper equity tool. Never invent or imply these abilities.
 Do not call `sb_submit_run` from this skill. Hand Strategy work to `$strategy-building`; use Paper
 tools here only after an eligible source exists.
 
@@ -199,6 +199,14 @@ positive canonical Decimal string and the exact decimal sum must equal `1`. A ve
 composition: no capital transfer, periodic rebalance, shared margin, signal fusion, order netting,
 or execution-level netting exists.
 
+If the user did not provide an exact Portfolio handle, call `pt_sp_list` once with a bounded
+`page_size` and the default `include_archived=false`. Show the returned name, status, metadata,
+latest version, version number, and `archived_at` without guessing missing values. Treat
+`next_page_token` as opaque and pass it back byte-for-byte only when the user asks for another page.
+Use `include_archived=true` only when the user explicitly asks to include archived Portfolios. An
+invalid or owner/archive-mismatched token is a caller-correctable invalid request: discard it and
+restart from the first page with the intended filters; never parse or modify it.
+
 Use `pt_sp_create` for the first exact composition and
 `pt_sp_revise` only when the user explicitly changes the version. Display and
 confirm every StrategyVersion handle and weight before either mutation. Read exact parent/version
@@ -236,6 +244,11 @@ Explain safe failures as actionable product states without exposing downstream t
   do not describe the source as eligible.
 - `quantai_unavailable` or another retryable mutation error: the mutation can still be ambiguous.
   Reconcile authoritatively and never change its idempotency identity or blindly submit again.
+- `paper_read_unavailable`: the provider read was unavailable and the error is retryable, but a
+  manual portfolio attempt that entered the provider path has already consumed the 60-second
+  per-run window. Honor returned stale/cache/retry-after guidance instead of forcing another read.
+- `paper_read_rejected`: the provider rejected an otherwise ordinary read. It is not retryable;
+  report the safe state and do not loop.
 - Authoritative authorization/scope failure with active gates: complete fresh staging consent for
   the minimum required Paper scopes.
 - Rate/freshness response: honor returned cache, stale, and retry-after information.
