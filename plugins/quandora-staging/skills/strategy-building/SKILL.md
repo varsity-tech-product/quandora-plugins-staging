@@ -1,18 +1,18 @@
 ---
 name: strategy-building
-description: Use when the user asks to list available, eligible, or selectable Strategy factors, including the bare Chinese request “列出可用因子”, or to compose, create, backtest, resume, retrieve, or archive a cross-sectional Quandora Staging Strategy using Official, Mine, or Shared factors. Route deep result diagnosis and optimization to strategy-analysis.
+description: Use when the user asks to list available, eligible, or selectable Strategy factors, including the bare Chinese request “列出可用因子”, or to compose, create, backtest, resume, retrieve, or archive a cross-sectional Quandora Staging Strategy using Official, Mine, or Shared factors. Also owns explicit base/pro portfolio-optimizer StrategyVersion source creation and backtests. Route deep result diagnosis to strategy-analysis.
 ---
 
 # Quandora Staging Strategy Building
 
-Bundled plugin version: 1.52
+Bundled plugin version: 1.53
 
 Use this skill through the authenticated Quandora Staging connection exposed by the host as
 `quandora-staging`. It owns factor selection, Strategy creation or revision, and Strategy backtests
-for Official, Mine, and Shared factors, and includes the complete Strategy Result Bundle workflow.
-Every factor composition and Strategy backtest uses only the Strategy tools listed below. Never use
-Paper Trading tools to compose or backtest a Strategy. Use `$strategy-analysis` for deep result
-diagnosis.
+for Official, Mine, and Shared factors, and includes the complete ordinary Strategy Result Bundle
+workflow. Ordinary composition/backtests use `sb_*`. An explicit base/pro optimizer or versioned
+source request uses only the bounded `pt_src_*` source tools documented below; it does not start
+Paper. Use `$strategy-analysis` for deep result diagnosis.
 
 OAuth and all credentials are handled by the host. Quandora access tokens expire after 7 days, and the host MCP client should use its stored rotating refresh token automatically. Never inspect, print, copy, store, or ask the user to paste API keys, bearer tokens, authorization codes, access tokens, refresh tokens, PKCE verifiers, service tokens, or other credentials.
 
@@ -26,9 +26,15 @@ Bundle workflow uses the relevant subset of `sb_get_contract`, `sb_list_eligible
 remain legacy single-artifact compatibility actions. Use `qd_get_guidance` only for one of the
 documented guidance branches below.
 
-Official, Mine, and Shared selections use the same `sb_submit_run` path. Do not load the Paper
-Trading skill or present Strategy composition as Paper preparation. A later Paper Trading request
-is a separate workflow.
+An explicit optimizer/versioned-source workflow uses `pt_src_create`, `pt_src_revise`,
+`pt_src_def_get`, `pt_src_ver_get`, `pt_src_bt_submit`, and `pt_get_source`. These remain Strategy
+preparation actions in this skill even though their public names share the Paper namespace. Never
+call `pt_submit_run` here; actual Paper submission stays in `$paper-trading`.
+
+Official, Mine, and Shared selections use `sb_submit_run` for ordinary Strategies. They use exact
+admission triples with `pt_src_create`/`pt_src_revise` only when the user explicitly requests an
+optimizer or versioned source. Do not load the Paper Trading skill during either Strategy workflow.
+A later Paper request is a separate workflow with separate confirmation.
 
 The normal Strategy workflow must not require or call `sb_import_factor`. Import-only actions are
 not global prerequisites, and an ordinary Strategy task must continue when they are absent. Check
@@ -67,7 +73,57 @@ use an alternative service path. Use host-native HTTP only for the one opaque
 `sb_bundle_ticket`; never use it for internal-service calls, raw storage,
 or credential-paste flows.
 
-## Workflow
+## Versioned Optimizer Source Workflow
+
+Use this workflow only when the user explicitly requests a base/pro portfolio optimizer, an
+optimizer-ready source, or a versioned source operation. A request to “optimize” an existing result
+analytically still routes to `$strategy-analysis`; do not confuse research diagnosis with enabling
+the portfolio optimizer. All other Strategy requests use the ordinary `sb_*` workflow below.
+
+1. Call `qd_get_guidance` for `operation.strategy.version.manage` without `sections` before the
+   first optimizer source mutation in the request. Treat the returned revision and guidance as
+   authoritative; unknown or contradictory guidance fails closed.
+2. Select 1–20 distinct rows returned by `sb_list_eligible`. For each selected Official, Mine, or
+   Shared row, require `admission.status=admitted` and non-empty exact `admission.factor_id`,
+   `admission.factor_version_id`, and `admission.job_id`. Copy those three values into one
+   top-level `factor_references` item byte-for-byte. Do not substitute display ids, rating
+   provenance, latest versions, or guessed jobs. If any exact triple is unavailable, stop before a
+   source write.
+3. Build one closed cross-sectional `specification` from only `strategy_kind`, optional
+   `weighting`, required `ranking`, optional `strategy_type`, optional `rebalance_bars`, and
+   `portfolio_optimizer`. The optimizer object contains exactly `version` (`base` or `pro`) and
+   `policy_yaml`. Weighting is exactly equal mode or custom positive finite weights aligned with
+   the factor references and totaling `1`; ranking is top/bottom `N` in `1..1000000` or percent in
+   `(0,50]`; strategy type is long-only, short-only, or neutral; rebalance bars is an integer in
+   `1..1000000`. Never send universe fields or silently drop an unsupported field.
+4. Require `policy_yaml` to be one complete capital-independent UTF-8 YAML mapping no larger than
+   65,536 bytes. It must not contain the top-level key `portfolio_value`; StrategyRun
+   `initial_cash` owns optimizer capital. Never add a capital field, secret, credential, provider
+   identity, account identity, internal URL, filesystem path, or environment-specific value. Use
+   only a complete policy supplied by the user or supported by the authoritative guidance; never
+   invent undocumented provider keys or treat version-only defaults as a valid new write.
+5. Show the exact safe factor labels/triples, Strategy specification, optimizer version, and policy
+   text to the user, then obtain explicit confirmation. Use `pt_src_create` for a new Strategy or
+   read the exact parent with `pt_src_def_get`/`pt_src_ver_get` and use `pt_src_revise` for a new
+   immutable version. A write response may expose only `{version, enabled}` optimizer
+   classification; raw policy YAML must not be expected or reconstructed from reads.
+6. Source creation/revision and source backtest are separate mutations. Before `pt_src_bt_submit`,
+   display and confirm the exact StrategyVersion, canonical decimal-string `initial_cash`, dates,
+   and optional canonical fee strings. Changing only capital creates another StrategyRun for the
+   same StrategyVersion; do not create a new StrategyVersion and never insert that cash into
+   `policy_yaml`.
+7. Treat the returned owner-local `source_strategy_run_id` as opaque and monitor it only with
+   `pt_get_source`. `is_optimizer=true` is classification, not proof of Paper eligibility. Only
+   `optimizer_execution.config_source=caller` with available exact source capital can become
+   eligible. `default`, `default_after_invalid`, missing/unknown evidence, or an unknown readiness
+   reason fails closed; do not resubmit automatically or change the policy/key after an ambiguous
+   mutation.
+
+This source path does not expose the ordinary Strategy Result Bundle workflow. Report the bounded
+source lifecycle and eligibility returned by `pt_get_source`. If the user later asks for Paper,
+hand the exact completed source to `$paper-trading` and obtain its separate confirmation.
+
+## Ordinary Strategy Workflow
 
 Bare “列出可用因子”, “可用因子”, “available factors”, “eligible factors”, “selectable
 factors”, “可用于策略的因子”, and equivalent Strategy factor-pool intent calls only
@@ -107,9 +163,11 @@ Never infer source from factor name, id, category, author, or the current query.
 list or detail call merely to classify source. An **Official** factor is read-only product
 inventory: it cannot be edited, archived, or deleted by the user. Its top-level `factor_id` is the
 canonical selector identity used by `sb_submit_run`, exactly like the returned `factor_id` for Mine
-and Shared factors. `admission` and rating fields are evidence only and are never request fields.
-Use only the listed Strategy tools during factor selection, composition, submission, and backtest
-monitoring.
+and Shared factors. For ordinary `sb_submit_run`, `admission` and rating fields are evidence only
+and are never request fields. The explicit optimizer source workflow above is the sole exception:
+it copies only the three exact admitted identity fields into top-level `factor_references`.
+During the ordinary workflow below, use only the listed `sb_*` Strategy tools for factor selection,
+composition, submission, and backtest monitoring.
 
 ### 1. Prepare a Valid Submission
 

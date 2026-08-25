@@ -5,16 +5,17 @@ description: Use when the user asks for simulated trading, paper trading, 模拟
 
 # Quandora Staging Paper Trading
 
-Bundled plugin version: 1.52
+Bundled plugin version: 1.53
 
 Use this skill through the authenticated `quandora-staging` MCP connection. It operates only on
 the current user's product-safe StrategyRun, Paper run, and Strategy Portfolio handles. It is a
 staging capability and must never be described as production or live-money trading.
 
 Route requests for “模拟盘”, “纸交易”, “paper trading”, current Paper assets/PnL, Paper history,
-or Portfolio Paper here directly. Factor selection, Strategy composition or revision, and Strategy
-backtests always belong to `$strategy-building` and use its `sb_*` tools. If no eligible source
-exists, hand off to Strategy Building; do not prepare one in this skill.
+or Portfolio Paper here directly. Factor selection, Strategy composition/revision, and Strategy
+backtests belong to `$strategy-building`: ordinary work uses `sb_*`, while an explicitly requested
+optimizer/versioned source uses its bounded `pt_src_*` workflow. If no eligible source exists, hand
+off to Strategy Building; do not prepare one in this skill.
 
 OAuth and credentials are host-managed. Never inspect, print, copy, store, or ask the user to paste
 API keys, bearer/access/refresh tokens, authorization codes, PKCE verifiers, service tokens,
@@ -37,6 +38,9 @@ Use only the minimum relevant subset of these Paper tools:
   `pt_sp_bt_get`, `pt_sp_bt_result`.
 - Portfolio Paper: `pt_sp_run_submit`, `pt_sp_run_get`,
   `pt_sp_run_stop`.
+- Authoritative strategy/Paper guidance when needed: `qd_get_guidance` with
+  `operation.paper_trade.submit` or `operation.strategy.portfolio.manage`, always without
+  `sections`.
 
 Some hosts prefix names with the server name, for example
 `quandora_staging__pt_get_run`; treat it as the same tool. If no `pt_*` tools are visible, do not
@@ -90,7 +94,8 @@ prepared StrategyVersion, or submit a Strategy backtest.
 
 If no suitable eligible source exists, or the user asks to create, change, or backtest a Strategy,
 hand that work to `$strategy-building` and stop before any Paper mutation. Strategy Building uses
-only its `sb_*` tools. After it produces a completed source with `paper_eligibility=eligible`,
+its ordinary `sb_*` path or, only for explicit optimizer/versioned-source intent, its bounded
+`pt_src_*` path. After it produces a completed source with `paper_eligibility=eligible`,
 continue only when the user still wants Paper, then select the exact source and obtain the separate
 Paper confirmation below.
 
@@ -98,8 +103,8 @@ Paper confirmation below.
 
 If the user did not provide an exact source StrategyRun handle, call `pt_list_sources`. Show a
 compact table with source handle, lifecycle/submit state, strategy kind, initial cash, safe
-strategy/version information, `paper_eligibility`, and the returned closed
-`eligibility_reasons`.
+strategy/version information, `is_optimizer`, safe `optimizer_execution` version/config source/
+warning code when present, `paper_eligibility`, and the returned closed `eligibility_reasons`.
 
 Ask the user to select one exact returned source. Never probe guessed handles. Explain eligibility
 without downstream internals:
@@ -110,6 +115,14 @@ without downstream internals:
   eligible.
 - `ineligible`: use only the returned closed reason codes, such as incomplete/unsubmitted source,
   unsupported strategy kind, or missing semantic lineage.
+
+For an optimizer source, `is_optimizer=true` is classification only. Require exact positive
+`initial_cash`, `optimizer_execution.version` of `base` or `pro`, and
+`optimizer_execution.config_source=caller`. Treat `optimizer_config_not_caller` as ineligible.
+Treat `optimizer_execution_unavailable` or `source_capital_unavailable` as
+`provider_validation_required`, not as permission to submit. `default`, `default_after_invalid`,
+missing evidence, unknown values, or contradictory eligibility fail closed. Never request raw
+policy YAML or provider state to repair a source.
 
 A source must ultimately be owner-scoped, completed, successfully submitted, cross-sectional, and
 semantically reconstructable. `source_validation_unavailable` means the bounded source read failed
@@ -122,14 +135,23 @@ payloads. Missing displayed capital does not by itself make an ordinary source i
 Before `pt_submit_run`, display and obtain explicit confirmation for:
 
 - exact source StrategyRun handle and safe strategy/version label;
-- exact `initial_balance` when the user supplies one;
+- exact `initial_balance` when the user supplies one for an ordinary source;
 - optional ISO `start_date`;
 - optional exact `leverage`.
 
-Send only `source_strategy_run_id`, `start_date`, `initial_balance`, and `leverage`, omitting optional
-fields the user did not choose. When the caller omits `initial_balance`, omit it from the tool call;
-FM retains its existing default. Creating or revising a source, completing its backtest, and
-submitting Paper are separate mutations and each requires the appropriate explicit confirmation.
+For an eligible optimizer source, first read `operation.paper_trade.submit` with
+`qd_get_guidance` without `sections`, show the source's exact `initial_cash` as the locked Paper
+balance, and include it in the confirmation. Do not ask for, offer, or send an `initial_balance`
+override; omit that field so PB binds the exact source StrategyRun capital. To change optimizer
+capital, hand back to
+`$strategy-building` to create another StrategyRun for the same StrategyVersion, then obtain a new
+Paper confirmation for that returned source.
+
+For an ordinary source, send only `source_strategy_run_id`, `start_date`, optional
+`initial_balance`, and optional `leverage`, omitting fields the user did not choose. When the caller
+omits ordinary `initial_balance`, omit it from the tool call and FM retains its existing default.
+Creating/revising a source, completing its backtest, and submitting Paper are separate mutations;
+each requires its own explicit confirmation.
 
 ### 4. Observe Lifecycle and Read Data
 
@@ -199,6 +221,11 @@ positive canonical Decimal string and the exact decimal sum must equal `1`. A ve
 composition: no capital transfer, periodic rebalance, shared margin, signal fusion, order netting,
 or execution-level netting exists.
 
+Before the first Strategy Portfolio create/revise/backtest/Paper mutation in a request, read
+`operation.strategy.portfolio.manage` with `qd_get_guidance` without `sections`. If that
+authoritative contract contradicts this bundled workflow, fail closed and report the revision
+mismatch instead of mutating.
+
 If the user did not provide an exact Portfolio handle, call `pt_sp_list` once with a bounded
 `page_size` and the default `include_archived=false`. Show the returned name, status, metadata,
 latest version, version number, and `archived_at` without guessing missing values. Treat
@@ -238,6 +265,14 @@ Explain safe failures as actionable product states without exposing downstream t
 
 - `source_strategy_ineligible`: choose another eligible completed source or complete the missing
   source prerequisite. Use only its returned closed `eligibility_reasons`.
+- `optimizer_source_capital_mismatch`: no Paper mutation was admitted with the requested balance.
+  Re-read the exact source and show `required_initial_balance`; never expose it as a selectable
+  override. Continue only through a fresh user-confirmed submit that omits `initial_balance`, or
+  return to Strategy Building for a new same-version StrategyRun at different capital.
+- `optimizer_config_not_caller`: the source did not execute the caller-frozen optimizer policy and
+  is ineligible; do not retry Paper or fall back to an ordinary/default optimizer.
+- `optimizer_execution_unavailable` or `source_capital_unavailable`: optimizer readiness cannot be
+  proven. Do not submit; retry only the bounded source read later when the user asks.
 - `paper_initial_balance_unavailable`: the requested Paper balance cannot be used safely; omit an
   override only when the user intended FM's default.
 - `source_validation_unavailable`: source discovery could not complete its bounded FM validation;
