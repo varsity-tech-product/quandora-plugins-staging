@@ -15,10 +15,11 @@ Quandora Staging Factor Mining helps an agent:
 
 ## Result Files
 
-When the host supports local files, Factor Mining saves the verified FM-owned archive as:
+When the host supports local files, Factor Mining saves the verified FM-owned archive at a
+user-requested destination or, by default, relative to the active workspace:
 
 ```text
-/Users/richsion/Quandora staging result/factor/<factor_slug>.zip
+quandora-results/factor/<factor_slug>.zip
 ```
 
 The factor slug is derived from the current user-facing factor name. The remote filename remains
@@ -29,10 +30,21 @@ extracted, deleted, or rebuilt.
 Completed Strategy bundles use the dedicated Strategy subdirectory:
 
 ```text
-/Users/richsion/Quandora staging result/strategy/<strategy_slug>.zip
+quandora-results/strategy/<strategy_slug>.zip
 ```
 
 The strategy slug is derived from the current user-facing submitted Strategy name.
+
+## Package Validation
+
+Run the database-free package contract before review:
+
+```text
+python3 plugins/quandora-staging/scripts/check-package.py
+```
+
+The check keeps manifest and bundled Skill versions aligned, limits Codex default prompts, and
+rejects routine version probes, workstation-specific paths, and stale global bundle limits.
 
 ## What Analysis Does
 

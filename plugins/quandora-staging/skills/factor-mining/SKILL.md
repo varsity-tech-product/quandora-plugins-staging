@@ -13,23 +13,6 @@ The agent drafts a valid Factor Mining `plugin.py`, submits the complete source 
 
 OAuth and all credentials are handled by the host. Quandora access tokens expire after 7 days, and the host MCP client should use its stored rotating refresh token automatically. Never inspect, print, copy, store, or ask the user to paste API keys, bearer tokens, authorization codes, access tokens, refresh tokens, PKCE verifiers, service tokens, or other credentials.
 
-## Plugin Version Reminder
-
-On the first entry into any Quandora skill in the current conversation, if the conversation history does not already contain one successful `qd_plugin_ver` call and no earlier version-check attempt has occurred, call it once before the business entry point. Pass the bundled plugin version declared by the current skill verbatim as `installed_version`; never infer it from memory, the remote latest version, or the host name.
-
-Treat the bundled version as an opaque release label: pass it verbatim and never parse, order, or normalize it.
-
-- If `update_available=false`, continue silently.
-- If `update_available=true`, say exactly: `The latest Quandora plugin version is <latest_version>. Please update the plugin.` Then say: `A Quandora Staging MCP access token is valid for 7 days. After 7 days, use the prompt below to ask your agent to refresh the connection; it should use automatic refresh first and CLI re-authentication only if required.` Then provide this exact copyable prompt in a fenced `text` block: `Refresh the Quandora Staging MCP connection. If automatic refresh fails, re-authenticate it with the CLI.` Then immediately continue the user's original request.
-- If `qd_plugin_ver` is missing, disabled, invisible, or fails, do not report that the plugin is outdated, do not retry the check anywhere later in the current conversation, and continue the original request without a version message or any change to the business workflow. OAuth or connection failures continue through the existing safe connection-handling path; never bypass MCP with raw HTTP.
-- Never install, update, uninstall, or reload a plugin; execute an update command; ask whether to update; immediately start OAuth or reauthorize merely because of the version result; provide a platform-specific command in the version reminder; or delay the original request. The copyable prompt is information for the user to invoke after 7 days, not permission to run it during the version check.
-- A later entry into Factor Mining, Factor Analysis, Strategy Building, Strategy Analysis, or Paper Trading in the same conversation recognizes the prior successful version check and does not call it or remind again.
-- Treat `qd_plugin_ver` as optional for connection readiness. Its absence alone never triggers connection recovery or changes the required business-tool set.
-
-The version check is not a business action. For a normal Factor Mining workflow, check first when required above and then call `fm_status` under the existing rules. For a bare Strategy factor-list request, check first when required and then make the one business call `sb_list_eligible`. For Strategy composition, check first when required and then call `sb_get_contract` under the existing rules. All other exact call-count, pagination, and mutation constraints remain unchanged.
-
-<!-- end-plugin-version-reminder -->
-
 If the required Quandora Staging tools are visible, continue automatically. If they are not visible, tell the user to update or reinstall the current staging plugin, then use the host's normal Quandora Staging reconnect and browser re-authorization path before stopping:
 
 - Codex CLI/TUI: run `codex mcp login quandora-staging`. Wait for the user to complete the browser authorization flow, then check again for `fm_status`.
@@ -61,7 +44,6 @@ After routing has confirmed Factor Mining scope, use only the Factor Mining acti
 - `fm_bundle_ticket`
 - `fm_bundle_chunk`
 - `qd_get_guidance`
-- `qd_plugin_ver` (conversation-level read-only reminder check; not a business action)
 
 Some hosts may prefix action names with the server name, such as `quandora_staging__fm_status`. Treat those as the same actions.
 
@@ -183,10 +165,11 @@ deduplication, validation, upload, resume/polling, and terminal Result Bundle wo
 Do not write `plugin.py` until the plugin construction contract has been returned. If the contract cannot be fetched, stop and report that plugin authoring is blocked by missing contract metadata.
 
 After a session exists, do not create a local result archive, extracted result directory, or
-`artifacts/` directory. The canonical completed local output is the verified FM-owned ZIP beneath
-the exact directory `/Users/richsion/Quandora staging result/factor/`. Create that directory if it
-does not exist; never save a completed Factor ZIP in the parent result directory, the current
-workspace, or a Strategy directory. Build `<factor_slug>` from the current user-facing factor name (`FACTOR_NAME`
+`artifacts/` directory. When the user requests an export, use their requested destination or the
+active workspace-relative directory `quandora-results/factor/`; if neither can be resolved safely,
+do not write a file. The canonical completed local output is the verified FM-owned ZIP at
+`quandora-results/factor/<factor_slug>.zip` beneath that workspace. Never save a completed Factor
+ZIP in a Strategy directory. Build `<factor_slug>` from the current user-facing factor name (`FACTOR_NAME`
 or the exact returned display name): lowercase it, replace each run of non-`[a-z0-9]` characters
 with one underscore, trim outer underscores, and use `factor` if the result is empty. The slug must
 not contain a backend UUID, internal selector, snapshot revision, remote filename prefix, or path
@@ -278,7 +261,7 @@ These recovery actions do not add an automatic retry loop.
 
 If `upload_backtest_wait` returns `running`, call `fm_resume_run` at most 4 times in the current request.
 
-If the run is still `running` after the fourth resume, stop waiting and treat the archive as a pending run snapshot, not a completed result. Save only files that are already true at that point, such as `plugin.py` and a redacted pending run summary. Do not request Result Bundle metadata or attempt ZIP delivery until a later `fm_resume_run` returns a terminal status. In the final response, clearly say the backtest is still running, the Result Bundle was not requested, and the user can ask to resume later. Show the `/Users/richsion/Quandora staging result/factor/` folder path when the host supports local files.
+If the run is still `running` after the fourth resume, stop waiting and treat the archive as a pending run snapshot, not a completed result. Save only files that are already true at that point, such as `plugin.py` and a redacted pending run summary. Do not request Result Bundle metadata or attempt ZIP delivery until a later `fm_resume_run` returns a terminal status. In the final response, clearly say the backtest is still running, the Result Bundle was not requested, and the user can ask to resume later. Show the resolved result folder only when the host supports local files.
 
 ### Result Bundle Handling
 
@@ -336,10 +319,9 @@ that explicitly asks for one compatibility artifact; they are not bundle-complet
 
 Use this URL-first delivery once per request:
 
-1. Require ZIP content type, non-negative size, lowercase SHA-256, and the exact safe local
-   destination `/Users/richsion/Quandora staging result/factor/<factor_slug>.zip`. Before creating
-   any file, create `/Users/richsion/Quandora staging result/factor/` if needed. Write only to
-   `/Users/richsion/Quandora staging result/factor/<factor_slug>.zip.partial` until verification finishes. If the final path
+1. Require ZIP content type, non-negative size, lowercase SHA-256, and the safe local destination
+   chosen above. Create its parent directory if needed. Write only to
+   `quandora-results/factor/<factor_slug>.zip.partial` beneath the selected workspace until verification finishes. If the final path
    already contains unrelated bytes or cannot be proven to match the selected ZIP, do not
    overwrite it silently: tell the user and use a different safe user-facing slug chosen with the
    user, never an internal backend identifier.
@@ -357,12 +339,12 @@ Use this URL-first delivery once per request:
    that actual retry fails, move to MCP fallback. Never reuse a single-use URL/ticket.
 4. Verify exact size and SHA-256, ZIP magic/openability, and that every ZIP entry is a safe relative
    path contained by the archive. Then atomically rename the verified `.partial` file to
-   `/Users/richsion/Quandora staging result/factor/<factor_slug>.zip`.
+   `quandora-results/factor/<factor_slug>.zip` beneath the selected workspace.
 
 If the URL is unavailable, blocked by local host network policy, expired, or fails after that one retry, automatically use `fm_bundle_chunk` with the same canonical `job_id` and `snapshot_revision`. This fallback uses the already-working authenticated MCP connection and requires no new host-native file sink or shell network access:
 
 1. Start at offset `0` and request at most `256 KiB` (`262144`) raw bytes per call. For every valid response, decode and append `content_b64` before acting on `terminal`; never print or log the base64. A `terminal: true` response may carry the final non-empty `content_b64`, so those bytes are part of the ZIP and must be appended before stopping. When `terminal` is false, require `next_offset` to equal the current offset plus the decoded byte length and continue from exactly that value. When `terminal` is true, require `next_offset` to be null and the appended total to equal `size_bytes`; do not request another public empty chunk.
-2. Enforce the 10 MiB ZIP cap and at most 40 chunk calls. Keep every response bound to the same kind, job ID, snapshot revision, filename, content type, size, and whole-object SHA. Never mix revisions or append an old partial. Do not start a local receiver that exits when its setup command reaches EOF; use a per-response binary-safe append operation, or keep one verified writer session open until the terminal response has been appended.
+2. Do not impose a client-wide ZIP-size cap. Before the first chunk, require a non-negative server-declared `size_bytes` that fits the selected host destination and compute the exact upper call bound as `ceil(size_bytes / 262144)`. Reject a response sequence that exceeds that bound or the declared size. Keep every response bound to the same kind, job ID, snapshot revision, filename, content type, size, and whole-object SHA. Never mix revisions or append an old partial. Do not start a local receiver that exits when its setup command reaches EOF; use a per-response binary-safe append operation, or keep one verified writer session open until the terminal response has been appended.
 3. The public chunk contract's `terminal: true` means that response ends the stream; the client must not require `content_b64` itself to be empty and must not request an extra empty response. After appending the terminal response, verify the assembled byte count, whole-ZIP SHA-256, ZIP magic/openability, and safe entry paths before atomic rename. On interruption or any terminal fallback failure, discard only the task-created unverified `.partial` and report that no verified ZIP was saved.
 
 After the bounded materialization recheck when applicable, if the selected bundle metadata is `pending`, `not_available`, or `integrity_failure`, stop before URL/chunk/file creation: no URL, no chunk, no fabricated file. Preserve its safe status/reason. Do not save bearer tokens, download URLs, raw service metadata, artifact IDs, admission IDs, credentials, or any other downstream IDs. The only exception is the current `session_id` / `run_id` local-traceability allowlist described above. If the host does not support file writes, report that no local verified ZIP was saved.
@@ -389,7 +371,7 @@ Strategy-readiness assessment. Never auto-submit an optimization from either ski
 ## Final Response
 
 Summarize status, factor name, safe diagnostics if the run failed, bundle state, and the exact
-verified `/Users/richsion/Quandora staging result/factor/<factor_slug>.zip` path when saved. Inspect `ok`, `status`,
+resolved verified ZIP path when saved. Inspect `ok`, `status`,
 `terminal_status`, `failures`, sanitized job statuses, and bundle metadata. Do not mention internal
 implementation details or treat an optional bundle item omission recorded by FM as a failed run.
 For a selected partial snapshot, state that it is partial and report the exact omissions and pending
@@ -397,21 +379,15 @@ reasons from the runtime manifest without claiming completeness.
 
 Never show job IDs, snapshot revisions, bearer tokens, raw credentials, or full `plugin.py` source in user-facing summaries. Do not repeat a consumed or expired download URL in the final summary; this does not prohibit its safe transient appearance in the ticket response or download-tool invocation. It is safe to show the local result folder and verified ZIP path created by the current host.
 
-At the end of every completed, failed, or interrupted run, show the `/Users/richsion/Quandora staging result/factor/` folder and
+At the end of every completed, failed, or interrupted run, show the resolved result folder and
 the verified Result Bundle ZIP when saved. For a pending run, mention a redacted pending summary
 only if the normal authoring workflow saved one. For a completed run, the FM-owned ZIP is the only
 canonical completed-result archive. If the ZIP could not be saved, say so accurately. Never show
 job IDs, snapshot revisions, download URLs, tickets, credentials, or bundle base64.
 
-For GUI/Desktop hosts, use Markdown links with absolute local paths and angle-bracket link targets so paths with spaces work:
-
-Result folder: [Open result folder](</Users/richsion/Quandora staging result/factor/>)
-Result Bundle ZIP: [verified ZIP](</Users/richsion/Quandora staging result/factor/<factor_slug>.zip>)
-
-For CLI/TUI hosts, use plain absolute paths, not Markdown links:
-
-Result folder: /Users/richsion/Quandora\ staging\ result/factor/
-Result Bundle ZIP: /Users/richsion/Quandora\ staging\ result/factor/<factor_slug>.zip
+For GUI/Desktop hosts, resolve the selected workspace-relative destination to its actual absolute
+path before rendering a Markdown file link; never invent a home directory. For CLI/TUI hosts, print
+that resolved path as plain text. If no destination was supplied or safely resolvable, do not write.
 
 If the host could not write files, print:
 
