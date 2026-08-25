@@ -35,17 +35,6 @@ quandora-results/strategy/<strategy_slug>.zip
 
 The strategy slug is derived from the current user-facing submitted Strategy name.
 
-## Package Validation
-
-Run the database-free package contract before review:
-
-```text
-python3 plugins/quandora-staging/scripts/check-package.py
-```
-
-The check keeps manifest and bundled Skill versions aligned, limits Codex default prompts, and
-rejects routine version probes, workstation-specific paths, and stale global bundle limits.
-
 ## What Analysis Does
 
 Factor Analysis and Strategy Analysis read owner-scoped server-persisted evidence, diagnose
