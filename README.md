@@ -109,12 +109,16 @@ diagnose metrics and charts, separate evidence from inference, and propose contr
 without automatically submitting a factor, Strategy, or Paper run. Factor Analysis checks the
 server Factor Card's Health and rating gates before interpreting economic performance.
 
-Quandora Staging Paper Trading lets agents discover ordinary eligible sources; create or revise a
-bounded ordinary source StrategyVersion from exact factor/version/job references; submit
-and monitor its source backtest through the Paper-owned source detail; then start and monitor
-single-strategy or static-sleeve Strategy Portfolio Paper runs after confirmation. It also reads
-current PnL and historical execution data and terminally stops selected runs. It is staging-only
-and does not place live-money trades.
+Quandora Staging Strategy Building keeps ordinary Strategy authoring/backtests on `sb_*`. For an
+explicit base/pro optimizer request, it prepares a versioned source from exact admitted
+factor/version/job triples, freezes capital-independent policy, and submits separately confirmed
+StrategyRuns whose `initial_cash` owns optimizer capital.
+
+Quandora Staging Paper Trading discovers eligible ordinary or optimizer sources, then starts and
+monitors single-strategy or static-sleeve Strategy Portfolio Paper runs after confirmation.
+Optimizer Paper requires caller-frozen execution evidence and exact source-run capital, with no
+policy or capital override. The skill also reads current PnL and historical execution data and
+terminally stops selected runs. It is staging-only and does not place live-money trades.
 
 ## Install
 
@@ -370,6 +374,14 @@ safe terminal Strategy diagnostics, closed Paper position-history semantics, and
 versioned source creation. Official factors use their exact admission triples as top-level
 `factor_references`; they never fall back to the legacy Strategy selector path. No backend API,
 tool, OAuth scope, or deployment configuration changes are introduced by this plugin release.
+
+Plugin 1.53 preserves the public tool inventory and OAuth scopes while enabling the reviewed
+base/pro optimizer workflow. Strategy Building owns bounded versioned-source writes and
+StrategyRun-owned capital; Paper Trading admits only `config_source=caller` with exact source
+capital and never offers a Paper-time optimizer override. Deploy the matching PB and Auth revisions
+before publishing the unique 1.53 artifact. Keep Auth's staging latest-version label at `1.52`
+until that artifact is confirmed installable from every supported manifest, then advance the label
+through a separate reviewed staging configuration change. Production remains unchanged.
 
 ## License
 

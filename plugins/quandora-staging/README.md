@@ -15,10 +15,11 @@ Quandora Staging Factor Mining helps an agent:
 
 ## Result Files
 
-When the host supports local files, Factor Mining saves the verified FM-owned archive as:
+When the host supports local files, Factor Mining saves the verified FM-owned archive at a
+user-requested destination or, by default, relative to the active workspace:
 
 ```text
-/Users/richsion/Quandora staging result/factor/<factor_slug>.zip
+quandora-results/factor/<factor_slug>.zip
 ```
 
 The factor slug is derived from the current user-facing factor name. The remote filename remains
@@ -29,7 +30,7 @@ extracted, deleted, or rebuilt.
 Completed Strategy bundles use the dedicated Strategy subdirectory:
 
 ```text
-/Users/richsion/Quandora staging result/strategy/<strategy_slug>.zip
+quandora-results/strategy/<strategy_slug>.zip
 ```
 
 The strategy slug is derived from the current user-facing submitted Strategy name.
@@ -42,14 +43,23 @@ experiments. Strategy Analysis pairs the Product Backend run snapshot with retai
 bounded six-chart data and can assess Paper readiness. Factor Analysis reads the server Factor Card,
 chart data, and inert job-linked source when needed. Neither analysis skill submits or mutates a run.
 
+## What Strategy Building Does
+
+Strategy Building keeps ordinary factor composition, backtests, and Result Bundles on the `sb_*`
+surface. When the user explicitly requests a base/pro portfolio optimizer, it instead prepares a
+versioned source from exact admitted factor/version/job triples, freezes one bounded
+capital-independent YAML mapping, and submits a source StrategyRun whose `initial_cash` owns
+optimizer capital. It never starts Paper; that remains a separate confirmed workflow.
+
 ## What Paper Trading Does
 
-Quandora Staging Paper Trading helps an agent discover the current user's eligible sources and
-prepare a bounded ordinary source StrategyVersion from exact factor/version/job references.
-It submits and monitors the source backtest with the Paper-owned source detail, obtains explicit
-Paper submit/stop confirmation, and reads live current PnL, position history, fills, funding, equity
-curves, and bounded strategy code. It also supports static independent-sleeve Strategy Portfolio
-backtests and Paper runs. It does not expose production trading, universe overrides, Paper
+Quandora Staging Paper Trading helps an agent discover the current user's eligible sources,
+validate safe ordinary/optimizer readiness, obtain explicit Paper submit/stop confirmation, and
+read live current PnL, position history, fills, funding, equity curves, and bounded strategy code.
+Optimizer Paper accepts only caller-frozen execution evidence and exact source-run capital; it has
+no policy or capital override. The skill also lists the current user's active Strategy Portfolios
+with opaque pagination and supports static independent-sleeve Portfolio backtests and Paper runs.
+It does not expose production trading, universe overrides, Paper
 archive/resume, or nonexistent parent aggregate positions/equity.
 
 ## Skills
@@ -106,3 +116,10 @@ contracts: terminal retryability creates a new run rather than reviving a failed
 position history contains only closed net-position lifecycles, and Official-factor Strategy sources
 use exact admission triples through top-level `factor_references`. No backend or deployment change
 is part of this plugin release.
+
+Plugin 1.53 keeps the same public tools and OAuth scopes and enables the reviewed optimizer
+workflow. Strategy Building owns bounded base/pro versioned-source writes and StrategyRun capital;
+Paper Trading requires `config_source=caller`, exact source capital, and no Paper-time override.
+Publish only after the matching PB and Auth revisions are deployed. Keep Auth's advertised staging
+label at `1.52` until the unique 1.53 artifact is installable from every supported manifest, then
+advance that label in a separate reviewed configuration change.
