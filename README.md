@@ -383,6 +383,12 @@ before publishing the unique 1.53 artifact. Keep Auth's staging latest-version l
 until that artifact is confirmed installable from every supported manifest, then advance the label
 through a separate reviewed staging configuration change. Production remains unchanged.
 
+Plugin 1.54 adds the dedicated `sb_rerun_run` Strategy action. Deploy the Product Backend rerun
+endpoint and Auth public tool contract before publishing the unique staging Plugin 1.54 artifact.
+The action reuses `strategy:runs.create`, creates a new child run from an eligible failed source's
+immutable snapshot and exact FM StrategyVersion, and leaves the source terminal. No Factor Mining
+runtime, Paper workflow, production plugin, or new OAuth scope is part of this release.
+
 ## License
 
 This repository is licensed under the Apache License 2.0. See [LICENSE](LICENSE).
