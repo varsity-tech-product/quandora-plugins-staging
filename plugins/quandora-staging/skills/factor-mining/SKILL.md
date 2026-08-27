@@ -166,16 +166,20 @@ Do not write `plugin.py` until the plugin construction contract has been returne
 
 After a session exists, do not create a local result archive, extracted result directory, or
 `artifacts/` directory. When the user requests an export, use their requested destination or the
-active workspace-relative directory `quandora-results/factor/`; if neither can be resolved safely,
-do not write a file. The canonical completed local output is the verified FM-owned ZIP at
-`quandora-results/factor/<factor_slug>.zip` beneath that workspace. Never save a completed Factor
-ZIP in a Strategy directory. Build `<factor_slug>` from the current user-facing factor name (`FACTOR_NAME`
-or the exact returned display name): lowercase it, replace each run of non-`[a-z0-9]` characters
-with one underscore, trim outer underscores, and use `factor` if the result is empty. The slug must
-not contain a backend UUID, internal selector, snapshot revision, remote filename prefix, or path
-separator. A pre-terminal pending diagnostic may retain the existing redacted summary behavior in
-the normal authoring workspace, but it is not a completed result and must not be presented as the
-canonical Result Bundle.
+active workspace-relative directory `Quandora staging result/factor/`; if neither can be resolved
+safely, do not write a file. The canonical completed local output is the verified FM-owned ZIP at
+`Quandora staging result/factor/<factor_slug>.zip` beneath that workspace. Never save a completed
+Factor ZIP in a Strategy directory.
+
+Build `<factor_slug>` from the exact accepted top-level `FACTOR_TYPE` literal in the complete
+`plugin_source` that passed validation and was submitted. Require the literal to remain the same
+non-empty lowercase snake_case value as `FACTOR_SECTIONS["__FACTOR_TYPE__"]`, and use it unchanged
+as the slug. Do not derive the destination from `FACTOR_NAME`, a returned display name, the remote
+filename, or an internal identifier, and never silently fall back to a generic `factor` slug. If the
+accepted source does not provide one safe matching `FACTOR_TYPE`, stop the local export and report
+the contract mismatch instead of creating an ambiguous destination. A pre-terminal pending
+diagnostic may retain the existing redacted summary behavior in the normal authoring workspace, but
+it is not a completed result and must not be presented as the canonical Result Bundle.
 
 After session creation, call `fm_dedup_context` with only the `session_id`. Use `query_mode`, `scope`, `memory_stats`, `similar_factors`, and `task_memory_pressure` only to select a fresher research hypothesis. A high `task_memory_pressure` must never stop the workflow, reject a draft, or trigger repeated rewrites.
 
@@ -321,7 +325,7 @@ Use this URL-first delivery once per request:
 
 1. Require ZIP content type, non-negative size, lowercase SHA-256, and the safe local destination
    chosen above. Create its parent directory if needed. Write only to
-   `quandora-results/factor/<factor_slug>.zip.partial` beneath the selected workspace until verification finishes. If the final path
+   `Quandora staging result/factor/<factor_slug>.zip.partial` beneath the selected workspace until verification finishes. If the final path
    already contains unrelated bytes or cannot be proven to match the selected ZIP, do not
    overwrite it silently: tell the user and use a different safe user-facing slug chosen with the
    user, never an internal backend identifier.
@@ -339,7 +343,7 @@ Use this URL-first delivery once per request:
    that actual retry fails, move to MCP fallback. Never reuse a single-use URL/ticket.
 4. Verify exact size and SHA-256, ZIP magic/openability, and that every ZIP entry is a safe relative
    path contained by the archive. Then atomically rename the verified `.partial` file to
-   `quandora-results/factor/<factor_slug>.zip` beneath the selected workspace.
+   `Quandora staging result/factor/<factor_slug>.zip` beneath the selected workspace.
 
 If the URL is unavailable, blocked by local host network policy, expired, or fails after that one retry, automatically use `fm_bundle_chunk` with the same canonical `job_id` and `snapshot_revision`. This fallback uses the already-working authenticated MCP connection and requires no new host-native file sink or shell network access:
 

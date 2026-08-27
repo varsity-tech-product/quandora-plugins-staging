@@ -273,14 +273,15 @@ show public tasks.
 mine a factor with custom idea
 ```
 
-When the host supports local files, the verified FM-owned archive is saved with a local name derived
-from the current user-facing factor name:
+When the host supports local files, the verified FM-owned archive is saved relative to the active
+workspace with a local name derived from the validated source's exact `FACTOR_TYPE`:
 
 ```text
 Quandora staging result/factor/<factor_slug>.zip
 ```
 
-The remote filename remains transport metadata. The verified ZIP is retained as the canonical local
+The slug never silently falls back to a generic `factor` name. The remote filename remains transport
+metadata. The verified ZIP is retained as the canonical local
 output and is not automatically extracted, deleted, or rebuilt. A readable partial ZIP remains
 downloadable; its runtime manifest is authoritative for the exact included, pending, and omitted
 items.

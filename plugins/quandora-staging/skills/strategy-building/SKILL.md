@@ -486,9 +486,9 @@ compatibility artifact; they are not bundle-completion tools.
 Use this URL-first delivery once per request:
 
 1. Require ZIP content type, non-negative size, lowercase SHA-256, and the user-requested destination
-   or active workspace-relative destination `quandora-results/strategy/<strategy_slug>.zip`. If
+   or active workspace-relative destination `Quandora staging result/strategy/<strategy_slug>.zip`. If
    neither can be resolved safely, do not write a file. Create its parent directory if needed and
-   write only to `quandora-results/strategy/<strategy_slug>.zip.partial` beneath the selected workspace until verification finishes. If the final path
+   write only to `Quandora staging result/strategy/<strategy_slug>.zip.partial` beneath the selected workspace until verification finishes. If the final path
    already contains unrelated bytes or cannot be proven to match the selected ZIP, do not
    overwrite it silently: tell the user and use a different safe user-facing slug chosen with the
    user, never an internal backend identifier.
@@ -505,7 +505,7 @@ Use this URL-first delivery once per request:
    failure, issue at most one fresh ticket and immediately consume its new URL for one retry. After
    that actual retry fails, move to MCP fallback. Never reuse a single-use URL/ticket.
 4. Verify exact size and SHA-256, ZIP magic/openability, and safe relative ZIP entry paths, then
-   atomically rename the verified `.partial` to `quandora-results/strategy/<strategy_slug>.zip` beneath the selected workspace.
+   atomically rename the verified `.partial` to `Quandora staging result/strategy/<strategy_slug>.zip` beneath the selected workspace.
 
 If the URL is unavailable, blocked by local host network policy, expired, or fails after that one retry, automatically use `sb_bundle_chunk` with the same exact public `result.run.id` and `snapshot_revision`. The fallback uses the already-working authenticated MCP connection and requires no new host-native file sink or shell network access.
 
@@ -537,10 +537,10 @@ remote filename prefix, fingerprint, or path separator.
 The default canonical completed local path, relative to the active workspace, is:
 
 ```text
-quandora-results/strategy/<strategy_slug>.zip
+Quandora staging result/strategy/<strategy_slug>.zip
 ```
 
-Use a user-requested destination when supplied. Otherwise create `quandora-results/strategy/`
+Use a user-requested destination when supplied. Otherwise create `Quandora staging result/strategy/`
 beneath a safely resolved active workspace. If no writable destination can be resolved, do not
 write. Never save a completed Strategy ZIP in the Factor directory.
 

@@ -34,8 +34,22 @@ MARKETPLACE_MANIFESTS = (
 FORBIDDEN_RUNTIME_MARKDOWN = {
     "/Users/": "workstation-specific POSIX path",
     "C:\\Users\\": "workstation-specific Windows path",
+    "quandora-results/": "obsolete local result root",
     "10 MiB ZIP cap": "stale client-wide bundle cap",
     "at most 40 chunk calls": "stale fixed chunk-call cap",
+}
+REQUIRED_RESULT_DESTINATIONS = {
+    PLUGIN_ROOT / "README.md": (
+        "Quandora staging result/factor/<factor_slug>.zip",
+        "Quandora staging result/strategy/<strategy_slug>.zip",
+    ),
+    SKILLS_ROOT / "factor-mining" / "SKILL.md": (
+        "Quandora staging result/factor/<factor_slug>.zip",
+        "never silently fall back to a generic `factor` slug",
+    ),
+    SKILLS_ROOT / "strategy-building" / "SKILL.md": (
+        "Quandora staging result/strategy/<strategy_slug>.zip",
+    ),
 }
 MANDATORY_VERSION_PROBE_PATTERNS = (
     re.compile(r"^##\s+Plugin Version Reminder\s*$", re.MULTILINE | re.IGNORECASE),
@@ -164,6 +178,15 @@ def _check_runtime_markdown(errors: list[str], skill_files: dict[str, Path]) -> 
             if needle in text:
                 errors.append(
                     f"{path.relative_to(REPOSITORY_ROOT)}: contains {meaning}: {needle!r}"
+                )
+
+    for path, required_fragments in REQUIRED_RESULT_DESTINATIONS.items():
+        text = path.read_text(encoding="utf-8")
+        for fragment in required_fragments:
+            if fragment not in text:
+                errors.append(
+                    f"{path.relative_to(REPOSITORY_ROOT)}: "
+                    f"missing portable result-destination contract: {fragment!r}"
                 )
 
 

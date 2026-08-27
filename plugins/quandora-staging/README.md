@@ -19,18 +19,19 @@ When the host supports local files, Factor Mining saves the verified FM-owned ar
 user-requested destination or, by default, relative to the active workspace:
 
 ```text
-quandora-results/factor/<factor_slug>.zip
+Quandora staging result/factor/<factor_slug>.zip
 ```
 
-The factor slug is derived from the current user-facing factor name. The remote filename remains
-transport metadata, and the bundle's runtime manifest is authoritative for included, pending, and
-omitted items. A readable partial remains downloadable. The verified ZIP is not automatically
-extracted, deleted, or rebuilt.
+The factor slug is the validated source's exact non-empty lowercase snake_case `FACTOR_TYPE`; it
+never falls back to a generic `factor` directory. The remote filename remains transport metadata,
+and the bundle's runtime manifest is authoritative for included, pending, and omitted items. A
+readable partial remains downloadable. The verified ZIP is not automatically extracted, deleted,
+or rebuilt.
 
 Completed Strategy bundles use the dedicated Strategy subdirectory:
 
 ```text
-quandora-results/strategy/<strategy_slug>.zip
+Quandora staging result/strategy/<strategy_slug>.zip
 ```
 
 The strategy slug is derived from the current user-facing submitted Strategy name.
