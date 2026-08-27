@@ -375,6 +375,21 @@ manufacture item availability.
 For any other non-`completed` terminal archive status, likewise record only the archive-level state
 and safe diagnostics. The final observed main-run snapshot remains the source for `run_summary.json`.
 
+### Completed With No Result
+
+When a canonical run snapshot has `status=completed` and the exact closed
+`resultOutcome={status:"no_result", reasonCode:"zero_orders", orderCount:0}`, treat it as a
+successful terminal execution with no orders, not as a failure, timeout, or incomplete run. State
+that no positions were opened, so performance metrics, trades, charts, and Paper eligibility do not
+exist for this run. Do not call `sb_resume_run` or `sb_rerun_run`, and do not retry artifact reads to
+manufacture evidence. A later `sb_bundle_ticket` response with `status=not_available` and
+`reason_code=no_result_zero_orders` is the matching authoritative terminal bundle state: do not
+call `sb_bundle_chunk`, create a ZIP, or fall back to per-file artifacts.
+
+If the user wants another experiment, propose one controlled single-variable change and obtain
+explicit confirmation before handing that new mutation to the ordinary Strategy submission flow.
+Never describe the new experiment as recovery or retry of the completed source.
+
 ### Terminal Diagnostics and Saved Strategy
 
 An accepted Agent Strategy submission is saved as a normal Quandora Strategy and appears in the
@@ -412,7 +427,8 @@ Require all of the following from that canonical source snapshot: `status=failed
 `fmRunId`, `fmRetryable=true`, and a non-empty `fmStrategyVersionId`. If any condition is absent,
 report that the run cannot be safely rerun and stop. Never treat `timeout`, `cancelled`, a failed
 pre-submit reservation, or a diagnostics-only `retryable` hint without exact FM version identity as
-eligible.
+eligible. A `completed` run carrying the closed zero-order `resultOutcome` above is also never
+eligible for `sb_rerun_run`.
 
 Call `sb_rerun_run` exactly once with only `{ "run_id": "<exact source run id>" }`. Do not send an
 idempotency key; Auth binds trusted invocation identity to the source. The backend creates a new
@@ -513,7 +529,11 @@ If the URL is unavailable, blocked by local host network policy, expired, or fai
 2. Do not impose a client-wide ZIP-size cap. Before the first chunk, require a non-negative server-declared `size_bytes` that fits the selected host destination and compute the exact upper call bound as `ceil(size_bytes / 262144)`. Reject a response sequence that exceeds that bound or the declared size. Keep every response bound to the same kind, public run ID, snapshot revision, filename, content type, size, and whole-object SHA. Never mix revisions or append an old partial. Do not start a local receiver that exits when its setup command reaches EOF; use a per-response binary-safe append operation, or keep one verified writer session open until the terminal response has been appended.
 3. The public chunk contract's `terminal: true` means that response ends the stream; the client must not require `content_b64` itself to be empty and must not request an extra empty response. After appending the terminal response, verify the assembled byte count, whole-ZIP SHA-256, ZIP magic/openability, and safe entry paths before atomic rename. On interruption or any terminal fallback failure, discard only the task-created unverified `.partial` and report that no verified ZIP was saved.
 
-After the bounded materialization recheck when applicable, if the selected bundle metadata is `pending`, `not_available`, or `integrity_failure`, stop before URL/chunk/file creation: no URL, no chunk, no fabricated file. Preserve its safe status/reason and do not invent a completed bundle.
+After the bounded materialization recheck when applicable, if the selected bundle metadata is
+`pending`, `not_available`, or `integrity_failure`, stop before URL/chunk/file creation: no URL, no
+chunk, no fabricated file. Preserve its safe status/reason and do not invent a completed bundle.
+In particular, `not_available` with `reason_code=no_result_zero_orders` is terminal evidence that
+the completed run produced no orders; never wait or retry it as materialization.
 
 Preserve the verified ZIP as the canonical local output. Do not automatically extract the ZIP,
 delete it, re-ZIP it, rename its entries, synthesize missing files, or reconstruct a replacement

@@ -388,7 +388,10 @@ Plugin 1.54 adds the dedicated `sb_rerun_run` Strategy action. Deploy the Produc
 endpoint and Auth public tool contract before publishing the unique staging Plugin 1.54 artifact.
 The action reuses `strategy:runs.create`, creates a new child run from an eligible failed source's
 immutable snapshot and exact FM StrategyVersion, and leaves the source terminal. No Factor Mining
-runtime, Paper workflow, production plugin, or new OAuth scope is part of this release.
+runtime, production plugin, or new OAuth scope is part of this release. Plugin 1.54 also consumes
+FM's additive completed/no-result semantic: zero-order runs stay completed, their
+`not_available/no_result_zero_orders` bundle state is terminal, and they are never offered for
+failed-run rerun or Paper submission.
 
 ## License
 

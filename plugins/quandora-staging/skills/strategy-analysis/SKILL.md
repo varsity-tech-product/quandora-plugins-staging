@@ -74,6 +74,14 @@ snapshot returned by `sb_get_run`; do not infer parameters from chart labels.
 If the run is not terminal, report the current state. Do not call `sb_resume_run` from this
 read-only skill and do not substitute local files.
 
+If the run is `completed` with the exact closed
+`resultOutcome={status:"no_result", reasonCode:"zero_orders", orderCount:0}`, stop result retrieval
+before requesting artifacts or six-chart data. Report the observed zero-order outcome and explain
+that there are no positions, trades, performance metrics, or charts to analyze. This is not a
+failed run and is not eligible for failed-run rerun or Paper Trading. Do not repeatedly request
+missing evidence. If the user wants a new experiment, propose one single-variable ablation and ask
+for confirmation before handing it to `$strategy-building`.
+
 ### 3. Read Core Server Artifacts
 
 Use `sb_get_artifact` for the exact run. Start with `summary` and `performance`, then request only
@@ -100,7 +108,8 @@ review; never execute either.
 The six-chart route is the numerical analysis path. Do not request a Result Bundle, PNG, download
 ticket, storage URL, or local file to replace it. On `pending`, `not_available`, `too_large`, or
 `integrity_failed`, report the exact evidence limitation and continue only with independent server
-artifacts that remain trustworthy.
+artifacts that remain trustworthy. `not_available` with `reason_code=no_result_zero_orders` is
+terminal zero-order evidence, not a transient gap; stop without retries or substitute evidence.
 
 ### 5. Diagnose The Result
 

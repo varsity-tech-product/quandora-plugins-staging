@@ -105,6 +105,9 @@ If the user did not provide an exact source StrategyRun handle, call `pt_list_so
 compact table with source handle, lifecycle/submit state, strategy kind, initial cash, safe
 strategy/version information, `is_optimizer`, safe `optimizer_execution` version/config source/
 warning code when present, `paper_eligibility`, and the returned closed `eligibility_reasons`.
+When `source_strategy_no_result` is present, the completed source produced zero orders and is
+ineligible for Paper. Do not submit or retry it. Offer a handoff to `$strategy-analysis` or, after
+explicit user confirmation, a new controlled Strategy experiment through `$strategy-building`.
 
 Ask the user to select one exact returned source. Never probe guessed handles. Explain eligibility
 without downstream internals:
@@ -265,6 +268,9 @@ Explain safe failures as actionable product states without exposing downstream t
 
 - `source_strategy_ineligible`: choose another eligible completed source or complete the missing
   source prerequisite. Use only its returned closed `eligibility_reasons`.
+- `source_strategy_no_result`: the completed source produced zero orders, so no Paper mutation was
+  admitted. Do not retry Paper or reinterpret the run as failed; use Strategy Analysis or a newly
+  confirmed controlled Strategy experiment.
 - `optimizer_source_capital_mismatch`: no Paper mutation was admitted with the requested balance.
   Re-read the exact source and show `required_initial_balance`; never expose it as a selectable
   override. Continue only through a fresh user-confirmed submit that omits `initial_balance`, or

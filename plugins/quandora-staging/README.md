@@ -53,7 +53,9 @@ capital-independent YAML mapping, and submits a source StrategyRun whose `initia
 optimizer capital. An explicitly requested failed-run rerun uses `sb_rerun_run` to create one new
 child from the source's immutable snapshot and exact FM StrategyVersion; it never resumes the
 terminal source or reconstructs a current Strategy submission. It never starts Paper; that remains
-a separate confirmed workflow.
+a separate confirmed workflow. A completed zero-order run remains completed, exposes a bounded
+no-result outcome, has no downloadable Result Bundle, and is never routed into failed-run rerun or
+Paper submission.
 
 ## What Paper Trading Does
 
@@ -132,4 +134,6 @@ Plugin 1.54 adds the dedicated `sb_rerun_run` Strategy action. Deploy the Produc
 endpoint and Auth public tool contract before publishing the unique staging Plugin 1.54 artifact.
 The action reuses `strategy:runs.create`, creates a new child run from an eligible failed source's
 immutable snapshot and exact FM StrategyVersion, and leaves the source terminal. No Factor Mining
-runtime, Paper workflow, production plugin, or new OAuth scope is part of this release.
+runtime, production plugin, or new OAuth scope is part of this release. The same release also
+consumes FM's additive completed/no-result semantic: zero-order runs stay completed, their
+`not_available/no_result_zero_orders` bundle state is terminal, and Paper submission is withheld.
