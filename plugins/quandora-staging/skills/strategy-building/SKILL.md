@@ -5,7 +5,7 @@ description: Use when the user asks to list available, eligible, or selectable S
 
 # Quandora Staging Strategy Building
 
-Bundled plugin version: 1.53
+Bundled plugin version: 1.54
 
 Use this skill through the authenticated Quandora Staging connection exposed by the host as
 `quandora-staging`. It owns factor selection, Strategy creation or revision, and Strategy backtests
@@ -204,6 +204,9 @@ composition, submission, and backtest monitoring.
   1–20):
   - `factor_ids`: unique factor ids.
   - `factor_weights`: unique `{ "factor_id": "...", "weight": <finite positive number> }` objects.
+- The same equal-weight and `factor_weights` forms apply to Official, Mine, Shared, and mixed
+  compositions. Do not replace an explicitly weighted Official composition with equal weights, and
+  do not reject it merely because an official factor is immutable.
 - When configuration is omitted, leave optional caller fields omitted. Interpret the current
   Product defaults only for effective behavior and local description: equal weights use the
   `factor_ids` selection form, the default direction is neutral, and omitted ranking uses percentage

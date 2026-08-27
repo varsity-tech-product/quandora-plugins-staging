@@ -1,14 +1,14 @@
 ---
 name: factor-analysis
-description: Analyze, diagnose, compare, and propose controlled improvements for existing Quandora Factor Mining results from owner-scoped server-persisted evidence. Use when a user asks why a factor or rating passed or failed, requests a Factor Card Health Check or data-quality diagnosis, wants optimization ideas grounded in evidence, or asks whether a factor is ready for Strategy Building. Do not use for creating or submitting a new factor; route those requests to factor-mining.
+description: Analyze, diagnose, compare, and propose controlled improvements for existing Quandora Factor Mining results from owner-scoped or active-official server-persisted evidence. Use when a user asks why a factor or rating passed or failed, requests a Factor Card Health Check or data-quality diagnosis, wants optimization ideas grounded in evidence, or asks whether a factor is ready for Strategy Building. Do not use for creating or submitting a new factor; route those requests to factor-mining.
 ---
 
 # Factor Analysis
 
-Bundled plugin version: 1.53
+Bundled plugin version: 1.54
 
-Analyze one exact factor result as a read-only research workflow. Use Quandora's owner-scoped,
-server-persisted Factor Card, chart data, and job-linked source. Separate observed evidence from
+Analyze one exact factor result as a read-only research workflow. Use Quandora's owner-scoped or
+active-official server-persisted Factor Card, chart data, and exact source. Separate observed evidence from
 inference, alternative explanations, and proposed experiments. Never turn an optimization idea
 into an automatic submission.
 
@@ -35,11 +35,12 @@ chooses a proposed Strategy experiment.
 ## Non-Negotiable Safety
 
 - Remain read-only. Do not submit, resume, save, overwrite, archive, or delete anything.
-- Use only owner-scoped evidence returned by Quandora MCP tools. Never inspect a user's local files
+- Use only owner-scoped or active-official evidence returned by Quandora MCP tools. Never inspect a user's local files
   as proof of a product result.
 - Do not require a local ZIP, extraction tool, Python runtime, notebook, or archive-inspection
   script. A host without those facilities must receive the same analysis capability.
-- Never execute factor source. Treat `fm_run_source.source` as inert text evidence only.
+- Never execute factor source. Treat `fm_run_source.source` and `of_run_source.source` as inert
+  text evidence only.
 - Analyze only product-safe IS evidence exposed to an external agent. Do not claim OOS or ALL
   evidence unless a future authoritative public contract explicitly provides it.
 - Preserve missing and null values as unavailable. Never convert them to zero.
@@ -55,8 +56,12 @@ chooses a proposed Strategy experiment.
 
 ### 1. Establish The Exact Target
 
-Prefer an exact terminal `job_id` supplied by the user or already returned in the conversation. If
-the user supplies only a factor name, a vague reference, or asks for the latest result:
+First determine whether the target is caller-owned or an active official factor. An official row is
+identified only by a successful `sb_list_eligible` response carrying `source_kind: official`; retain
+its exact top-level `factor_id` and do not ask for or expose an evidence job. For caller-owned
+results, prefer an exact terminal `job_id` supplied by the user or already returned in the
+conversation. If the user supplies only a caller-owned factor name, a vague reference, or asks for
+the latest caller-owned result:
 
 1. Call `fm_list_factors` with `page_size: 10`.
 2. Match only trustworthy returned identity and metadata. Do not guess across ambiguous names; ask
@@ -66,12 +71,16 @@ the user supplies only a factor name, a vague reference, or asks for the latest 
    `job_id` for the intended version and run.
 4. Never substitute a factor id, version id, branch id, session id, or display name for `job_id`.
 
+For an active official factor, use only its exact `factor_id` with the `of_*` actions below. Never
+send that id to an owner-scoped `fm_*` evidence action, and never substitute rating provenance,
+admission identity, a version/run pair, or a hidden evidence job.
+
 Do not auto-page discovery. Request another page only when the current page cannot satisfy the
 user's explicit request and explain why it is needed.
 
 ### 2. Read Server-Persisted Evidence
 
-For the exact `job_id`:
+For a caller-owned exact `job_id`:
 
 1. Call `fm_window_cards` with `windows: ["is"]`. Use `factor_card` as the authoritative product-safe
    Factor Card. Ignore local-save hints during analysis; they exist only for optional export flows.
@@ -89,11 +98,17 @@ For the exact `job_id`:
 Treat `unavailable`, missing sections, failed readiness, and null fields as explicit evidence gaps.
 Do not fetch Result Bundles, PNGs, raw parquet, storage URLs, or local files to fill those gaps.
 
+For an active official exact `factor_id`, follow the same evidence workflow with
+`of_window_cards`, `of_chart_data`, and optional `of_run_source`. These actions are also IS-only.
+Correlate every response to the same exact `factor_id`; do not mix owner-scoped and official
+selectors. Availability, pagination, inert-source, and evidence-gap rules are otherwise identical.
+
 ### 3. Build The Evidence Inventory
 
 Record:
 
-- exact job, factor, and version identities returned by the server;
+- the exact public selector: owner-scoped `job_id` or active-official `factor_id`, plus only the
+  additional identities the corresponding safe response returns;
 - terminal job status and IS-only scope;
 - Factor Card availability, Health fields, rating fields, and their recorded thresholds;
 - chart readiness and dataset provenance metadata;

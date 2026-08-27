@@ -118,9 +118,10 @@ position history contains only closed net-position lifecycles, and Official-fact
 use exact admission triples through top-level `factor_references`. No backend or deployment change
 is part of this plugin release.
 
-Plugin 1.53 keeps the same public tools and OAuth scopes and enables the reviewed optimizer
-workflow. Strategy Building owns bounded base/pro versioned-source writes and StrategyRun capital;
-Paper Trading requires `config_source=caller`, exact source capital, and no Paper-time override.
-Publish only after the matching PB and Auth revisions are deployed. Keep Auth's advertised staging
-label at `1.52` until the unique 1.53 artifact is installable from every supported manifest, then
-advance that label in a separate reviewed configuration change.
+Plugin 1.54 adds dedicated read-only `of_*` tools for active official Factor IS evidence, inert
+source, PNG, raw-signal, and Result Bundle delivery without exposing an evidence job. Strategy
+Building also preserves custom weights for Official, Mine, Shared, and mixed compositions alongside
+the reviewed base/pro optimizer workflow. The tools reuse `factor_mining:artifacts.read`, so OAuth
+scopes do not change. Publish only after matching PB and Auth revisions are deployed. Keep Auth's
+advertised staging label unchanged until the unique 1.54 artifact is installable from every
+supported manifest, then advance that label in a separate reviewed configuration change.
