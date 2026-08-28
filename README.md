@@ -377,7 +377,9 @@ versioned source creation. Official factors use their exact admission triples as
 tool, OAuth scope, or deployment configuration changes are introduced by this plugin release.
 
 Plugin 1.54 adds the dedicated read-only `of_*` surface for active official Factor IS evidence,
-source, PNG, raw-signal, and Result Bundle delivery without exposing an evidence job. It also
+inert source, and canonical Result Bundle delivery through the public factor selector. The FM-owned
+ZIP remains authoritative for included PNG and raw-signal artifacts and may retain canonical run
+provenance internally; that provenance is never a public selector. It also
 enables reviewed custom weighting for Official, Mine, Shared, and mixed Strategy compositions while
 retaining the base/pro optimizer workflow and its StrategyRun-owned capital boundary. The new tools
 reuse `factor_mining:artifacts.read`; no new OAuth scope is introduced. Deploy matching PB and Auth

@@ -119,7 +119,9 @@ use exact admission triples through top-level `factor_references`. No backend or
 is part of this plugin release.
 
 Plugin 1.54 adds dedicated read-only `of_*` tools for active official Factor IS evidence, inert
-source, PNG, raw-signal, and Result Bundle delivery without exposing an evidence job. Strategy
+source, and canonical Result Bundle delivery through the public factor selector. The FM-owned ZIP
+is authoritative for included PNG and raw-signal artifacts and may retain canonical run provenance
+internally; that provenance is never a public selector. Strategy
 Building also preserves custom weights for Official, Mine, Shared, and mixed compositions alongside
 the reviewed base/pro optimizer workflow. The tools reuse `factor_mining:artifacts.read`, so OAuth
 scopes do not change. Publish only after matching PB and Auth revisions are deployed. Keep Auth's
