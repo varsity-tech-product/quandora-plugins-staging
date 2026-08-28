@@ -1,11 +1,11 @@
 ---
 name: strategy-building
-description: Use when the user asks to list available, eligible, or selectable Strategy factors, including the bare Chinese request “列出可用因子”, or to compose, create, backtest, resume, retrieve, or archive a cross-sectional Quandora Staging Strategy using Official, Mine, or Shared factors. Also owns explicit base/pro portfolio-optimizer StrategyVersion source creation and backtests. Route deep result diagnosis to strategy-analysis.
+description: Use when the user asks to list available, eligible, or selectable Strategy factors, including the bare Chinese request “列出可用因子”, or to compose, create, backtest, resume, rerun a failed run, retrieve, or archive a cross-sectional Quandora Staging Strategy using Official, Mine, or Shared factors. Also owns explicit base/pro portfolio-optimizer StrategyVersion source creation and backtests. Route deep result diagnosis to strategy-analysis.
 ---
 
 # Quandora Staging Strategy Building
 
-Bundled plugin version: 1.53
+Bundled plugin version: 1.54
 
 Use this skill through the authenticated Quandora Staging connection exposed by the host as
 `quandora-staging`. It owns factor selection, Strategy creation or revision, and Strategy backtests
@@ -22,7 +22,7 @@ Before starting, confirm that the Quandora Staging connection is authenticated a
 actions needed for the requested path. A normal list, composition, submit, observe, and Result
 Bundle workflow uses the relevant subset of `sb_get_contract`, `sb_list_eligible`,
 `sb_factor_detail`, `sb_shared_list`, `sb_shared_add`, `sb_submit_run`, `sb_list_runs`, `sb_get_run`,
-`sb_resume_run`, `sb_bundle_ticket`, and `sb_bundle_chunk`. `sb_get_artifact` and `sb_file_ticket`
+`sb_resume_run`, `sb_rerun_run`, `sb_bundle_ticket`, and `sb_bundle_chunk`. `sb_get_artifact` and `sb_file_ticket`
 remain legacy single-artifact compatibility actions. Use `qd_get_guidance` only for one of the
 documented guidance branches below.
 
@@ -375,6 +375,21 @@ manufacture item availability.
 For any other non-`completed` terminal archive status, likewise record only the archive-level state
 and safe diagnostics. The final observed main-run snapshot remains the source for `run_summary.json`.
 
+### Completed With No Result
+
+When a canonical run snapshot has `status=completed` and the exact closed
+`resultOutcome={status:"no_result", reasonCode:"zero_orders", orderCount:0}`, treat it as a
+successful terminal execution with no orders, not as a failure, timeout, or incomplete run. State
+that no positions were opened, so performance metrics, trades, charts, and Paper eligibility do not
+exist for this run. Do not call `sb_resume_run` or `sb_rerun_run`, and do not retry artifact reads to
+manufacture evidence. A later `sb_bundle_ticket` response with `status=not_available` and
+`reason_code=no_result_zero_orders` is the matching authoritative terminal bundle state: do not
+call `sb_bundle_chunk`, create a ZIP, or fall back to per-file artifacts.
+
+If the user wants another experiment, propose one controlled single-variable change and obtain
+explicit confirmation before handing that new mutation to the ordinary Strategy submission flow.
+Never describe the new experiment as recovery or retry of the completed source.
+
 ### Terminal Diagnostics and Saved Strategy
 
 An accepted Agent Strategy submission is saved as a normal Quandora Strategy and appears in the
@@ -398,6 +413,36 @@ failure and do not create a replacement run without the user's informed request.
 failures, attribute a factor only when the returned bounded `affectedFactors` contains that exact
 factor; an empty array means attribution is unavailable. Do not infer a source-code repair from a
 diagnostic and do not automatically resubmit a failed run.
+
+### Rerun a Failed Terminal Run
+
+Use `sb_rerun_run` only when the user explicitly asks to rerun a failed Strategy run. That request
+authorizes one rerun action for the exact resolved source and does not require a second confirmation.
+If the user has not identified one exact run, call `sb_list_runs` for one bounded newest-first page,
+show only the relevant failed candidates, and ask the user to select one; do not guess from a name.
+Before the mutation, call `sb_get_run` once for the exact selected `run_id` unless that canonical
+snapshot was already returned in the current workflow.
+
+Require all of the following from that canonical source snapshot: `status=failed`, a non-empty
+`fmRunId`, `fmRetryable=true`, and a non-empty `fmStrategyVersionId`. If any condition is absent,
+report that the run cannot be safely rerun and stop. Never treat `timeout`, `cancelled`, a failed
+pre-submit reservation, or a diagnostics-only `retryable` hint without exact FM version identity as
+eligible. A `completed` run carrying the closed zero-order `resultOutcome` above is also never
+eligible for `sb_rerun_run`.
+
+Call `sb_rerun_run` exactly once with only `{ "run_id": "<exact source run id>" }`. Do not send an
+idempotency key; Auth binds trusted invocation identity to the source. The backend creates a new
+StrategyRun from the source's immutable composition, parameters, and exact FM StrategyVersion. Do
+not call `sb_submit_run`, rebuild a payload from the current saved Strategy, choose a newer version,
+or call `sb_resume_run` on the terminal source. Require the response run id to differ from the
+source and `rerunOfRunId` to equal the source id; otherwise fail closed.
+
+Treat the returned child as the sole main run and observe it with the same bounded non-terminal
+`sb_resume_run` policy above. The source remains failed and immutable. After an ambiguous tool or
+transport response, do not issue another rerun automatically because a new tool invocation is a new
+intent; inspect owner-scoped run history for a uniquely attributable child or report the ambiguity.
+Never manufacture success, revive the source, or create multiple replacement runs while resolving
+an uncertain response.
 
 ### 3. Save the Strategy Result Bundle
 
@@ -484,7 +529,11 @@ If the URL is unavailable, blocked by local host network policy, expired, or fai
 2. Do not impose a client-wide ZIP-size cap. Before the first chunk, require a non-negative server-declared `size_bytes` that fits the selected host destination and compute the exact upper call bound as `ceil(size_bytes / 262144)`. Reject a response sequence that exceeds that bound or the declared size. Keep every response bound to the same kind, public run ID, snapshot revision, filename, content type, size, and whole-object SHA. Never mix revisions or append an old partial. Do not start a local receiver that exits when its setup command reaches EOF; use a per-response binary-safe append operation, or keep one verified writer session open until the terminal response has been appended.
 3. The public chunk contract's `terminal: true` means that response ends the stream; the client must not require `content_b64` itself to be empty and must not request an extra empty response. After appending the terminal response, verify the assembled byte count, whole-ZIP SHA-256, ZIP magic/openability, and safe entry paths before atomic rename. On interruption or any terminal fallback failure, discard only the task-created unverified `.partial` and report that no verified ZIP was saved.
 
-After the bounded materialization recheck when applicable, if the selected bundle metadata is `pending`, `not_available`, or `integrity_failure`, stop before URL/chunk/file creation: no URL, no chunk, no fabricated file. Preserve its safe status/reason and do not invent a completed bundle.
+After the bounded materialization recheck when applicable, if the selected bundle metadata is
+`pending`, `not_available`, or `integrity_failure`, stop before URL/chunk/file creation: no URL, no
+chunk, no fabricated file. Preserve its safe status/reason and do not invent a completed bundle.
+In particular, `not_available` with `reason_code=no_result_zero_orders` is terminal evidence that
+the completed run produced no orders; never wait or retry it as materialization.
 
 Preserve the verified ZIP as the canonical local output. Do not automatically extract the ZIP,
 delete it, re-ZIP it, rename its entries, synthesize missing files, or reconstruct a replacement

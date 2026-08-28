@@ -50,7 +50,12 @@ Strategy Building keeps ordinary factor composition, backtests, and Result Bundl
 surface. When the user explicitly requests a base/pro portfolio optimizer, it instead prepares a
 versioned source from exact admitted factor/version/job triples, freezes one bounded
 capital-independent YAML mapping, and submits a source StrategyRun whose `initial_cash` owns
-optimizer capital. It never starts Paper; that remains a separate confirmed workflow.
+optimizer capital. An explicitly requested failed-run rerun uses `sb_rerun_run` to create one new
+child from the source's immutable snapshot and exact FM StrategyVersion; it never resumes the
+terminal source or reconstructs a current Strategy submission. It never starts Paper; that remains
+a separate confirmed workflow. A completed zero-order run remains completed, exposes a bounded
+no-result outcome, has no downloadable Result Bundle, and is never routed into failed-run rerun or
+Paper submission.
 
 ## What Paper Trading Does
 
@@ -124,3 +129,11 @@ Paper Trading requires `config_source=caller`, exact source capital, and no Pape
 Publish only after the matching PB and Auth revisions are deployed. Keep Auth's advertised staging
 label at `1.52` until the unique 1.53 artifact is installable from every supported manifest, then
 advance that label in a separate reviewed configuration change.
+
+Plugin 1.54 adds the dedicated `sb_rerun_run` Strategy action. Deploy the Product Backend rerun
+endpoint and Auth public tool contract before publishing the unique staging Plugin 1.54 artifact.
+The action reuses `strategy:runs.create`, creates a new child run from an eligible failed source's
+immutable snapshot and exact FM StrategyVersion, and leaves the source terminal. No Factor Mining
+runtime, production plugin, or new OAuth scope is part of this release. The same release also
+consumes FM's additive completed/no-result semantic: zero-order runs stay completed, their
+`not_available/no_result_zero_orders` bundle state is terminal, and Paper submission is withheld.
