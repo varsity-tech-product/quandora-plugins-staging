@@ -5,7 +5,7 @@ description: Use when the user asks to list available, eligible, or selectable S
 
 # Quandora Staging Strategy Building
 
-Bundled plugin version: 1.54
+Bundled plugin version: 1.55
 
 Use this skill through the authenticated Quandora Staging connection exposed by the host as
 `quandora-staging`. It owns factor selection, Strategy creation or revision, and Strategy backtests
@@ -406,13 +406,17 @@ For a terminal failure, use only the safe `failureDiagnostics` envelope when it 
 - When it is `unavailable`, or no `failureDiagnostics` envelope is returned, state that the
   server supplied no safe terminal diagnostic.
 
-Treat a terminal run as immutable. In particular, `quantai_strategy_infra_timeout` with
-`retryable: true` means the user may explicitly choose to create a new Strategy run; it never means
-that the same terminal run can be resumed or revived. Do not call `sb_resume_run` for a terminal
-failure and do not create a replacement run without the user's informed request. For compile
-failures, attribute a factor only when the returned bounded `affectedFactors` contains that exact
-factor; an empty array means attribution is unavailable. Do not infer a source-code repair from a
-diagnostic and do not automatically resubmit a failed run.
+Treat a terminal run as immutable. `fmRetryable` and the safe diagnostic `retryable` value are
+advice about whether the same immutable execution is likely to benefit from another attempt; they
+do not authorize or block an explicitly requested rerun. A true value, such as for
+`quantai_strategy_infra_timeout`, is a server recommendation to retry. A false or absent value,
+including a compile or Lean failure, means the same exact StrategyVersion may fail again, so state
+that risk briefly before carrying out the user's already explicit request. It never means that the
+same terminal run can be resumed or revived. Do not call `sb_resume_run` for a terminal failure and
+do not create a replacement run without the user's informed request. For compile failures,
+attribute a factor only when the returned bounded `affectedFactors` contains that exact factor; an
+empty array means attribution is unavailable. Do not infer a source-code repair from a diagnostic
+and do not automatically resubmit a failed run.
 
 ### Rerun a Failed Terminal Run
 
@@ -424,11 +428,14 @@ Before the mutation, call `sb_get_run` once for the exact selected `run_id` unle
 snapshot was already returned in the current workflow.
 
 Require all of the following from that canonical source snapshot: `status=failed`, a non-empty
-`fmRunId`, `fmRetryable=true`, and a non-empty `fmStrategyVersionId`. If any condition is absent,
-report that the run cannot be safely rerun and stop. Never treat `timeout`, `cancelled`, a failed
-pre-submit reservation, or a diagnostics-only `retryable` hint without exact FM version identity as
-eligible. A `completed` run carrying the closed zero-order `resultOutcome` above is also never
-eligible for `sb_rerun_run`.
+`fmRunId`, and a non-empty `fmStrategyVersionId`. Treat `fmRetryable` as advisory only. When it is
+false or absent, or the safe diagnostics report a compile or Lean failure, warn briefly that the
+same immutable StrategyVersion may repeat the failure; the user's explicit rerun request remains
+authorization for one action and does not require a second confirmation. If the required status or
+FM lineage is absent, report that the run cannot be safely replayed and stop. Never treat `timeout`,
+`cancelled`, a failed pre-submit reservation without exact FM run and version identity, or a
+diagnostics-only `retryable` hint without that identity as eligible. A `completed` run carrying the
+closed zero-order `resultOutcome` above is also never eligible for `sb_rerun_run`.
 
 Call `sb_rerun_run` exactly once with only `{ "run_id": "<exact source run id>" }`. Do not send an
 idempotency key; Auth binds trusted invocation identity to the source. The backend creates a new

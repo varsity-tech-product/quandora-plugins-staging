@@ -4,7 +4,7 @@ interface:
   icon_small: "./assets/strategy-building.png"
   icon_large: "./assets/strategy-building.png"
   brand_color: "#F28C00"
-  default_prompt: "Use $strategy-building to choose Official, Mine, or Shared Quandora factors, create or backtest a Strategy, or safely rerun an explicitly selected failed Strategy run."
+  default_prompt: "Use $strategy-building to choose Official, Mine, or Shared Quandora factors, create or backtest a Strategy, or rerun an explicitly selected replayable failed Strategy run."
 
 dependencies:
   tools:

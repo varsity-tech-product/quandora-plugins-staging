@@ -5,7 +5,7 @@ description: Use when the user asks for simulated trading, paper trading, 模拟
 
 # Quandora Staging Paper Trading
 
-Bundled plugin version: 1.54
+Bundled plugin version: 1.55
 
 Use this skill through the authenticated `quandora-staging` MCP connection. It operates only on
 the current user's product-safe StrategyRun, Paper run, and Strategy Portfolio handles. It is a
