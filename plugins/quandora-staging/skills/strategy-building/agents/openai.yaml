@@ -1,10 +1,10 @@
 interface:
   display_name: "Strategy Building Staging"
-  short_description: "Compose, optimize, and backtest cross-sectional staging strategies"
+  short_description: "Create and backtest one staging strategy"
   icon_small: "./assets/strategy-building.png"
   icon_large: "./assets/strategy-building.png"
   brand_color: "#F28C00"
-  default_prompt: "Use $strategy-building to choose Official, Mine, or Shared Quandora factors, create or backtest a Strategy, or rerun an explicitly selected replayable failed Strategy run."
+  default_prompt: "Use $strategy-building to choose Official, Mine, or Shared Quandora factors and create, backtest, or safely rerun one ordinary or base/pro optimizer Strategy."
 
 dependencies:
   tools:

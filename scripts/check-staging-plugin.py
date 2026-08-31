@@ -9,7 +9,6 @@ import sys
 from pathlib import Path
 from typing import Any
 
-
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 PLUGIN_ROOT = REPOSITORY_ROOT / "plugins" / "quandora-staging"
 SKILLS_ROOT = PLUGIN_ROOT / "skills"
@@ -19,6 +18,125 @@ REQUIRED_SKILLS = {
     "paper-trading",
     "strategy-analysis",
     "strategy-building",
+    "strategy-portfolio",
+}
+MAX_MAIN_SKILL_LINES = 220
+ROUTING_MARKERS = {
+    "factor-analysis": ("Do not use for creating", "$factor-mining"),
+    "factor-mining": ("Do not use for the Strategy", "$strategy-building", "$factor-analysis"),
+    "paper-trading": ("Do not use to create", "$strategy-building", "$strategy-portfolio"),
+    "strategy-analysis": ("Do not use to compose", "$strategy-building"),
+    "strategy-building": (
+        "Do not use for multi-Strategy Portfolio",
+        "$strategy-portfolio",
+        "$paper-trading",
+        "$strategy-analysis",
+    ),
+    "strategy-portfolio": ("Do not use for single-Strategy", "$strategy-building", "$paper-trading"),
+}
+CANONICAL_TOOL_OWNERS = {
+    "factor-mining": {
+        "get_factor_mining_status",
+        "list_factor_mining_tasks",
+        "get_factor_plugin_contract",
+        "create_factor_task_session",
+        "create_custom_factor_session",
+        "validate_factor_plugin",
+        "get_factor_dedup_context",
+        "submit_factor_backtest",
+        "continue_factor_backtest",
+        "create_factor_result_bundle_download",
+        "read_factor_result_bundle_chunk",
+        "list_owned_factor_families",
+        "get_factor_family_history",
+        "get_quandora_guidance",
+        "check_quandora_plugin_version",
+    },
+    "factor-analysis": {
+        "get_factor_backtest_window_cards",
+        "get_factor_backtest_chart_data",
+        "get_factor_backtest_source",
+        "create_factor_chart_download",
+        "create_factor_raw_artifact_download",
+        "read_factor_chart_chunk",
+        "get_official_factor_window_cards",
+        "get_official_factor_chart_data",
+        "get_official_factor_source",
+        "create_official_factor_result_bundle_download",
+        "read_official_factor_result_bundle_chunk",
+    },
+    "strategy-building": {
+        "get_strategy_capabilities",
+        "list_eligible_strategy_factors",
+        "get_eligible_strategy_factor",
+        "list_shared_strategy_factor_candidates",
+        "admit_shared_strategy_factor",
+        "import_strategy_factor",
+        "submit_adhoc_strategy_backtest",
+        "list_strategy_backtests",
+        "get_strategy_backtest",
+        "continue_strategy_backtest",
+        "rerun_strategy_backtest",
+        "create_strategy_result_bundle_download",
+        "read_strategy_result_bundle_chunk",
+        "create_strategy",
+        "revise_strategy",
+        "get_strategy",
+        "get_strategy_version",
+        "submit_strategy_backtest",
+    },
+    "strategy-analysis": {
+        "get_strategy_backtest_artifact",
+        "get_strategy_backtest_analysis_data",
+        "create_strategy_artifact_download",
+    },
+    "strategy-portfolio": {
+        "list_strategy_portfolios",
+        "create_strategy_portfolio",
+        "revise_strategy_portfolio",
+        "get_strategy_portfolio",
+        "get_strategy_portfolio_version",
+        "submit_strategy_portfolio_backtest",
+        "get_strategy_portfolio_backtest",
+        "get_strategy_portfolio_backtest_result",
+    },
+    "paper-trading": {
+        "list_paper_trade_sources",
+        "get_paper_trade_source",
+        "list_paper_trades",
+        "get_paper_trade",
+        "start_paper_trade",
+        "refresh_paper_trade_account_snapshot",
+        "list_closed_paper_trade_positions",
+        "get_paper_trade_equity_curve",
+        "list_paper_trade_fills",
+        "list_paper_trade_funding",
+        "get_paper_trade_strategy_code",
+        "stop_paper_trade",
+        "start_strategy_portfolio_paper_trade",
+        "get_strategy_portfolio_paper_trade",
+        "stop_strategy_portfolio_paper_trade",
+    },
+}
+RETIRED_TOOL_NAMES = {
+    "fm_status", "fm_list_tasks", "fm_get_contract", "fm_task_session",
+    "fm_custom_sess", "fm_validate", "fm_dedup_context", "fm_run_backtest",
+    "fm_resume_run", "fm_window_cards", "fm_chart_data", "fm_run_source",
+    "fm_png_ticket", "fm_raw_ticket", "fm_bundle_ticket", "fm_bundle_chunk",
+    "fm_png_chunk", "fm_list_factors", "fm_get_history", "of_window_cards",
+    "of_chart_data", "of_run_source", "of_bundle_ticket", "of_bundle_chunk",
+    "qd_get_guidance", "qd_plugin_ver", "sb_get_contract", "sb_list_eligible",
+    "sb_factor_detail", "sb_shared_list", "sb_shared_add", "sb_import_factor",
+    "sb_submit_run", "sb_list_runs", "sb_get_run", "sb_resume_run",
+    "sb_rerun_run", "sb_get_artifact", "sb_analysis_data", "sb_file_ticket",
+    "sb_bundle_ticket", "sb_bundle_chunk", "pt_src_create", "pt_src_revise",
+    "pt_src_def_get", "pt_src_ver_get", "pt_src_bt_submit", "pt_list_sources",
+    "pt_get_source", "pt_list_runs", "pt_get_run", "pt_submit_run",
+    "pt_get_portfolio", "pt_list_pos", "pt_get_equity", "pt_list_fills",
+    "pt_list_funding", "pt_get_code", "pt_stop_run", "pt_sp_list",
+    "pt_sp_create", "pt_sp_revise", "pt_sp_get", "pt_sp_version",
+    "pt_sp_bt_submit", "pt_sp_bt_get", "pt_sp_bt_result", "pt_sp_run_submit",
+    "pt_sp_run_get", "pt_sp_run_stop",
 }
 DIRECT_VERSION_MANIFESTS = (
     REPOSITORY_ROOT / "kimi.plugin.json",
@@ -53,9 +171,9 @@ REQUIRED_RESULT_DESTINATIONS = {
 }
 MANDATORY_VERSION_PROBE_PATTERNS = (
     re.compile(r"^##\s+Plugin Version Reminder\s*$", re.MULTILINE | re.IGNORECASE),
-    re.compile(r"first entry.{0,400}qd_plugin_ver", re.DOTALL | re.IGNORECASE),
+    re.compile(r"first entry.{0,400}check_quandora_plugin_version", re.DOTALL | re.IGNORECASE),
     re.compile(
-        r"qd_plugin_ver.{0,240}(before the business entry point|before the business action)",
+        r"check_quandora_plugin_version.{0,240}(before the business entry point|before the business action)",
         re.DOTALL | re.IGNORECASE,
     ),
 )
@@ -141,6 +259,9 @@ def _skill_files(errors: list[str]) -> dict[str, Path]:
     missing = REQUIRED_SKILLS - set(files)
     if missing:
         errors.append(f"missing required staging Skills: {sorted(missing)}")
+    unexpected = set(files) - REQUIRED_SKILLS
+    if unexpected:
+        errors.append(f"unexpected staging Skills: {sorted(unexpected)}")
     return files
 
 
@@ -151,12 +272,21 @@ def _check_skills(
 ) -> None:
     for skill_name, path in sorted(skill_files.items()):
         text = path.read_text(encoding="utf-8")
+        line_count = len(text.splitlines())
+        if line_count > MAX_MAIN_SKILL_LINES:
+            errors.append(
+                f"{skill_name}/SKILL.md: {line_count} lines exceeds the "
+                f"{MAX_MAIN_SKILL_LINES}-line progressive-disclosure limit"
+            )
         if not text.startswith("---\n"):
             errors.append(f"{skill_name}/SKILL.md: missing YAML frontmatter")
         if f"name: {skill_name}\n" not in text[:1000]:
             errors.append(f"{skill_name}/SKILL.md: frontmatter name does not match directory")
         if "description:" not in text[:1000]:
             errors.append(f"{skill_name}/SKILL.md: missing frontmatter description")
+        for marker in ROUTING_MARKERS.get(skill_name, ()):
+            if marker not in text:
+                errors.append(f"{skill_name}/SKILL.md: missing routing boundary {marker!r}")
         if any(pattern.search(text) for pattern in MANDATORY_VERSION_PROBE_PATTERNS):
             errors.append(
                 f"{skill_name}/SKILL.md: version checks must remain explicit diagnostics, "
@@ -169,15 +299,83 @@ def _check_skills(
                 f"{skill_name}/SKILL.md: bundled version {actual!r} != {package_version!r}"
             )
 
+        agent_file = path.parent / "agents" / "openai.yaml"
+        if not agent_file.is_file():
+            errors.append(f"{skill_name}: missing agents/openai.yaml")
+        else:
+            agent_text = agent_file.read_text(encoding="utf-8")
+            if f"${skill_name}" not in agent_text:
+                errors.append(
+                    f"{skill_name}/agents/openai.yaml: default prompt must name ${skill_name}"
+                )
+            if 'value: "quandora-staging"' not in agent_text:
+                errors.append(
+                    f"{skill_name}/agents/openai.yaml: missing Quandora Staging MCP dependency"
+                )
+
+        for target in re.findall(r"\[[^\]]+\]\(([^)]+)\)", text):
+            if target.startswith(("http://", "https://", "#")):
+                continue
+            local_target = (path.parent / target.split("#", 1)[0]).resolve()
+            if not local_target.exists():
+                errors.append(f"{skill_name}/SKILL.md: broken local reference {target!r}")
+
+        reference_dir = path.parent / "references"
+        if reference_dir.is_dir():
+            linked = {
+                (path.parent / target.split("#", 1)[0]).resolve()
+                for target in re.findall(r"\[[^\]]+\]\(([^)]+)\)", text)
+                if not target.startswith(("http://", "https://", "#"))
+            }
+            for reference in reference_dir.glob("*.md"):
+                if reference.resolve() not in linked:
+                    errors.append(
+                        f"{skill_name}/references/{reference.name}: supporting material is not "
+                        "linked from its primary SKILL.md"
+                    )
+
+    all_tools = [
+        tool for owned_tools in CANONICAL_TOOL_OWNERS.values() for tool in owned_tools
+    ]
+    if len(all_tools) != len(set(all_tools)):
+        errors.append("canonical tool ownership map contains duplicate primary owners")
+    if len(all_tools) != 70:
+        errors.append(f"canonical tool ownership map must contain 70 tools, got {len(all_tools)}")
+    for owner, owned_tools in CANONICAL_TOOL_OWNERS.items():
+        owner_path = skill_files.get(owner)
+        if owner_path is None:
+            continue
+        owner_text = owner_path.read_text(encoding="utf-8")
+        for tool in sorted(owned_tools):
+            if f"`{tool}`" not in owner_text:
+                errors.append(f"{owner}/SKILL.md: missing primary tool ownership for {tool}")
+
+    for skill_name, path in sorted(skill_files.items()):
+        text = path.read_text(encoding="utf-8")
+        for retired in sorted(RETIRED_TOOL_NAMES):
+            if re.search(rf"(?<![A-Za-z0-9_]){re.escape(retired)}(?![A-Za-z0-9_])", text):
+                errors.append(f"{skill_name}/SKILL.md: retired tool name remains: {retired}")
+
 
 def _check_runtime_markdown(errors: list[str], skill_files: dict[str, Path]) -> None:
-    paths = [PLUGIN_ROOT / "README.md", *skill_files.values()]
+    references = sorted(SKILLS_ROOT.glob("*/references/*.md"))
+    paths = [
+        REPOSITORY_ROOT / "README.md",
+        PLUGIN_ROOT / "README.md",
+        *skill_files.values(),
+        *references,
+    ]
     for path in sorted(paths):
         text = path.read_text(encoding="utf-8")
         for needle, meaning in FORBIDDEN_RUNTIME_MARKDOWN.items():
             if needle in text:
                 errors.append(
                     f"{path.relative_to(REPOSITORY_ROOT)}: contains {meaning}: {needle!r}"
+                )
+        for retired in sorted(RETIRED_TOOL_NAMES):
+            if re.search(rf"(?<![A-Za-z0-9_]){re.escape(retired)}(?![A-Za-z0-9_])", text):
+                errors.append(
+                    f"{path.relative_to(REPOSITORY_ROOT)}: retired tool name remains: {retired}"
                 )
 
     for path, required_fragments in REQUIRED_RESULT_DESTINATIONS.items():

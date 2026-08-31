@@ -1,6 +1,6 @@
 # Six-Chart Diagnostics
 
-Use `sb_analysis_data` for retained six-chart numerical evidence. Start with `chart: "overview"`,
+Use `get_strategy_backtest_analysis_data` for retained six-chart numerical evidence. Start with `chart: "overview"`,
 then request only the chart pages needed for the user's question. JSON null remains missing data.
 
 ## Adaptive Diagnostic Groups
@@ -15,7 +15,7 @@ Diagnostic grouping is separate from actual portfolio selection:
 | below 9 | 2 | `max(2, min(4, median))` | 0.50 |
 
 `Q1` is the lowest prediction group and `QN` the highest. Diagnostic spread is
-`(QN - Q1) / 2`. Read actual Strategy Top/Bottom selection only from `sb_get_run.parameters.ranking`.
+`(QN - Q1) / 2`. Read actual Strategy Top/Bottom selection only from `get_strategy_backtest.parameters.ranking`.
 
 ## Chart 1: Prediction Quantiles
 

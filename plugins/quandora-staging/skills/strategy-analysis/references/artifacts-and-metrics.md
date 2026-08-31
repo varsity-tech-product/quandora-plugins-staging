@@ -4,8 +4,8 @@ Apply each artifact's declared schema and window. Missing or null values remain 
 
 ## Primary Evidence
 
-- `sb_get_run` provides canonical composition and effective parameters.
-- `sb_get_artifact` with `summary` and `performance` provides headline result metrics.
+- `get_strategy_backtest` provides canonical composition and effective parameters.
+- `get_strategy_backtest_artifact` with `summary` and `performance` provides headline result metrics.
 - Equity and drawdown curves show path dependence, concentration, and recovery.
 - Turnover and exposure curves show implementation intensity and neutrality through time.
 - Attribution and signal-return curves can support mechanism claims only when actually included.

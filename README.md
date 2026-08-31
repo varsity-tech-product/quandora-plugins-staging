@@ -109,10 +109,14 @@ diagnose metrics and charts, separate evidence from inference, and propose contr
 without automatically submitting a factor, Strategy, or Paper run. Factor Analysis checks the
 server Factor Card's Health and rating gates before interpreting economic performance.
 
-Quandora Staging Strategy Building keeps ordinary Strategy authoring/backtests on `sb_*`. For an
+Quandora Staging Strategy Building owns one Strategy through direct domain-action tools. For an
 explicit base/pro optimizer request, it prepares a versioned source from exact admitted
 factor/version/job triples, freezes capital-independent policy, and submits separately confirmed
 StrategyRuns whose `initial_cash` owns optimizer capital.
+
+Quandora Staging Strategy Portfolio combines at least two exact StrategyVersions with positive
+weights summing to one, versions that static composition, and runs aggregate Portfolio backtests.
+It hands a completed PortfolioRun to Paper Trading only after a separate user request.
 
 Quandora Staging Paper Trading discovers eligible ordinary or optimizer sources, then starts and
 monitors single-strategy or static-sleeve Strategy Portfolio Paper runs after confirmation.
@@ -200,7 +204,7 @@ In a new Cursor Desktop Agent chat, enter the complete host command:
 /add-plugin quandora-staging@https://github.com/varsity-tech-product/quandora-plugins-staging
 ```
 
-After Cursor Desktop installs the plugin, authenticate the plugin-provided `quandora-staging` remote MCP server and complete Quandora Staging authorization in the browser. Then start a new Agent chat before invoking a Factor Mining, Factor Analysis, Strategy Building, Strategy Analysis, or Paper Trading skill.
+After Cursor Desktop installs the plugin, authenticate the plugin-provided `quandora-staging` remote MCP server and complete Quandora Staging authorization in the browser. Then start a new Agent chat before invoking a Factor Mining, Factor Analysis, Strategy Building, Strategy Portfolio, Strategy Analysis, or Paper Trading skill.
 
 ### CodeBuddy CLI
 
@@ -256,7 +260,7 @@ Start a new session, authorize the plugin-provided staging MCP server, and verif
 /mcp
 ```
 
-Complete Quandora Staging authorization in the browser when prompted. After authorization, start a new session before invoking a Factor Mining, Factor Analysis, Strategy Building, Strategy Analysis, or Paper Trading skill.
+Complete Quandora Staging authorization in the browser when prompted. After authorization, start a new session before invoking a Factor Mining, Factor Analysis, Strategy Building, Strategy Portfolio, Strategy Analysis, or Paper Trading skill.
 
 ## Use Factor Mining
 
@@ -322,6 +326,19 @@ Quandora staging result/strategy/<strategy_slug>.zip
 
 The verified FM-owned Strategy ZIP is retained without automatic extraction or reconstruction.
 
+## Use Strategy Portfolio
+
+Use the skill command when available:
+
+```text
+/quandora-staging:strategy-portfolio combine these StrategyVersions with 60/40 weights
+/quandora-staging:strategy-portfolio backtest my portfolio
+```
+
+Strategy Portfolio requires at least two exact StrategyVersions and positive decimal weights that
+sum to one. It owns Portfolio definition/versioning and aggregate backtests only. Starting Paper
+from a completed PortfolioRun is a separate `$paper-trading` workflow and confirmation.
+
 ## Use Strategy Analysis
 
 ```text
@@ -376,17 +393,17 @@ versioned source creation. Official factors use their exact admission triples as
 `factor_references`; they never fall back to the legacy Strategy selector path. No backend API,
 tool, OAuth scope, or deployment configuration changes are introduced by this plugin release.
 
-Plugin 1.53 preserves the public tool inventory and OAuth scopes while enabling the reviewed
-base/pro optimizer workflow. Strategy Building owns bounded versioned-source writes and
-StrategyRun-owned capital; Paper Trading admits only `config_source=caller` with exact source
-capital and never offers a Paper-time optimizer override. Deploy the matching PB and Auth revisions
-before publishing the unique 1.53 artifact. Keep Auth's staging latest-version label at `1.52`
+Plugin 1.54 hard-cuts the abbreviated MCP inventory to one set of direct domain-action names and
+adds the sixth `strategy-portfolio` skill. Strategy Building owns one Strategy and optimizer policy,
+Strategy Portfolio owns multi-Strategy composition and aggregate backtests, and Paper Trading owns
+simulated execution from completed evidence. No retired tool alias remains. Deploy the matching PB and Auth revisions
+before publishing the unique 1.54 artifact. Keep Auth's staging latest-version label at `1.52`
 until that artifact is confirmed installable from every supported manifest, then advance the label
 through a separate reviewed staging configuration change. Production remains unchanged.
 
-Plugin 1.54 adds the dedicated `sb_rerun_run` Strategy action. Deploy the Product Backend rerun
+Plugin 1.54 adds the dedicated `rerun_strategy_backtest` Strategy action. Deploy the Product Backend rerun
 endpoint and Auth public tool contract before publishing the unique staging Plugin 1.54 artifact.
-The action reuses `strategy:runs.create`, creates a new child run from an eligible failed source's
+The action uses `strategy:backtests.create`, creates a new child run from an eligible failed source's
 immutable snapshot and exact FM StrategyVersion, and leaves the source terminal. No Factor Mining
 runtime, production plugin, or new OAuth scope is part of this release. Plugin 1.54 also consumes
 FM's additive completed/no-result semantic: zero-order runs stay completed, their
@@ -398,6 +415,16 @@ run that retains its exact FM run and StrategyVersion lineage. `fmRetryable` rem
 the Agent warns that compile or Lean failures may repeat, but does not block the user's explicit
 one-shot rerun. Deploy the matching Product Backend and Auth revisions before publishing Plugin
 1.55. Factor Mining, frontend, production plugin metadata, and OAuth scopes remain unchanged.
+
+Plugin 1.56 hard-cuts every abbreviated MCP tool name to one direct domain-action name, adds the
+sixth `strategy-portfolio` skill, requires closed typed success/error outputs, and separates OAuth
+capabilities by domain. Strategy and Portfolio definitions/backtests use `strategy:*` scopes;
+`paper_trading:sources.read` is discovery-only; both single-Strategy and Portfolio simulated
+execution use `paper_trading:runs.*`. Agent routing remains object- and operation-based: a
+one-component Strategy is not converted into a Portfolio research object, while either kind may
+later hand completed evidence to the separate Paper execution skill. No retired tool or scope alias
+is retained. Publish only after the matching Product Backend and Auth revisions are deployed and
+the unique 1.56 artifact is installable from every supported manifest.
 
 ## License
 
