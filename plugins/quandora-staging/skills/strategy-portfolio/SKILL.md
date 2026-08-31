@@ -5,11 +5,17 @@ description: Use when the user asks to combine two or more exact Quandora Strate
 
 # Quandora Staging Strategy Portfolio
 
-Bundled plugin version: 1.54
+Bundled plugin version: 1.55
 
 Use this skill through the authenticated `quandora-staging` MCP connection. It owns Strategy
 Portfolio research: immutable multi-Strategy composition, versioning, aggregate backtests, and
 aggregate result reads. It never starts, monitors, or stops Paper trading.
+
+Portfolio definitions use `strategy:portfolios.read` or `strategy:portfolios.write`, and aggregate
+Portfolio research runs use `strategy:portfolio_backtests.read` or
+`strategy:portfolio_backtests.create`. These are research capabilities even when a
+completed PortfolioRun is later selected for Paper; the later execution uses the separate
+`paper_trading:runs.read`, `paper_trading:runs.create`, or `paper_trading:runs.stop` boundary.
 
 Route single-Strategy factor selection, Strategy/StrategyVersion authoring, optimizer policy, and
 single-Strategy backtests to `$strategy-building`. Route simulated execution from a completed

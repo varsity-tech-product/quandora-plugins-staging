@@ -401,14 +401,22 @@ before publishing the unique 1.54 artifact. Keep Auth's staging latest-version l
 until that artifact is confirmed installable from every supported manifest, then advance the label
 through a separate reviewed staging configuration change. Production remains unchanged.
 
-Plugin 1.54 adds the dedicated `sb_rerun_run` Strategy action. Deploy the Product Backend rerun
+Plugin 1.54 adds the dedicated `rerun_strategy_backtest` Strategy action. Deploy the Product Backend rerun
 endpoint and Auth public tool contract before publishing the unique staging Plugin 1.54 artifact.
-The action reuses `strategy:runs.create`, creates a new child run from an eligible failed source's
+The action uses `strategy:backtests.create`, creates a new child run from an eligible failed source's
 immutable snapshot and exact FM StrategyVersion, and leaves the source terminal. No Factor Mining
 runtime, production plugin, or new OAuth scope is part of this release. Plugin 1.54 also consumes
 FM's additive completed/no-result semantic: zero-order runs stay completed, their
 `not_available/no_result_zero_orders` bundle state is terminal, and they are never offered for
 failed-run rerun or Paper submission.
+
+Plugin 1.55 makes every public tool result a closed typed success/error contract and hard-cuts OAuth
+capabilities by domain. Strategy definitions, Strategy backtests, Portfolio definitions, and
+Portfolio backtests use `strategy:*`; `paper_trading:sources.read` is discovery-only; both
+single-Strategy and Portfolio simulated execution use `paper_trading:runs.*`. Agent routing remains
+object- and operation-based: a one-component Strategy is not converted into a Portfolio research
+object, while either kind may later hand completed evidence to the separate Paper execution skill.
+No retired tool or scope alias is retained.
 
 ## License
 

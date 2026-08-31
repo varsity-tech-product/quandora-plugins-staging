@@ -5,11 +5,17 @@ description: Use when the user asks to start, inspect, monitor, or stop simulate
 
 # Quandora Staging Paper Trading
 
-Bundled plugin version: 1.54
+Bundled plugin version: 1.55
 
 Use this skill through the authenticated `quandora-staging` MCP connection. It owns simulated
 execution only: eligible-source discovery, Paper start, lifecycle monitoring, execution data, and
 terminal stop. It is staging-only and never represents production or live-money trading.
+
+`paper_trading:sources.read` is discovery-only. Both single-Strategy Paper and Strategy Portfolio
+Paper use `paper_trading:runs.read`, `paper_trading:runs.create`, or
+`paper_trading:runs.stop`; the execution shape does not move Portfolio
+definitions or backtests into the Paper namespace. A single Strategy can be understood as one
+execution sleeve, but it does not become a Strategy Portfolio research object.
 
 Route single-Strategy authoring/backtests to `$strategy-building`. Route multi-Strategy Portfolio
 composition, revision, aggregate backtests, and aggregate result reads to `$strategy-portfolio`.

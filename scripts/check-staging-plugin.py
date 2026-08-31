@@ -321,13 +321,18 @@ def _check_skills(
 
 
 def _check_runtime_markdown(errors: list[str], skill_files: dict[str, Path]) -> None:
-    paths = [PLUGIN_ROOT / "README.md", *skill_files.values()]
+    paths = [REPOSITORY_ROOT / "README.md", PLUGIN_ROOT / "README.md", *skill_files.values()]
     for path in sorted(paths):
         text = path.read_text(encoding="utf-8")
         for needle, meaning in FORBIDDEN_RUNTIME_MARKDOWN.items():
             if needle in text:
                 errors.append(
                     f"{path.relative_to(REPOSITORY_ROOT)}: contains {meaning}: {needle!r}"
+                )
+        for retired in sorted(RETIRED_TOOL_NAMES):
+            if re.search(rf"(?<![A-Za-z0-9_]){re.escape(retired)}(?![A-Za-z0-9_])", text):
+                errors.append(
+                    f"{path.relative_to(REPOSITORY_ROOT)}: retired tool name remains: {retired}"
                 )
 
     for path, required_fragments in REQUIRED_RESULT_DESTINATIONS.items():

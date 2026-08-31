@@ -5,7 +5,7 @@ description: Use when the user asks to list available or eligible Strategy facto
 
 # Quandora Staging Strategy Building
 
-Bundled plugin version: 1.54
+Bundled plugin version: 1.55
 
 Use this skill through the authenticated Quandora Staging connection exposed by the host as
 `quandora-staging`. It owns factor selection, Strategy creation or revision, and Strategy backtests
@@ -30,6 +30,10 @@ An explicit optimizer/versioned-source workflow uses `create_strategy`, `revise_
 `get_strategy`, `get_strategy_version`, `submit_strategy_backtest`, and `get_paper_trade_source`. These are Strategy
 definition, version, and backtest actions with direct domain names. Never
 call `start_paper_trade` here; actual Paper submission stays in `$paper-trading`.
+Their capability boundary is also domain-based: versioned definitions use
+`strategy:definitions.read` or `strategy:definitions.write`, and all single-Strategy backtests use
+`strategy:backtests.read` or `strategy:backtests.create`. `paper_trading:sources.read` is only the later discovery/read
+boundary for a Paper-eligible source; it never authorizes a Strategy write or backtest.
 
 Official, Mine, and Shared selections use `submit_adhoc_strategy_backtest` for ordinary Strategies. They use exact
 admission triples with `create_strategy`/`revise_strategy` only when the user explicitly requests an
