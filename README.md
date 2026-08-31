@@ -393,6 +393,12 @@ FM's additive completed/no-result semantic: zero-order runs stay completed, thei
 `not_available/no_result_zero_orders` bundle state is terminal, and they are never offered for
 failed-run rerun or Paper submission.
 
+Plugin 1.55 broadens explicit manual rerun from FM-recommended failures to every failed Strategy
+run that retains its exact FM run and StrategyVersion lineage. `fmRetryable` remains a risk signal:
+the Agent warns that compile or Lean failures may repeat, but does not block the user's explicit
+one-shot rerun. Deploy the matching Product Backend and Auth revisions before publishing Plugin
+1.55. Factor Mining, frontend, production plugin metadata, and OAuth scopes remain unchanged.
+
 ## License
 
 This repository is licensed under the Apache License 2.0. See [LICENSE](LICENSE).
