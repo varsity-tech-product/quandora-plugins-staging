@@ -15,7 +15,7 @@ OAuth and all credentials are handled by the host. Quandora access tokens expire
 
 If the required Quandora Staging tools are visible, continue automatically. If they are not visible, tell the user to update or reinstall the current staging plugin, then use the host's normal Quandora Staging reconnect and browser re-authorization path before stopping:
 
-- Codex CLI/TUI: run `codex mcp login quandora-staging`. Wait for the user to complete the browser authorization flow, then check again for `fm_status`.
+- Codex CLI/TUI: run `codex mcp login quandora-staging`. Wait for the user to complete the browser authorization flow, then check again for `get_factor_mining_status`.
 - Codex Desktop: the plugin provides the Quandora Staging connector. If the first use opens the authorization flow, wait for the user to authorize Quandora Staging in the browser, then continue in a new chat. If the tools still are not visible, tell the user to fully quit and reopen Codex Desktop.
 - Kimi Code: run `/mcp-config login plugin-quandora-staging:quandora-staging`, complete the browser authorization flow, then start a new chat and check `/mcp`.
 - Claude Code: open `/mcp`, authenticate `quandora-staging`, then start a new chat.
@@ -30,29 +30,36 @@ Do not ask for Quandora API keys, `vt_` keys, bearer tokens, authorization codes
 
 After routing has confirmed Factor Mining scope, use only the Factor Mining actions exposed by `quandora-staging`. The artifact-ticket download exception above is only for consuming returned artifact bytes; it is not permission to call a service API directly.
 
-- `fm_status`
-- `fm_list_factors`
-- `fm_get_history`
-- `fm_list_tasks`
-- `fm_get_contract`
-- `fm_task_session`
-- `fm_custom_sess`
-- `fm_validate`
-- `fm_dedup_context`
-- `fm_run_backtest`
-- `fm_resume_run`
-- `fm_bundle_ticket`
-- `fm_bundle_chunk`
-- `qd_get_guidance`
+- `get_factor_mining_status`
+- `list_owned_factor_families`
+- `get_factor_family_history`
+- `list_factor_mining_tasks`
+- `get_factor_plugin_contract`
+- `create_factor_task_session`
+- `create_custom_factor_session`
+- `validate_factor_plugin`
+- `get_factor_dedup_context`
+- `submit_factor_backtest`
+- `continue_factor_backtest`
+- `create_factor_result_bundle_download`
+- `read_factor_result_bundle_chunk`
+- `get_quandora_guidance`
+- `check_quandora_plugin_version`
 
-Some hosts may prefix action names with the server name, such as `quandora_staging__fm_status`. Treat those as the same actions.
+Some hosts may prefix the canonical action name with the server name, such as
+`quandora_staging__get_factor_mining_status`. This qualification does not change the action name or
+authorize any retired short name.
+
+Use `check_quandora_plugin_version` only when the user requests a version diagnostic or the host
+reports a plausible package/server compatibility problem. Never make it a mandatory workflow entry
+probe.
 
 ## Plugin Construction Contract
 
-Before writing `plugin.py`, call `fm_get_contract` and use the returned `plugin_contract` as the source of truth for Python inputs, C# runtime expressions, runtime globals, and horizon defaults.
+Before writing `plugin.py`, call `get_factor_plugin_contract` and use the returned `plugin_contract` as the source of truth for Python inputs, C# runtime expressions, runtime globals, and horizon defaults.
 
 - Use `plugin_contract.allowed_data` to decide which input columns the factor may use.
-- Use `plugin_contract.fwd_period` after the contract is returned. For custom ideas, pass `fwd_period: 7` to `fm_custom_sess` unless the user explicitly asks for another supported horizon.
+- Use `plugin_contract.fwd_period` after the contract is returned. For custom ideas, pass `fwd_period: 7` to `create_custom_factor_session` unless the user explicitly asks for another supported horizon.
 - Use `plugin_contract.data_columns[].python_kwarg` for `build_signal` parameters.
 - Whenever C# reads a market-data column from `bar`, including every extra-buffer enqueue, use the matching `plugin_contract.data_columns[].csharp_double_expression`. Do not use `bar` expressions inside `__FACTOR_COMPUTE_BODY__`; that section can use only the variables listed by its contract, normally `prices`, canonical extra-buffer arrays, `rawSignal`, and factor-owned fields.
 - Follow `plugin_contract.runtime_rules` for required globals, `FACTOR_SECTIONS`, runtime variant, leak rules, extra-buffer rules, and reserved identifiers.
@@ -74,10 +81,10 @@ Never infer C# bar fields, field types, decimal/double casts, runtime buffer exp
 
 Before entering a Factor Mining workflow, route the request:
 
-- Bare “列出可用因子”, “可用因子”, “available factors”, “eligible factors”, “selectable factors”, “可用于策略的因子”, and requests for the Strategy factor pool exit this skill and hand off to the Strategy Building skill. That skill calls only `sb_list_eligible` for the request. Do not first call `fm_status` or `fm_list_factors`, do not call both lists, and do not ask a clarification question for a bare request.
-- Requests explicitly about “我的 Factor Mining 因子”, caller-owned or reusable Factor Mining factor families, factor history, branches, versions, or previous Factor Mining runs remain in this skill and route to `fm_list_factors`.
+- Bare “列出可用因子”, “可用因子”, “available factors”, “eligible factors”, “selectable factors”, “可用于策略的因子”, and requests for the Strategy factor pool exit this skill and hand off to the Strategy Building skill. That skill calls only `list_eligible_strategy_factors` for the request. Do not first call `get_factor_mining_status` or `list_owned_factor_families`, do not call both lists, and do not ask a clarification question for a bare request.
+- Requests explicitly about “我的 Factor Mining 因子”, caller-owned or reusable Factor Mining factor families, factor history, branches, versions, or previous Factor Mining runs remain in this skill and route to `list_owned_factor_families`.
 
-After routing has confirmed Factor Mining scope, call `fm_status` exactly once at the start of the normal Factor Mining workflow. If authorization is missing or the tools are not exposed, use the host's Quandora Staging connection path: desktop hosts use their Connector settings, while CLI/TUI hosts use their MCP login command. Do not ask the user for direct keys.
+After routing has confirmed Factor Mining scope, call `get_factor_mining_status` exactly once at the start of the normal Factor Mining workflow. If authorization is missing or the tools are not exposed, use the host's Quandora Staging connection path: desktop hosts use their Connector settings, while CLI/TUI hosts use their MCP login command. Do not ask the user for direct keys.
 
 Before routing to factor creation, recognize intentional reuse and history intent. If the user asks
 about existing factors, stable versions, prior successful factors, factor evolution, or past runs,
@@ -85,7 +92,7 @@ follow the reuse workflow below. Otherwise keep the existing creation workflow u
 
 ### Approved Guidance
 
-Use `qd_get_guidance` only when approved product semantics are needed. It accepts only a
+Use `get_quandora_guidance` only when approved product semantics are needed. It accepts only a
 known `guide_id`. Supply `sections` only for `operation.factor.history.read` or
 `operation.result.read`; omit `sections` for the capability-only `metric.backtest.grade` guide.
 Pass `if_guide_revision` when revalidating a previous response, and honor a not-modified response
@@ -105,16 +112,16 @@ an MCP tool argument.
 
 ### Intentional Reuse and History
 
-1. `fm_list_factors` lists caller-owned reusable Factor Mining factor families; it is
+1. `list_owned_factor_families` lists caller-owned reusable Factor Mining factor families; it is
    not the Strategy eligible-factor pool. Call it first and show compact factor-family rows. Omit
    `page_size` unless pagination is needed; when present it must be an integer from 1 through 20.
    Do not hydrate or fetch history for every row. A failed list call is an error, not an empty
    result. Never claim zero factors unless a successful response contains an empty `items` array.
    After a list error, stop that read workflow. Do not call
-   `fm_get_history` as a fallback.
+   `get_factor_family_history` as a fallback.
 2. Ask the user to select an exact `factor_id` returned by a successful
-   `fm_list_factors` response for the current caller. Only after that explicit selection
-   call `fm_get_history`. Never substitute a backtest `run_id`, `job_id`,
+   `list_owned_factor_families` response for the current caller. Only after that explicit selection
+   call `get_factor_family_history`. Never substitute a backtest `run_id`, `job_id`,
    `plugin_id`, `session_id`, PB `intake_result.factor.factor_id`, Strategy top-level compatibility
    selector, Strategy admission ID, or any locally cached ID.
 3. Start with the default `summary` view. Request only the controlled `branches`, `versions`, or
@@ -128,7 +135,7 @@ an MCP tool argument.
 4. Use only returned metadata and run summaries. Historical source reading and editing are not
    exposed in this release. Do not read a local cache, call another service, or devise a workaround.
 
-When controlled history semantics are needed, call `qd_get_guidance` with
+When controlled history semantics are needed, call `get_quandora_guidance` with
 `operation.factor.history.read`, only the relevant `sections`, and `if_guide_revision` when
 revalidating a previous response. Honor a not-modified response without fetching unrelated
 Guidance.
@@ -138,14 +145,14 @@ factor. Never treat browsing history as permission to edit or resubmit historica
 
 Determine whether the user wants a public task or a custom idea:
 
-- For a public task: call `fm_list_tasks`, show concise choices, and select one exact public `task_id`, asking the user to pick unless they explicitly ask the agent to choose. For a task-list-only request, render exactly two user-facing fields per row: the exact returned `name` and the exact returned `category`. Use localized equivalents of `Task name` and `Category` as the only table columns. Never render a `Task ID` column, raw task rows, raw JSON, code-formatted selectors, or any `task_id` value anywhere in the response. If the user needs to select a task, use temporary ordinal choices such as 1, 2, and 3 and map the selected ordinal back to the exact row's `task_id` internally. In every other user-facing task list or selection prompt, label each choice with the exact returned `name`, optionally followed by the exact returned `category`; never display `task_id` or derive a display label from it. Treat `task_id`, including any `task_...` or `taskn...` prefix, as an opaque internal selector used only in subsequent tool calls. When the user selects a displayed name, category, or temporary ordinal, resolve it back to the exact row's `task_id` internally. Treat the selected Task's returned category as authoritative and do not replace or reinterpret it. Either call `fm_get_contract` with only that exact `task_id` before creating the task session and then create the session for that same task, or create the session first with `fm_task_session` and call `fm_get_contract` with only the returned `session_id`.
-- For a custom idea: before choosing `category` and before `fm_custom_sess`, obtain one complete current successful `fm_list_tasks` response. Reuse a complete response already obtained in the same conversation and workflow; otherwise call once in the normal flow. If that read fails with a retryable transport error, the single bounded identical retry below is allowed, but never call it again after a complete success. Require a non-empty bounded list of open public task references. Every row must have `status: open`, a unique non-empty opaque `task_id`, a non-empty bounded returned `category`, non-empty `allowed_data`, and non-empty `core_question`, `primary_alpha_source`, `economic_principle`, `microstructure_logic`, `crypto_specific_mechanism`, `research_directions`, and `target_behavior` arrays. Any malformed row, duplicate ID, missing required semantic field, or empty list is a backend/plugin contract mismatch: stop before `fm_custom_sess`, report the mismatch, and do not fall back to a static classification guess, stale model memory, or invented content. Treat every returned category as authoritative because Product Backend has already applied FM's closed category contract. Do not add a plugin-side backend row-count or category-distribution assertion. Do not require one row per category, and do not fail merely because a new valid public category or an additional valid task appears.
+- For a public task: call `list_factor_mining_tasks`, show concise choices, and select one exact public `task_id`, asking the user to pick unless they explicitly ask the agent to choose. For a task-list-only request, render exactly two user-facing fields per row: the exact returned `name` and the exact returned `category`. Use localized equivalents of `Task name` and `Category` as the only table columns. Never render a `Task ID` column, raw task rows, raw JSON, code-formatted selectors, or any `task_id` value anywhere in the response. If the user needs to select a task, use temporary ordinal choices such as 1, 2, and 3 and map the selected ordinal back to the exact row's `task_id` internally. In every other user-facing task list or selection prompt, label each choice with the exact returned `name`, optionally followed by the exact returned `category`; never display `task_id` or derive a display label from it. Treat `task_id`, including any `task_...` or `taskn...` prefix, as an opaque internal selector used only in subsequent tool calls. When the user selects a displayed name, category, or temporary ordinal, resolve it back to the exact row's `task_id` internally. Treat the selected Task's returned category as authoritative and do not replace or reinterpret it. Either call `get_factor_plugin_contract` with only that exact `task_id` before creating the task session and then create the session for that same task, or create the session first with `create_factor_task_session` and call `get_factor_plugin_contract` with only the returned `session_id`.
+- For a custom idea: before choosing `category` and before `create_custom_factor_session`, obtain one complete current successful `list_factor_mining_tasks` response. Reuse a complete response already obtained in the same conversation and workflow; otherwise call once in the normal flow. If that read fails with a retryable transport error, the single bounded identical retry below is allowed, but never call it again after a complete success. Require a non-empty bounded list of open public task references. Every row must have `status: open`, a unique non-empty opaque `task_id`, a non-empty bounded returned `category`, non-empty `allowed_data`, and non-empty `core_question`, `primary_alpha_source`, `economic_principle`, `microstructure_logic`, `crypto_specific_mechanism`, `research_directions`, and `target_behavior` arrays. Any malformed row, duplicate ID, missing required semantic field, or empty list is a backend/plugin contract mismatch: stop before `create_custom_factor_session`, report the mismatch, and do not fall back to a static classification guess, stale model memory, or invented content. Treat every returned category as authoritative because Product Backend has already applied FM's closed category contract. Do not add a plugin-side backend row-count or category-distribution assertion. Do not require one row per category, and do not fail merely because a new valid public category or an additional valid task appears.
 
-  Compare the user's thesis semantically with the returned research fields across all current rows; never classify from task ID or title alone. Choose exactly the category of the best honestly matching returned public reference. This includes `Technical` when the current response returns it and the thesis matches technical price action, trend, reversal, breakout, range, candlestick, or volume-confirmed pattern semantics. If no returned public reference honestly fits, use the explicit product fallback `Other`. Do not fabricate an `Other` public row, copy a public `task_id` into the custom task/session, or turn this branch into `fm_task_session`.
+  Compare the user's thesis semantically with the returned research fields across all current rows; never classify from task ID or title alone. Choose exactly the category of the best honestly matching returned public reference. This includes `Technical` when the current response returns it and the thesis matches technical price action, trend, reversal, breakout, range, candlestick, or volume-confirmed pattern semantics. If no returned public reference honestly fits, use the explicit product fallback `Other`. Do not fabricate an `Other` public row, copy a public `task_id` into the custom task/session, or turn this branch into `create_factor_task_session`.
 
-  Separately, before creating the session, call `fm_get_contract({})` exactly once to read the global construction and data-column contract; the runtime classification read and this construction-contract read are both required. Validate the selected label as either the exact category of the matching row in the complete current response or the unmatched fallback `Other`; do not maintain a separate static copy of the backend category vocabulary. Prepare a clear title, category, description, non-empty `allowed_data`, and `fwd_period` for `fm_custom_sess`, using only exact column names returned by the global contract's `plugin_contract.allowed_data`, including `close`, `volume`, `funding_rate_close`, or `open_interest_close` only when returned. Use `fwd_period: 7` unless the user explicitly asks for another supported horizon. Create the custom session, then call `fm_get_contract` with only the returned `session_id`; treat that scoped contract as authoritative for writing and validating `plugin.py`. Never send a hand-built custom `task_payload` to `fm_get_contract`.
+  Separately, before creating the session, call `get_factor_plugin_contract({})` exactly once to read the global construction and data-column contract; the runtime classification read and this construction-contract read are both required. Validate the selected label as either the exact category of the matching row in the complete current response or the unmatched fallback `Other`; do not maintain a separate static copy of the backend category vocabulary. Prepare a clear title, category, description, non-empty `allowed_data`, and `fwd_period` for `create_custom_factor_session`, using only exact column names returned by the global contract's `plugin_contract.allowed_data`, including `close`, `volume`, `funding_rate_close`, or `open_interest_close` only when returned. Use `fwd_period: 7` unless the user explicitly asks for another supported horizon. Create the custom session, then call `get_factor_plugin_contract` with only the returned `session_id`; treat that scoped contract as authoritative for writing and validating `plugin.py`. Never send a hand-built custom `task_payload` to `get_factor_plugin_contract`.
 
-  `fm_custom_sess` has only the canonical flat shape below. This example is valid only when the immediately preceding global contract returned `close` exactly:
+  `create_custom_factor_session` has only the canonical flat shape below. This example is valid only when the immediately preceding global contract returned `close` exactly:
 
   ```json
   {
@@ -157,7 +164,7 @@ Determine whether the user wants a public task or a custom idea:
   }
   ```
 
-  Never send `name`, `idea`, `task_id`, or `task_payload` to `fm_custom_sess`.
+  Never send `name`, `idea`, `task_id`, or `task_payload` to `create_custom_factor_session`.
 
 After either branch returns its scoped contract, continue through the single shared plugin.py writing,
 deduplication, validation, upload, resume/polling, and terminal Result Bundle workflow below.
@@ -181,11 +188,11 @@ the contract mismatch instead of creating an ambiguous destination. A pre-termin
 diagnostic may retain the existing redacted summary behavior in the normal authoring workspace, but
 it is not a completed result and must not be presented as the canonical Result Bundle.
 
-After session creation, call `fm_dedup_context` with only the `session_id`. Use `query_mode`, `scope`, `memory_stats`, `similar_factors`, and `task_memory_pressure` only to select a fresher research hypothesis. A high `task_memory_pressure` must never stop the workflow, reject a draft, or trigger repeated rewrites.
+After session creation, call `get_factor_dedup_context` with only the `session_id`. Use `query_mode`, `scope`, `memory_stats`, `similar_factors`, and `task_memory_pressure` only to select a fresher research hypothesis. A high `task_memory_pressure` must never stop the workflow, reject a draft, or trigger repeated rewrites.
 
 Before drafting, form a concise research thesis. For public tasks, stay inside the task's economic direction and allowed data. For custom ideas, stay inside the user's stated idea. Consider two or three plausible mechanisms, then choose the one with the clearest economic rationale, the best fit to the plugin contract, and the least overlap with the returned task memory. Prefer genuinely different mechanisms over parameter variants of the same formula.
 
-Treat Task `category` and plugin `FACTOR_TYPE` as separate but strictly aligned fields. `category` is exactly the chosen product label retained by the custom Task/session lineage; `FACTOR_TYPE` is an agent-authored, mechanism-specific, unique snake_case identifier. For every custom factor, the thesis, formula, selected inputs, `FACTOR_NAME`, and `FACTOR_TYPE` must all semantically belong to the category supplied to `fm_custom_sess`. Use a mechanism-specific value such as `funding_adjusted_trend_persistence` inside `Momentum`; `FACTOR_TYPE` must never be a bare category label such as `momentum`, and never infer or rewrite the category from `FACTOR_TYPE`, names, tags, or backtest performance.
+Treat Task `category` and plugin `FACTOR_TYPE` as separate but strictly aligned fields. `category` is exactly the chosen product label retained by the custom Task/session lineage; `FACTOR_TYPE` is an agent-authored, mechanism-specific, unique snake_case identifier. For every custom factor, the thesis, formula, selected inputs, `FACTOR_NAME`, and `FACTOR_TYPE` must all semantically belong to the category supplied to `create_custom_factor_session`. Use a mechanism-specific value such as `funding_adjusted_trend_persistence` inside `Momentum`; `FACTOR_TYPE` must never be a bare category label such as `momentum`, and never infer or rewrite the category from `FACTOR_TYPE`, names, tags, or backtest performance.
 
 Immediately before validation and again after any source repair, verify this category-to-mechanism alignment. For a public task, revise an out-of-category draft to remain inside the selected Task or start the appropriate different task/session; never relabel the published Task. For a custom idea, if the mechanism has changed so that it no longer belongs to the category bound at session creation, do not validate or upload it through that session. Create a new custom session with the correct current returned category and a new invocation identity, then repeat the scoped contract, deduplication, validation, and ordinary upload flow. Do not silently keep a mismatched category or coerce an unrelated mechanism into a category that does not honestly fit.
 
@@ -201,7 +208,7 @@ Create or locate one `plugin.py` source:
 
 When writing `plugin.py`, keep `build_signal` inputs aligned with `plugin_contract.data_columns[].python_kwarg`. Keep `FACTOR_SECTIONS` runtime code aligned with the same columns. Use each column's `csharp_double_expression` only at runtime sites where `bar` is visible, such as canonical extra-buffer enqueue snippets; inside `__FACTOR_COMPUTE_BODY__`, use `prices` and canonical extra-buffer arrays instead.
 
-After a concrete `plugin.py` exists and before validation or upload, call `fm_dedup_context` again with the `session_id`, source, and concise factor metadata:
+After a concrete `plugin.py` exists and before validation or upload, call `get_factor_dedup_context` again with the `session_id`, source, and concise factor metadata:
 
 ```json
 {
@@ -215,7 +222,7 @@ After a concrete `plugin.py` exists and before validation or upload, call `fm_de
 
 Use `draft_duplicate_risk` as the only duplicate-risk verdict. When it identifies a concrete overlap with an existing factor's core mechanism, revise the candidate so its economic hypothesis, inputs, or formula family are materially different, then check the revised draft again. A medium or high score is not a hard gate only when the candidate is already economically meaningful and materially distinct, and the returned similar factors do not establish a concrete core-mechanism overlap. Otherwise resolve the overlap before validation and upload. Treat `similar_factors` as evidence for this comparison, not as a hard-failure gate.
 
-Never submit a filesystem path or ask Quandora to read local files. Validate the complete, exact source with `fm_validate`, inline `plugin_source`, and the same context used for the plugin construction contract. Normal public and custom workflows validate with `session_id` only after the scoped contract has been returned; do not author or validate a custom plugin from a hand-built `task_payload`.
+Never submit a filesystem path or ask Quandora to read local files. Validate the complete, exact source with `validate_factor_plugin`, inline `plugin_source`, and the same context used for the plugin construction contract. Normal public and custom workflows validate with `session_id` only after the scoped contract has been returned; do not author or validate a custom plugin from a hand-built `task_payload`.
 
 The agent must not import, execute, eval, or shell-run generated factor code locally. The remote validator performs AST/static checks and may also execute `build_signal` with synthetic inputs in an isolated preflight, while leaving module-level code unexecuted. Therefore `build_signal` must satisfy the contract for both float inputs and numeric values stored with object dtype, must return an aligned float `DataFrame`, and must replace positive or negative infinity with `np.nan` or a finite fallback.
 
@@ -234,7 +241,7 @@ runtime expressions with the corresponding
 `plugin_contract.data_columns[].csharp_double_expression`. If upload or admission fails, use only
 the closed `recovery_action` policy below; never infer a mutation retry from `retryable`.
 
-When the source is valid and the user is ready to submit, call `fm_run_backtest` with only `session_id` and the exact inline `plugin_source` that passed validation. Do not send `fwd_period`: the session/scoped contract already binds the horizon. Do not edit, regenerate, reformat, or re-read a different copy between successful validation and submission.
+When the source is valid and the user is ready to submit, call `submit_factor_backtest` with only `session_id` and the exact inline `plugin_source` that passed validation. Do not send `fwd_period`: the session/scoped contract already binds the horizon. Do not edit, regenerate, reformat, or re-read a different copy between successful validation and submission.
 
 ### Mutation Recovery Policy
 
@@ -257,21 +264,21 @@ upload, Start, create a replacement session, or change bound input.
   the complete repaired source, then create the same kind of session with a new invocation identity
   before following the ordinary validated upload path once.
 
-Normal `running` with `next_action=resume` resumes only through `fm_resume_run`; it never
-uploads or Starts again. Use `fm_resume_run` when a prior known run was interrupted.
+Normal `running` with `next_action=resume` resumes only through `continue_factor_backtest`; it never
+uploads or Starts again. Use `continue_factor_backtest` when a prior known run was interrupted.
 These recovery actions do not add an automatic retry loop.
 
 ### Waiting Policy
 
-If `upload_backtest_wait` returns `running`, call `fm_resume_run` at most 4 times in the current request.
+If `upload_backtest_wait` returns `running`, call `continue_factor_backtest` at most 4 times in the current request.
 
-If the run is still `running` after the fourth resume, stop waiting and treat the archive as a pending run snapshot, not a completed result. Save only files that are already true at that point, such as `plugin.py` and a redacted pending run summary. Do not request Result Bundle metadata or attempt ZIP delivery until a later `fm_resume_run` returns a terminal status. In the final response, clearly say the backtest is still running, the Result Bundle was not requested, and the user can ask to resume later. Show the resolved result folder only when the host supports local files.
+If the run is still `running` after the fourth resume, stop waiting and treat the archive as a pending run snapshot, not a completed result. Save only files that are already true at that point, such as `plugin.py` and a redacted pending run summary. Do not request Result Bundle metadata or attempt ZIP delivery until a later `continue_factor_backtest` returns a terminal status. In the final response, clearly say the backtest is still running, the Result Bundle was not requested, and the user can ask to resume later. Show the resolved result folder only when the host supports local files.
 
 ### Result Bundle Handling
 
-Run bundle handling only after `fm_run_backtest` or `fm_resume_run` returns a terminal status such as `succeeded`, `failed`, or `cancelled`. If the run is still `running`, skip this section. Use the redacted terminal response for status and interpretation. For completed runs, the FM-owned ZIP is the only canonical completed-result archive; never create a second completed-result `run_summary.json` beside it.
+Run bundle handling only after `submit_factor_backtest` or `continue_factor_backtest` returns a terminal status such as `succeeded`, `failed`, or `cancelled`. If the run is still `running`, skip this section. Use the redacted terminal response for status and interpretation. For completed runs, the FM-owned ZIP is the only canonical completed-result archive; never create a second completed-result `run_summary.json` beside it.
 
-For a terminal Factor run, issue one initial `fm_bundle_ticket` with the exact canonical backtest
+For a terminal Factor run, issue one initial `create_factor_result_bundle_download` with the exact canonical backtest
 `job_id` from the terminal response. The returned closed metadata and runtime manifest are
 authoritative for the immutable FM-owned ZIP. Treat both `available` and a persisted readable
 `partial` response as downloadable. Raw Parquet is optional and its absence or pending sync must
@@ -289,7 +296,7 @@ Apply this one bounded materialization recheck before the readable-partial fresh
    valid non-readable state, not as a transport or backend failure. Do not use its revision for a
    chunk call, create a file or `.partial`, consume a URL, retry a download ticket, or use a
    legacy-artifact fallback.
-2. Wait at most 10 seconds with a host-native bounded wait or timer, then make exactly one fresh current `fm_bundle_ticket`
+2. Wait at most 10 seconds with a host-native bounded wait or timer, then make exactly one fresh current `create_factor_result_bundle_download`
    call with the same canonical terminal `job_id` and without a
    caller-supplied `snapshot_revision`. Never resubmit or resume the completed Factor run merely
    to make a bundle appear.
@@ -303,7 +310,7 @@ Apply this one optional freshness step before downloading:
 
 1. If the initial ticket is persisted readable `partial` and its runtime manifest reports one or
    more items with a pending status, wait at most 10 seconds with a short host-native wait or timer.
-   Then issue exactly one fresh current `fm_bundle_ticket` with the same public selector and
+   Then issue exactly one fresh current `create_factor_result_bundle_download` with the same public selector and
    without `snapshot_revision`. Never loop or poll for freshness.
 2. Do not consume, reuse, display, or log the superseded ticket URL; let it expire naturally. If
    the refresh returns a valid readable newer snapshot, select that response. If it has a transient
@@ -345,7 +352,7 @@ Use this URL-first delivery once per request:
    path contained by the archive. Then atomically rename the verified `.partial` file to
    `Quandora staging result/factor/<factor_slug>.zip` beneath the selected workspace.
 
-If the URL is unavailable, blocked by local host network policy, expired, or fails after that one retry, automatically use `fm_bundle_chunk` with the same canonical `job_id` and `snapshot_revision`. This fallback uses the already-working authenticated MCP connection and requires no new host-native file sink or shell network access:
+If the URL is unavailable, blocked by local host network policy, expired, or fails after that one retry, automatically use `read_factor_result_bundle_chunk` with the same canonical `job_id` and `snapshot_revision`. This fallback uses the already-working authenticated MCP connection and requires no new host-native file sink or shell network access:
 
 1. Start at offset `0` and request at most `256 KiB` (`262144`) raw bytes per call. For every valid response, decode and append `content_b64` before acting on `terminal`; never print or log the base64. A `terminal: true` response may carry the final non-empty `content_b64`, so those bytes are part of the ZIP and must be appended before stopping. When `terminal` is false, require `next_offset` to equal the current offset plus the decoded byte length and continue from exactly that value. When `terminal` is true, require `next_offset` to be null and the appended total to equal `size_bytes`; do not request another public empty chunk.
 2. Do not impose a client-wide ZIP-size cap. Before the first chunk, require a non-negative server-declared `size_bytes` that fits the selected host destination and compute the exact upper call bound as `ceil(size_bytes / 262144)`. Reject a response sequence that exceeds that bound or the declared size. Keep every response bound to the same kind, job ID, snapshot revision, filename, content type, size, and whole-object SHA. Never mix revisions or append an old partial. Do not start a local receiver that exits when its setup command reaches EOF; use a per-response binary-safe append operation, or keep one verified writer session open until the terminal response has been appended.
@@ -456,7 +463,7 @@ Return a float `pd.DataFrame` aligned with `close`, use only current and histori
 
 ## Security
 
-- Use only Quandora actions for formal product workflows, except for consuming a short-lived opaque Result Bundle URL returned by `fm_bundle_ticket` exactly once.
+- Use only Quandora actions for formal product workflows, except for consuming a short-lived opaque Result Bundle URL returned by `create_factor_result_bundle_download` exactly once.
 - Never ask for API keys, auth files, user credentials, local execution keys, `vt_` keys, bearer tokens, or service tokens.
 - Never print, persist in logs, or summarize full credential values.
 - Do not call hosted generation endpoints; the active agent generates factor source in its current host session.

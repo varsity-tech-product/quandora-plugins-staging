@@ -7,9 +7,10 @@ description: Analyze, diagnose, compare, and propose controlled improvements for
 
 Bundled plugin version: 1.54
 
-Analyze one exact cross-sectional Strategy run as a read-only research workflow. Pair Product
+Analyze one exact cross-sectional Strategy run as a non-submitting research workflow. Pair Product
 Backend's canonical run snapshot with owner-scoped retained artifacts and bounded six-chart data.
-Distinguish observed evidence from inference, alternatives, and proposed experiments.
+Distinguish observed evidence from inference, alternatives, and proposed experiments. Mint a
+short-lived artifact download ticket only when the user explicitly requests an export.
 
 OAuth and all credentials are handled by the host. Quandora access tokens expire after 7 days, and
 the host MCP client should use its stored rotating refresh token automatically. Never inspect,
@@ -33,7 +34,8 @@ Trading.
 
 ## Non-Negotiable Safety
 
-- Remain read-only. Do not submit, resume, save, overwrite, archive, or mutate any run.
+- Do not submit, resume, overwrite, archive, or mutate any run. The only allowed mutation is minting
+  a short-lived download ticket for an explicit user-requested export.
 - Do not automatically create ablations, reruns, or Paper Trading runs.
 - Use only owner-scoped evidence returned by Quandora MCP tools. Never inspect user-local files as
   proof of a Strategy result.
@@ -45,6 +47,17 @@ Trading.
 - Treat grade and score as QuantAI-relayed evidence, not as a promotion or research verdict.
 - Treat `ALL` as a combined scope that includes IS. Never describe it as pure OOS.
 
+## Available Actions
+
+Use only the actions owned by this analysis boundary:
+
+- `get_strategy_backtest_artifact`
+- `get_strategy_backtest_analysis_data`
+
+For an explicit user-requested artifact export only, use
+`create_strategy_artifact_download`. Do not mint a ticket speculatively, use a download as an
+analysis prerequisite, or treat a ticket as permission to submit, rerun, or change a Strategy.
+
 ## Workflow
 
 ### 1. Establish The Exact Run
@@ -52,7 +65,7 @@ Trading.
 Prefer an exact `run_id` supplied by the user or already returned in the conversation. When no
 exact run id is supplied:
 
-1. Call `sb_list_runs` once with `{}`. It returns the owner's newest-first page with default
+1. Call `list_strategy_backtests` once with `{}`. It returns the owner's newest-first page with default
    `limit: 10` and `offset: 0`.
 2. Use returned identity, name, timestamps, status, and optional summary only to select a run.
 3. If more than one plausible run remains, ask the user to choose. Do not guess.
@@ -63,15 +76,15 @@ If an exact run id is supplied, skip discovery.
 
 ### 2. Read Canonical Composition And Parameters
 
-Call `sb_get_run` with the exact `run_id`. Treat its canonical `composition` and `parameters` as the
+Call `get_strategy_backtest` with the exact `run_id`. Treat its canonical `composition` and `parameters` as the
 authority for factor ids or weights, ranking, strategy type, window, capital, fees, rebalance bars,
 and attribution.
 
 If ranking was omitted at submission, the current Strategy default is neutral Top/Bottom 20%:
 `ranking: {mode: "percent", value: 20}` with `strategy_type: "neutral"`. Report the effective
-snapshot returned by `sb_get_run`; do not infer parameters from chart labels.
+snapshot returned by `get_strategy_backtest`; do not infer parameters from chart labels.
 
-If the run is not terminal, report the current state. Do not call `sb_resume_run` from this
+If the run is not terminal, report the current state. Do not call `continue_strategy_backtest` from this
 read-only skill and do not substitute local files.
 
 If the run is `completed` with the exact closed
@@ -84,7 +97,7 @@ for confirmation before handing it to `$strategy-building`.
 
 ### 3. Read Core Server Artifacts
 
-Use `sb_get_artifact` for the exact run. Start with `summary` and `performance`, then request only
+Use `get_strategy_backtest_artifact` for the exact run. Start with `summary` and `performance`, then request only
 the evidence needed for the question:
 
 - `equity_curve` and `drawdown_curve` for path, concentration, and recovery;
@@ -98,7 +111,7 @@ review; never execute either.
 
 ### 4. Read Six-Chart Numerical Evidence
 
-1. Call `sb_analysis_data` with `chart: "overview"`.
+1. Call `get_strategy_backtest_analysis_data` with `chart: "overview"`.
 2. Confirm the exact `run_id`, server artifact identity, status, integrity digest, availability,
    declared window, parameters, cross-section summary, missing styles, and chart catalog.
 3. Request only the chart pages needed for the diagnosis. Follow `next_offset` only for the same run
@@ -130,7 +143,7 @@ For every consequential conclusion, label it **Observed**, **Inference**, **Alte
 
 ### 6. Keep Portfolio Selection Separate From Diagnostic Buckets
 
-Actual Strategy selection comes only from `sb_get_run.parameters.ranking`. Six-chart diagnostics use
+Actual Strategy selection comes only from `get_strategy_backtest.parameters.ranking`. Six-chart diagnostics use
 an adaptive grouping scheme based on the median daily cross-section:
 
 - median at least 20: 10 quantiles, minimum cross-section 20, diagnostic `top_pct: 0.10`;

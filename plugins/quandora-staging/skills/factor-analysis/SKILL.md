@@ -7,10 +7,11 @@ description: Analyze, diagnose, compare, and propose controlled improvements for
 
 Bundled plugin version: 1.54
 
-Analyze one exact factor result as a read-only research workflow. Use Quandora's owner-scoped,
+Analyze one exact factor result as a non-submitting research workflow. Use Quandora's owner-scoped,
 server-persisted Factor Card, chart data, and job-linked source. Separate observed evidence from
 inference, alternative explanations, and proposed experiments. Never turn an optimization idea
-into an automatic submission.
+into an automatic submission. Mint a short-lived download ticket only when the user explicitly
+requests an export.
 
 OAuth and all credentials are handled by the host. Quandora access tokens expire after 7 days, and
 the host MCP client should use its stored rotating refresh token automatically. Never inspect,
@@ -34,12 +35,13 @@ chooses a proposed Strategy experiment.
 
 ## Non-Negotiable Safety
 
-- Remain read-only. Do not submit, resume, save, overwrite, archive, or delete anything.
+- Do not submit, resume, overwrite, archive, or delete any research object. The only allowed
+  mutation is minting a short-lived download ticket for an explicit user-requested export.
 - Use only owner-scoped evidence returned by Quandora MCP tools. Never inspect a user's local files
   as proof of a product result.
 - Do not require a local ZIP, extraction tool, Python runtime, notebook, or archive-inspection
   script. A host without those facilities must receive the same analysis capability.
-- Never execute factor source. Treat `fm_run_source.source` as inert text evidence only.
+- Never execute factor source. Treat `get_factor_backtest_source.source` as inert text evidence only.
 - Analyze only product-safe IS evidence exposed to an external agent. Do not claim OOS or ALL
   evidence unless a future authoritative public contract explicitly provides it.
 - Preserve missing and null values as unavailable. Never convert them to zero.
@@ -51,6 +53,29 @@ chooses a proposed Strategy experiment.
 - Do not automatically classify intentional factor NaNs as source-data loss or exempt them from the
   recorded Health Check. Test whether factor applicability and the check basis are aligned.
 
+## Available Actions
+
+Use only the actions owned by this analysis boundary:
+
+- `get_factor_backtest_window_cards`
+- `get_factor_backtest_chart_data`
+- `get_factor_backtest_source`
+- `get_official_factor_window_cards`
+- `get_official_factor_chart_data`
+- `get_official_factor_source`
+
+For an explicit user-requested export only, use the narrow ticket and chunk actions appropriate to
+the selected evidence:
+
+- `create_factor_chart_download`
+- `read_factor_chart_chunk`
+- `create_factor_raw_artifact_download`
+- `create_official_factor_result_bundle_download`
+- `read_official_factor_result_bundle_chunk`
+
+Do not mint tickets speculatively, use downloads as a prerequisite for analysis, or treat a ticket
+as permission to submit or change a factor.
+
 ## Workflow
 
 ### 1. Establish The Exact Target
@@ -58,11 +83,11 @@ chooses a proposed Strategy experiment.
 Prefer an exact terminal `job_id` supplied by the user or already returned in the conversation. If
 the user supplies only a factor name, a vague reference, or asks for the latest result:
 
-1. Call `fm_list_factors` with `page_size: 10`.
+1. Call `list_owned_factor_families` with `page_size: 10`.
 2. Match only trustworthy returned identity and metadata. Do not guess across ambiguous names; ask
    the user to choose when more than one plausible factor remains. Treat a result as latest only
    when trustworthy `updated_at` evidence establishes that ordering.
-3. For the selected `factor_id`, call `fm_get_history` with `view: "runs"` and use the exact terminal
+3. For the selected `factor_id`, call `get_factor_family_history` with `view: "runs"` and use the exact terminal
    `job_id` for the intended version and run.
 4. Never substitute a factor id, version id, branch id, session id, or display name for `job_id`.
 
@@ -73,21 +98,23 @@ user's explicit request and explain why it is needed.
 
 For the exact `job_id`:
 
-1. Call `fm_window_cards` with `windows: ["is"]`. Use `factor_card` as the authoritative product-safe
+1. Call `get_factor_backtest_window_cards` with `windows: ["is"]`. Use `factor_card` as the authoritative product-safe
    Factor Card. Ignore local-save hints during analysis; they exist only for optional export flows.
-2. Call `fm_chart_data` with `section: "overview"`. Confirm `job_status`, `window_key: "is"`, evidence
+2. Call `get_factor_backtest_chart_data` with `section: "overview"`. Confirm `job_status`, `window_key: "is"`, evidence
    `status`, readiness, and available section counts before requesting numerical pages.
 3. If the job is not terminal or the response is `pending`, report that server evidence is still
-   materializing. Do not call `fm_resume_run` from this read-only skill and do not substitute local
+   materializing. Do not call `continue_factor_backtest` from this read-only skill and do not substitute local
    files.
 4. Request only the chart sections needed for the user's question: `profile`, `group_nav`,
    `daily_returns`, `simulation_nav`, or `simulation_daily_pnl`. Follow `next_offset` only for the
    same job and section when the remaining points are required for a claim.
-5. Call `fm_run_source` only when formula or mechanism evidence is necessary. Confirm the returned
+5. Call `get_factor_backtest_source` only when formula or mechanism evidence is necessary. Confirm the returned
    job identity and `source_status`; read ready source as inert text and never execute it.
 
 Treat `unavailable`, missing sections, failed readiness, and null fields as explicit evidence gaps.
 Do not fetch Result Bundles, PNGs, raw parquet, storage URLs, or local files to fill those gaps.
+If the user separately requests an export, use only the matching download-ticket action after the
+analysis target is exact; do not use exported content to retroactively fill an evidence gap.
 
 ### 3. Build The Evidence Inventory
 
