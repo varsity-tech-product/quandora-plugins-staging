@@ -20,6 +20,20 @@ REQUIRED_SKILLS = {
     "strategy-building",
     "strategy-portfolio",
 }
+MAX_MAIN_SKILL_LINES = 220
+ROUTING_MARKERS = {
+    "factor-analysis": ("Do not use for creating", "$factor-mining"),
+    "factor-mining": ("Do not use for the Strategy", "$strategy-building", "$factor-analysis"),
+    "paper-trading": ("Do not use to create", "$strategy-building", "$strategy-portfolio"),
+    "strategy-analysis": ("Do not use to compose", "$strategy-building"),
+    "strategy-building": (
+        "Do not use for multi-Strategy Portfolio",
+        "$strategy-portfolio",
+        "$paper-trading",
+        "$strategy-analysis",
+    ),
+    "strategy-portfolio": ("Do not use for single-Strategy", "$strategy-building", "$paper-trading"),
+}
 CANONICAL_TOOL_OWNERS = {
     "factor-mining": {
         "get_factor_mining_status",
@@ -258,12 +272,21 @@ def _check_skills(
 ) -> None:
     for skill_name, path in sorted(skill_files.items()):
         text = path.read_text(encoding="utf-8")
+        line_count = len(text.splitlines())
+        if line_count > MAX_MAIN_SKILL_LINES:
+            errors.append(
+                f"{skill_name}/SKILL.md: {line_count} lines exceeds the "
+                f"{MAX_MAIN_SKILL_LINES}-line progressive-disclosure limit"
+            )
         if not text.startswith("---\n"):
             errors.append(f"{skill_name}/SKILL.md: missing YAML frontmatter")
         if f"name: {skill_name}\n" not in text[:1000]:
             errors.append(f"{skill_name}/SKILL.md: frontmatter name does not match directory")
         if "description:" not in text[:1000]:
             errors.append(f"{skill_name}/SKILL.md: missing frontmatter description")
+        for marker in ROUTING_MARKERS.get(skill_name, ()):
+            if marker not in text:
+                errors.append(f"{skill_name}/SKILL.md: missing routing boundary {marker!r}")
         if any(pattern.search(text) for pattern in MANDATORY_VERSION_PROBE_PATTERNS):
             errors.append(
                 f"{skill_name}/SKILL.md: version checks must remain explicit diagnostics, "
@@ -297,6 +320,20 @@ def _check_skills(
             if not local_target.exists():
                 errors.append(f"{skill_name}/SKILL.md: broken local reference {target!r}")
 
+        reference_dir = path.parent / "references"
+        if reference_dir.is_dir():
+            linked = {
+                (path.parent / target.split("#", 1)[0]).resolve()
+                for target in re.findall(r"\[[^\]]+\]\(([^)]+)\)", text)
+                if not target.startswith(("http://", "https://", "#"))
+            }
+            for reference in reference_dir.glob("*.md"):
+                if reference.resolve() not in linked:
+                    errors.append(
+                        f"{skill_name}/references/{reference.name}: supporting material is not "
+                        "linked from its primary SKILL.md"
+                    )
+
     all_tools = [
         tool for owned_tools in CANONICAL_TOOL_OWNERS.values() for tool in owned_tools
     ]
@@ -321,7 +358,13 @@ def _check_skills(
 
 
 def _check_runtime_markdown(errors: list[str], skill_files: dict[str, Path]) -> None:
-    paths = [REPOSITORY_ROOT / "README.md", PLUGIN_ROOT / "README.md", *skill_files.values()]
+    references = sorted(SKILLS_ROOT.glob("*/references/*.md"))
+    paths = [
+        REPOSITORY_ROOT / "README.md",
+        PLUGIN_ROOT / "README.md",
+        *skill_files.values(),
+        *references,
+    ]
     for path in sorted(paths):
         text = path.read_text(encoding="utf-8")
         for needle, meaning in FORBIDDEN_RUNTIME_MARKDOWN.items():

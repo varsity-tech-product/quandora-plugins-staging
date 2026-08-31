@@ -410,13 +410,21 @@ FM's additive completed/no-result semantic: zero-order runs stay completed, thei
 `not_available/no_result_zero_orders` bundle state is terminal, and they are never offered for
 failed-run rerun or Paper submission.
 
-Plugin 1.55 makes every public tool result a closed typed success/error contract and hard-cuts OAuth
-capabilities by domain. Strategy definitions, Strategy backtests, Portfolio definitions, and
-Portfolio backtests use `strategy:*`; `paper_trading:sources.read` is discovery-only; both
-single-Strategy and Portfolio simulated execution use `paper_trading:runs.*`. Agent routing remains
-object- and operation-based: a one-component Strategy is not converted into a Portfolio research
-object, while either kind may later hand completed evidence to the separate Paper execution skill.
-No retired tool or scope alias is retained.
+Plugin 1.55 broadens explicit manual rerun from FM-recommended failures to every failed Strategy
+run that retains its exact FM run and StrategyVersion lineage. `fmRetryable` remains a risk signal:
+the Agent warns that compile or Lean failures may repeat, but does not block the user's explicit
+one-shot rerun. Deploy the matching Product Backend and Auth revisions before publishing Plugin
+1.55. Factor Mining, frontend, production plugin metadata, and OAuth scopes remain unchanged.
+
+Plugin 1.56 hard-cuts every abbreviated MCP tool name to one direct domain-action name, adds the
+sixth `strategy-portfolio` skill, requires closed typed success/error outputs, and separates OAuth
+capabilities by domain. Strategy and Portfolio definitions/backtests use `strategy:*` scopes;
+`paper_trading:sources.read` is discovery-only; both single-Strategy and Portfolio simulated
+execution use `paper_trading:runs.*`. Agent routing remains object- and operation-based: a
+one-component Strategy is not converted into a Portfolio research object, while either kind may
+later hand completed evidence to the separate Paper execution skill. No retired tool or scope alias
+is retained. Publish only after the matching Product Backend and Auth revisions are deployed and
+the unique 1.56 artifact is installable from every supported manifest.
 
 ## License
 
