@@ -5,8 +5,6 @@ description: Analyze, diagnose, compare, and propose controlled improvements for
 
 # Strategy Analysis
 
-Bundled plugin version: 1.57
-
 Analyze one exact cross-sectional Strategy run as a non-submitting research workflow. Pair Product
 Backend's canonical run snapshot with owner-scoped retained artifacts and bounded six-chart data.
 Distinguish observed evidence from inference, alternatives, and proposed experiments. Mint a

@@ -5,8 +5,6 @@ description: Use when the user asks to combine two or more exact Quandora Strate
 
 # Quandora Staging Strategy Portfolio
 
-Bundled plugin version: 1.57
-
 Use this skill through the authenticated `quandora-staging` MCP connection. It owns Strategy
 Portfolio research: immutable multi-Strategy composition, versioning, aggregate backtests, and
 aggregate result reads. It never starts, monitors, or stops Paper trading.
@@ -45,7 +43,7 @@ Paper tool as an implicit prerequisite.
 Some hosts display a server-qualified current name such as
 `quandora_staging__create_strategy_portfolio`. This is the same canonical tool, not a compatibility
 alias. The retired abbreviated names are not valid fallbacks. If a canonical tool is unavailable,
-report that exact state and use only the host-native reconnect/update flow; do not bypass MCP with
+report that exact state and use only WorkBuddy's native reconnect or browser-consent flow; do not bypass MCP with
 raw HTTP or pasted credentials.
 
 ## Portfolio Model
@@ -77,7 +75,7 @@ available, hand off to `$strategy-building` and stop before a Portfolio mutation
 ### Create or Revise
 
 Before the first create or revise mutation in the request, read the authoritative Portfolio guidance.
-Fail closed if its revision or constraints contradict this bundled workflow.
+Fail closed if its revision or constraints contradict this workflow.
 
 Validate components with exact decimal arithmetic. Before `create_strategy_portfolio`, show the
 name, every exact StrategyVersion, every weight, and the independent-sleeve semantics, then obtain

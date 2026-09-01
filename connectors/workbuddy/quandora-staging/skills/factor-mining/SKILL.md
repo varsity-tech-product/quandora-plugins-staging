@@ -5,8 +5,6 @@ description: Use when the user explicitly asks about caller-owned or reusable Fa
 
 # Quandora Staging Factor Mining
 
-Bundled plugin version: 1.57
-
 This skill owns Factor Mining research creation, caller-owned Factor family/history reads, Factor
 backtests, and Factor Result Bundle delivery through the authenticated `quandora-staging`
 connection.
@@ -27,15 +25,11 @@ Use only the minimum relevant subset:
 - Run lifecycle: `submit_factor_backtest`, `continue_factor_backtest`.
 - Result delivery: `create_factor_result_bundle_download`,
   `read_factor_result_bundle_chunk`.
-- Approved semantics/diagnostics: `get_quandora_guidance`,
-  `check_quandora_plugin_version`.
+- Approved semantics: `get_quandora_guidance`.
 
 Server-qualified display names such as `quandora_staging__submit_factor_backtest` are the same
 canonical action, not aliases. If a canonical tool is absent, do not use a retired name or another
 service path.
-
-Use `check_quandora_plugin_version` only for a requested version diagnostic or a plausible
-package/server mismatch; never as a mandatory entry probe.
 
 ## Load Supporting Material Selectively
 

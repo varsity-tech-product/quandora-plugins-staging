@@ -5,8 +5,6 @@ description: Use when the user asks to start, inspect, monitor, or stop simulate
 
 # Quandora Staging Paper Trading
 
-Bundled plugin version: 1.57
-
 Use this skill through the authenticated `quandora-staging` MCP connection. It owns simulated
 execution only: eligible-source discovery, Paper start, lifecycle monitoring, execution data, and
 terminal stop. It is staging-only and never represents production or live-money trading.
@@ -49,7 +47,7 @@ Never call Strategy or Strategy Portfolio definition/backtest tools here. In par
 Some hosts display a server-qualified current name such as
 `quandora_staging__start_paper_trade`. This is the canonical tool, not a compatibility alias. The
 retired abbreviated names are not valid fallbacks. If a canonical tool is unavailable, report the
-state and use only the host-native update/reconnect/browser-consent flow. Never bypass MCP with raw
+state and use only WorkBuddy's native reconnect or browser-consent flow. Never bypass MCP with raw
 HTTP or pasted credentials.
 
 ## Safety and Data Model
