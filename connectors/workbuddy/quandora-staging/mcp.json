@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "quandora-staging": {
+      "type": "streamableHttp",
+      "url": "https://mcp-staging.varsity.lol/quant",
+      "timeout": 30000
+    }
+  }
+}
