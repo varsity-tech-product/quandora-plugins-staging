@@ -5,7 +5,7 @@ description: Use when the user asks to list available or eligible Strategy facto
 
 # Quandora Staging Strategy Building
 
-Bundled plugin version: 1.56
+Bundled plugin version: 1.57
 
 This skill owns one Strategy: eligible-factor selection, ordinary Strategy submission, explicit
 versioned/optimizer Strategy definitions, single-Strategy backtests, reruns, and ordinary Strategy

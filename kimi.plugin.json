@@ -1,6 +1,6 @@
 {
   "name": "quandora-staging",
-  "version": "1.56",
+  "version": "1.57",
   "description": "Staging Quandora plugin with Factor and Strategy creation, analysis, and Paper Trading skills.",
   "keywords": [
     "quandora",

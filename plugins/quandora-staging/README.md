@@ -38,8 +38,8 @@ The strategy slug is derived from the current user-facing submitted Strategy nam
 
 ## What Analysis Does
 
-Factor Analysis and Strategy Analysis read owner-scoped server-persisted evidence, diagnose
-product-safe metrics and charts, separate observations from inference, and propose controlled
+Factor Analysis reads owner-scoped or active-official server-persisted evidence, while Strategy
+Analysis reads owner-scoped evidence. Both diagnose product-safe metrics and charts, separate observations from inference, and propose controlled
 experiments. Strategy Analysis pairs the Product Backend run snapshot with retained artifacts and
 bounded six-chart data and can assess Paper readiness. Factor Analysis reads the server Factor Card,
 chart data, and inert job-linked source when needed. Neither analysis skill submits or mutates a run.
@@ -163,3 +163,7 @@ multi-Strategy research to Strategy Portfolio, and only completed execution hand
 Trading. No retired tool or scope alias is retained. Publish only after the matching Product Backend
 and Auth revisions are deployed and the unique 1.56 artifact is installable from every supported
 manifest.
+
+Plugin 1.57 enables Factor Analysis for active official factors through their public `factor_id`.
+It consumes the already deployed official Factor Card, IS chart-data, source, and Result Bundle
+actions without changing backend APIs, public tools, OAuth scopes, or production metadata.

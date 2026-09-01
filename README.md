@@ -104,8 +104,9 @@ quandora-staging@quandora-staging
 
 Quandora Staging Factor Mining lets local agents create `plugin.py`, submit it through the authenticated staging Quandora connection, run a backtest, and save one verified FM-owned Result Bundle ZIP in the local workspace.
 
-Quandora Staging Factor Analysis and Strategy Analysis read owner-scoped server-persisted evidence,
-diagnose metrics and charts, separate evidence from inference, and propose controlled improvements
+Quandora Staging Factor Analysis reads owner-scoped or active-official server-persisted evidence,
+while Strategy Analysis reads owner-scoped evidence. Both diagnose metrics and charts, separate
+evidence from inference, and propose controlled improvements
 without automatically submitting a factor, Strategy, or Paper run. Factor Analysis checks the
 server Factor Card's Health and rating gates before interpreting economic performance.
 
@@ -296,8 +297,8 @@ items.
 /quandora-staging:factor-analysis analyze my latest factor result
 ```
 
-The skill resolves one exact factor run, reads its owner-scoped server Factor Card and bounded chart
-data, checks Health and rating evidence, and reads exact job-linked source only as inert text when
+The skill resolves one exact caller-owned run or active official factor, reads its server Factor Card
+and bounded IS chart data, checks Health and rating evidence, and reads exact source only as inert text when
 needed. It requires no local ZIP or Python runtime, remains read-only, and hands confirmed follow-up
 construction back to Factor Mining or Strategy Building.
 
@@ -425,6 +426,11 @@ one-component Strategy is not converted into a Portfolio research object, while 
 later hand completed evidence to the separate Paper execution skill. No retired tool or scope alias
 is retained. Publish only after the matching Product Backend and Auth revisions are deployed and
 the unique 1.56 artifact is installable from every supported manifest.
+
+Plugin 1.57 enables the existing Factor Analysis workflow for active official factors through their
+public `factor_id`. It uses the already deployed official Factor Card, IS chart-data, source, and
+Result Bundle actions, preserves owner/private boundaries, and introduces no backend API, tool,
+OAuth-scope, migration, or production-plugin change.
 
 ## License
 

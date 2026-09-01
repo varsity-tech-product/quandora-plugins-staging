@@ -5,7 +5,7 @@ description: Use when the user asks to start, inspect, monitor, or stop simulate
 
 # Quandora Staging Paper Trading
 
-Bundled plugin version: 1.56
+Bundled plugin version: 1.57
 
 Use this skill through the authenticated `quandora-staging` MCP connection. It owns simulated
 execution only: eligible-source discovery, Paper start, lifecycle monitoring, execution data, and
