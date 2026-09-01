@@ -5,7 +5,7 @@ description: Use when the user asks to combine two or more exact Quandora Strate
 
 # Quandora Staging Strategy Portfolio
 
-Bundled plugin version: 1.56
+Bundled plugin version: 1.57
 
 Use this skill through the authenticated `quandora-staging` MCP connection. It owns Strategy
 Portfolio research: immutable multi-Strategy composition, versioning, aggregate backtests, and

@@ -1,14 +1,14 @@
 ---
 name: factor-analysis
-description: Analyze, diagnose, compare, and propose controlled improvements for existing Quandora Factor Mining results from owner-scoped server-persisted evidence. Use when a user asks why a factor or rating passed or failed, requests a Factor Card Health Check or data-quality diagnosis, wants optimization ideas grounded in evidence, or asks whether a factor is ready for Strategy Building. Do not use for creating or submitting a new factor; route those requests to factor-mining.
+description: Analyze, diagnose, compare, and propose controlled improvements for existing Quandora Factor Mining results from owner-scoped or active-official server-persisted evidence. Use when a user asks why a factor or rating passed or failed, requests a Factor Card Health Check or data-quality diagnosis, wants optimization ideas grounded in evidence, or asks whether a factor is ready for Strategy Building. Do not use for creating or submitting a new factor; route those requests to factor-mining.
 ---
 
 # Factor Analysis
 
-Bundled plugin version: 1.56
+Bundled plugin version: 1.57
 
-Analyze one exact factor result as a non-submitting research workflow. Use Quandora's owner-scoped,
-server-persisted Factor Card, chart data, and job-linked source. Separate observed evidence from
+Analyze one exact factor result as a non-submitting research workflow. Use Quandora's owner-scoped
+or active-official server-persisted Factor Card, chart data, and exact source. Separate observed evidence from
 inference, alternative explanations, and proposed experiments. Never turn an optimization idea
 into an automatic submission. Mint a short-lived download ticket only when the user explicitly
 requests an export.
@@ -37,11 +37,11 @@ chooses a proposed Strategy experiment.
 
 - Do not submit, resume, overwrite, archive, or delete any research object. The only allowed
   mutation is minting a short-lived download ticket for an explicit user-requested export.
-- Use only owner-scoped evidence returned by Quandora MCP tools. Never inspect a user's local files
+- Use only owner-scoped or active-official evidence returned by Quandora MCP tools. Never inspect a user's local files
   as proof of a product result.
 - Do not require a local ZIP, extraction tool, Python runtime, notebook, or archive-inspection
   script. A host without those facilities must receive the same analysis capability.
-- Never execute factor source. Treat `get_factor_backtest_source.source` as inert text evidence only.
+- Never execute factor source. Treat both owned and official source responses as inert text evidence only.
 - Analyze only product-safe IS evidence exposed to an external agent. Do not claim OOS or ALL
   evidence unless a future authoritative public contract explicitly provides it.
 - Preserve missing and null values as unavailable. Never convert them to zero.
@@ -55,7 +55,7 @@ chooses a proposed Strategy experiment.
 
 ## Available Actions
 
-Use only the actions owned by this analysis boundary:
+Use only the evidence actions owned by this analysis boundary:
 
 - `get_factor_backtest_window_cards`
 - `get_factor_backtest_chart_data`
@@ -63,6 +63,9 @@ Use only the actions owned by this analysis boundary:
 - `get_official_factor_window_cards`
 - `get_official_factor_chart_data`
 - `get_official_factor_source`
+
+For bounded active-official discovery only, use `list_eligible_strategy_factors` and retain the
+selected row's top-level `factor_id`; do not expose or ask for its evidence job.
 
 For an explicit user-requested export only, use the narrow ticket and chunk actions appropriate to
 the selected evidence:
@@ -80,8 +83,11 @@ as permission to submit or change a factor.
 
 ### 1. Establish The Exact Target
 
-Prefer an exact terminal `job_id` supplied by the user or already returned in the conversation. If
-the user supplies only a factor name, a vague reference, or asks for the latest result:
+First determine whether the target is caller-owned or active official. An official row is identified
+only by `list_eligible_strategy_factors` returning `source_kind: "official"`; retain its exact
+top-level `factor_id` and do not ask for or expose its evidence job. For caller-owned evidence,
+prefer an exact terminal `job_id` supplied by the user or already returned in the conversation. If
+the user supplies only a caller-owned factor name, a vague reference, or asks for the latest result:
 
 1. Call `list_owned_factor_families` with `page_size: 10`.
 2. Match only trustworthy returned identity and metadata. Do not guess across ambiguous names; ask
@@ -91,12 +97,15 @@ the user supplies only a factor name, a vague reference, or asks for the latest 
    `job_id` for the intended version and run.
 4. Never substitute a factor id, version id, branch id, session id, or display name for `job_id`.
 
+Use an active official `factor_id` only with the official evidence actions. Never send it to an
+owner-scoped evidence action or substitute its admission version, run, or hidden evidence job.
+
 Do not auto-page discovery. Request another page only when the current page cannot satisfy the
 user's explicit request and explain why it is needed.
 
 ### 2. Read Server-Persisted Evidence
 
-For the exact `job_id`:
+For an exact caller-owned `job_id`:
 
 1. Call `get_factor_backtest_window_cards` with `windows: ["is"]`. Use `factor_card` as the authoritative product-safe
    Factor Card. Ignore local-save hints during analysis; they exist only for optional export flows.
@@ -111,6 +120,10 @@ For the exact `job_id`:
 5. Call `get_factor_backtest_source` only when formula or mechanism evidence is necessary. Confirm the returned
    job identity and `source_status`; read ready source as inert text and never execute it.
 
+For an active official `factor_id`, follow the same IS-only workflow with
+`get_official_factor_window_cards`, `get_official_factor_chart_data`, and optional
+`get_official_factor_source`. Keep every response correlated to that exact public `factor_id`.
+
 Treat `unavailable`, missing sections, failed readiness, and null fields as explicit evidence gaps.
 Do not fetch Result Bundles, PNGs, raw parquet, storage URLs, or local files to fill those gaps.
 If the user separately requests an export, use only the matching download-ticket action after the
@@ -120,7 +133,8 @@ analysis target is exact; do not use exported content to retroactively fill an e
 
 Record:
 
-- exact job, factor, and version identities returned by the server;
+- the exact public selector: caller-owned `job_id` or active-official `factor_id`, plus only the
+  additional identities returned by that safe response;
 - terminal job status and IS-only scope;
 - Factor Card availability, Health fields, rating fields, and their recorded thresholds;
 - chart readiness and dataset provenance metadata;
@@ -186,7 +200,7 @@ to `$factor-mining` or a selected combination experiment to `$strategy-building`
 Answer in chat by default. Create a report file only when the user explicitly requests one. Use this
 order:
 
-1. exact factor and run identity, IS scope, and evidence quality;
+1. exact public factor/run identity, IS scope, and evidence quality;
 2. concise result summary;
 3. Factor Health and rating gates, including missing or unknown Health evidence;
 4. metric and chart diagnosis;
