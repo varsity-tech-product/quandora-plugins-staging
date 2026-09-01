@@ -52,10 +52,10 @@ raw HTTP or pasted credentials.
 
 - A Strategy Portfolio contains at least two distinct exact `strategy_version_id` values.
 - Every `target_weight` is a positive canonical decimal string, and the exact decimal sum is `1`.
-- Canonical decimals use the shortest plain non-exponent spelling: no leading `+`, redundant
-  integer zero, or trailing fractional zero. Normalize with exact decimal arithmetic before
-  confirmation, for example `0.40`, `0.30`, `0.30` become `0.4`, `0.3`, `0.3`; submit exactly the
-  displayed canonical strings and never JSON numbers.
+- The Auth-published MCP input schema and runtime validator are authoritative for canonical
+  decimals. For confirmation, show the shortest plain non-exponent spelling with no leading `+`,
+  redundant integer zero, or trailing fractional zero; for example show `0.4`, `0.3`, `0.3`
+  instead of `0.40`, `0.30`, `0.30`. Submit the displayed strings and never JSON numbers.
 - A PortfolioVersion is immutable. A changed component or weight creates a new version.
 - Components are independent capital sleeves. There is no signal fusion, shared margin, capital
   transfer, periodic rebalance, provider-order netting, or execution-level position netting.
@@ -83,8 +83,8 @@ available, hand off to `$strategy-building` and stop before a Portfolio mutation
 Before the first create or revise mutation in the request, read the authoritative Portfolio guidance.
 Fail closed if its revision or constraints contradict this bundled workflow.
 
-Validate components with exact decimal arithmetic and fail before mutation if any normalized value
-is non-positive or the normalized sum is not exactly `1`. Before `create_strategy_portfolio`, show the
+Validate the displayed components with exact decimal arithmetic and fail before mutation if any
+value is non-positive or their sum is not exactly `1`. Before `create_strategy_portfolio`, show the
 name, every exact StrategyVersion, every weight, and the independent-sleeve semantics, then obtain
 explicit confirmation. Before `revise_strategy_portfolio`, first read the selected Portfolio and
 base PortfolioVersion, show the complete replacement composition, and obtain a separate explicit

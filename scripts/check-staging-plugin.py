@@ -34,13 +34,6 @@ ROUTING_MARKERS = {
     ),
     "strategy-portfolio": ("Do not use for single-Strategy", "$strategy-building", "$paper-trading"),
 }
-REQUIRED_SKILL_MARKERS = {
-    "strategy-portfolio": (
-        "shortest plain non-exponent spelling",
-        "`0.40`, `0.30`, `0.30` become `0.4`, `0.3`, `0.3`",
-        "submit exactly the\n  displayed canonical strings",
-    ),
-}
 CANONICAL_TOOL_OWNERS = {
     "factor-mining": {
         "get_factor_mining_status",
@@ -294,9 +287,6 @@ def _check_skills(
         for marker in ROUTING_MARKERS.get(skill_name, ()):
             if marker not in text:
                 errors.append(f"{skill_name}/SKILL.md: missing routing boundary {marker!r}")
-        for marker in REQUIRED_SKILL_MARKERS.get(skill_name, ()):
-            if marker not in text:
-                errors.append(f"{skill_name}/SKILL.md: missing required guidance {marker!r}")
         if any(pattern.search(text) for pattern in MANDATORY_VERSION_PROBE_PATTERNS):
             errors.append(
                 f"{skill_name}/SKILL.md: version checks must remain explicit diagnostics, "

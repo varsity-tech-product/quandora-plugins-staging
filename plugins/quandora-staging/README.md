@@ -168,8 +168,9 @@ Plugin 1.57 enables Factor Analysis for active official factors through their pu
 It consumes the already deployed official Factor Card, IS chart-data, source, and Result Bundle
 actions without changing backend APIs, public tools, OAuth scopes, or production metadata.
 
-Plugin 1.58 preserves the 1.57 tool and scope inventory and makes Strategy Portfolio decimal
-preflight executable for Agents: exact values are normalized to shortest plain decimal strings
-before confirmation, so equivalent spellings such as `0.40` are never sent to the strict backend.
-This is guidance and package-validation only. It adds no backend API, OAuth scope, or production
-change, and remains unpublished until the matching PB/Auth contract repairs are reviewed.
+Plugin 1.58 preserves the 1.57 tool and scope inventory and clarifies the Agent-side Strategy
+Portfolio confirmation flow for Auth's authoritative canonical-decimal tool contract. Agents show
+shortest plain decimal strings before mutation, for example `0.4` instead of `0.40`; Auth's MCP
+input schema and runtime validator remain the machine-enforced source of truth. This is guidance
+only. It adds no backend API, OAuth scope, or production change, and remains unpublished until the
+matching PB/Auth contract repairs are reviewed.
