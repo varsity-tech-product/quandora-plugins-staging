@@ -34,7 +34,7 @@
     "websiteURL": "https://github.com/varsity-tech-product/quandora-plugins-staging",
     "defaultPrompt": [
       "Use Quandora Staging Factor Mining with my custom factor idea.",
-      "Use Quandora Staging Strategy to combine existing factors into one cross-sectional strategy or use Strategy Portfolio to combine exact StrategyVersions and evaluate exact completed source runs.",
+      "Use Quandora Staging Strategy Portfolio to combine exact StrategyVersions and evaluate exact completed source runs.",
       "Use Quandora Staging Paper Trading to select an eligible source run and start a simulated run after confirmation."
     ],
     "brandColor": "#F28C00",

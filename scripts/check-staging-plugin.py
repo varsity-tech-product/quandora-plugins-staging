@@ -21,6 +21,7 @@ REQUIRED_SKILLS = {
     "strategy-portfolio",
 }
 MAX_MAIN_SKILL_LINES = 220
+MAX_CODEX_DEFAULT_PROMPT_CHARS = 128
 ROUTING_MARKERS = {
     "factor-analysis": ("Do not use for creating", "$factor-mining"),
     "factor-mining": ("Do not use for the Strategy", "$strategy-building", "$factor-analysis"),
@@ -253,6 +254,14 @@ def _check_manifests(errors: list[str]) -> str | None:
         )
     elif not all(isinstance(prompt, str) and prompt.strip() for prompt in prompts):
         errors.append("Codex defaultPrompt entries must be non-empty strings")
+    else:
+        for index, prompt in enumerate(prompts):
+            if len(prompt) > MAX_CODEX_DEFAULT_PROMPT_CHARS:
+                errors.append(
+                    "plugins/quandora-staging/.codex-plugin/plugin.json: "
+                    f"defaultPrompt[{index}] exceeds the "
+                    f"{MAX_CODEX_DEFAULT_PROMPT_CHARS}-character Codex limit"
+                )
 
     return next(iter(distinct), None)
 
