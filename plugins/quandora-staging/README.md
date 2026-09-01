@@ -46,12 +46,10 @@ chart data, and inert job-linked source when needed. Neither analysis skill subm
 
 ## What Strategy Building Does
 
-Strategy Building owns one Strategy: factor composition, versioning, backtests, reruns, and Result
-Bundles through direct domain-action tool names. When the user explicitly requests a base/pro
-portfolio optimizer, it prepares a
-versioned source from exact admitted factor/version/job triples, freezes one bounded
-capital-independent YAML mapping, and submits a source StrategyRun whose `initial_cash` owns
-optimizer capital. An explicitly requested failed-run rerun uses `rerun_strategy_backtest` to create one new
+Strategy Building owns one non-optimizer Strategy: factor composition, versioning, backtests,
+reruns, and Result Bundles through direct domain-action tool names. New optimizer authoring and
+execution are retired; historical optimizer-backed versions are read-only. An explicitly requested
+failed-run rerun uses `rerun_strategy_backtest` to create one new
 child from the source's immutable snapshot and exact FM StrategyVersion; it never resumes the
 terminal source or reconstructs a current Strategy submission. It never starts Paper; that remains
 a separate confirmed workflow. A completed zero-order run remains completed, exposes a bounded
@@ -61,19 +59,19 @@ Paper submission.
 ## What Strategy Portfolio Does
 
 Strategy Portfolio combines at least two exact StrategyVersions with positive decimal weights that
-sum to one, creates immutable PortfolioVersions, and runs aggregate Portfolio backtests. Components
-remain independent capital sleeves. It never starts Paper; a completed PortfolioRun is handed to
-Paper Trading only after a separate user request and confirmation.
+sum to one, creates immutable PortfolioVersions, selects one exact completed non-optimizer source
+run per component, and evaluates normalized weighted equity without rerunning Strategies or calling
+a provider. Components remain independent capital sleeves. It never starts Paper; a completed
+source-reuse PortfolioRun is handed to Paper Trading only after a separate request and confirmation.
 
 ## What Paper Trading Does
 
-Quandora Staging Paper Trading helps an agent discover the current user's eligible sources,
-validate safe ordinary/optimizer readiness, obtain explicit Paper submit/stop confirmation, and
-read live current PnL, position history, fills, funding, equity curves, and bounded strategy code.
-Optimizer Paper accepts only caller-frozen execution evidence and exact source-run capital; it has
-no policy or capital override. Portfolio Paper starts only from a completed PortfolioRun prepared
-by the Strategy Portfolio skill and preserves static independent-sleeve semantics. It does not
-create, revise, or backtest a Strategy Portfolio and does not expose production trading, universe overrides, Paper
+Quandora Staging Paper Trading helps an agent discover eligible non-optimizer sources, obtain
+explicit Paper submit/stop confirmation, and read live current PnL, position history, fills,
+funding, equity curves, and bounded strategy code. Portfolio Paper starts only from a completed
+source-reuse PortfolioRun, preserves exact source lineage, and uses component allocated cash for
+each child. It does not create, revise, or evaluate a Strategy Portfolio and does not expose
+production trading, universe overrides, Paper
 archive/resume, or nonexistent parent aggregate positions/equity.
 
 ## Skills
@@ -133,8 +131,8 @@ use exact admission triples through top-level `factor_references`. No backend or
 is part of this plugin release.
 
 Plugin 1.54 hard-cuts every abbreviated MCP tool name to one direct domain-action name and adds the
-sixth `strategy-portfolio` skill. Strategy Building owns one Strategy and its optimizer policy;
-Strategy Portfolio owns multi-Strategy composition and aggregate backtests; Paper Trading owns only
+sixth `strategy-portfolio` skill. Strategy Building owns one Strategy; Strategy Portfolio owns
+multi-Strategy research; Paper Trading owns only
 simulated execution from completed evidence. No retired tool alias is retained. Publish only after
 the matching PB and Auth revisions are deployed. Keep Auth's advertised staging
 label at `1.52` until the unique 1.54 artifact is installable from every supported manifest, then
@@ -156,7 +154,7 @@ one-shot rerun. Deploy the matching Product Backend and Auth revisions before pu
 
 Plugin 1.56 hard-cuts every abbreviated MCP tool name to one direct domain-action name, adds the
 sixth `strategy-portfolio` skill, requires closed typed success/error outputs, and separates OAuth
-capabilities by domain. Strategy and Portfolio definitions/backtests use `strategy:*` scopes;
+capabilities by domain. Strategy definitions/backtests and Portfolio research use `strategy:*` scopes;
 `paper_trading:sources.read` is discovery-only; both single-Strategy and Portfolio simulated
 execution use `paper_trading:runs.*`. The Agent routes a one-component request to Strategy Building,
 multi-Strategy research to Strategy Portfolio, and only completed execution handoffs to Paper
@@ -174,3 +172,11 @@ shortest plain decimal strings before mutation, for example `0.4` instead of `0.
 input schema and runtime validator remain the machine-enforced source of truth. This is guidance
 only. It adds no backend API, OAuth scope, or production change, and remains unpublished until the
 matching PB/Auth contract repairs are reviewed.
+
+Plugin 1.59 hard-cuts Portfolio research to exact source-run reuse. It adds
+`list_eligible_strategy_portfolio_source_runs`, uses evaluation names and scopes for Portfolio
+research, and retains no retired alias. Evaluation accepts exact completed non-optimizer sources
+and total capital, creates no child StrategyRun, and makes no provider call. New optimizer
+authoring/execution are retired; historical classification remains read-only. Portfolio Paper
+persists source lineage and allocates child initial balance from component allocated cash. Publish
+only after the matching PB/Auth PRs are reviewed and merged.

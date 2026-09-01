@@ -110,20 +110,20 @@ evidence from inference, and propose controlled improvements
 without automatically submitting a factor, Strategy, or Paper run. Factor Analysis checks the
 server Factor Card's Health and rating gates before interpreting economic performance.
 
-Quandora Staging Strategy Building owns one Strategy through direct domain-action tools. For an
-explicit base/pro optimizer request, it prepares a versioned source from exact admitted
-factor/version/job triples, freezes capital-independent policy, and submits separately confirmed
-StrategyRuns whose `initial_cash` owns optimizer capital.
+Quandora Staging Strategy Building owns one non-optimizer Strategy through direct domain-action
+tools. New optimizer authoring and execution are retired; historical optimizer-backed versions are
+read-only and cannot start a new Strategy, Portfolio, or Paper run.
 
 Quandora Staging Strategy Portfolio combines at least two exact StrategyVersions with positive
-weights summing to one, versions that static composition, and runs aggregate Portfolio backtests.
-It hands a completed PortfolioRun to Paper Trading only after a separate user request.
+weights summing to one, selects one exact completed non-optimizer source run per component, and
+evaluates their normalized weighted equity without rerunning a Strategy or calling a provider. It
+hands a completed source-reuse PortfolioRun to Paper Trading only after a separate user request.
 
-Quandora Staging Paper Trading discovers eligible ordinary or optimizer sources, then starts and
-monitors single-strategy or static-sleeve Strategy Portfolio Paper runs after confirmation.
-Optimizer Paper requires caller-frozen execution evidence and exact source-run capital, with no
-policy or capital override. The skill also reads current PnL and historical execution data and
-terminally stops selected runs. It is staging-only and does not place live-money trades.
+Quandora Staging Paper Trading discovers eligible non-optimizer sources, then starts and monitors
+single-strategy or static-sleeve Strategy Portfolio Paper runs after confirmation. Portfolio Paper
+preserves exact source lineage and gives each child its component allocated cash. The skill also
+reads current PnL and historical execution data and terminally stops selected runs. It is
+staging-only and does not place live-money trades.
 
 ## Install
 
@@ -333,12 +333,13 @@ Use the skill command when available:
 
 ```text
 /quandora-staging:strategy-portfolio combine these StrategyVersions with 60/40 weights
-/quandora-staging:strategy-portfolio backtest my portfolio
+/quandora-staging:strategy-portfolio evaluate my portfolio from exact completed source runs
 ```
 
 Strategy Portfolio requires at least two exact StrategyVersions and positive decimal weights that
-sum to one. It owns Portfolio definition/versioning and aggregate backtests only. Starting Paper
-from a completed PortfolioRun is a separate `$paper-trading` workflow and confirmation.
+sum to one. It owns Portfolio definition/versioning, exact source selection, and source-reuse
+evaluation only. Starting Paper from a completed PortfolioRun is a separate `$paper-trading`
+workflow and confirmation.
 
 ## Use Strategy Analysis
 
@@ -395,9 +396,9 @@ versioned source creation. Official factors use their exact admission triples as
 tool, OAuth scope, or deployment configuration changes are introduced by this plugin release.
 
 Plugin 1.54 hard-cuts the abbreviated MCP inventory to one set of direct domain-action names and
-adds the sixth `strategy-portfolio` skill. Strategy Building owns one Strategy and optimizer policy,
-Strategy Portfolio owns multi-Strategy composition and aggregate backtests, and Paper Trading owns
-simulated execution from completed evidence. No retired tool alias remains. Deploy the matching PB and Auth revisions
+adds the sixth `strategy-portfolio` skill. Strategy Building owns one Strategy, Strategy Portfolio
+owns multi-Strategy research, and Paper Trading owns simulated execution from completed evidence.
+No retired tool alias remains. Deploy the matching PB and Auth revisions
 before publishing the unique 1.54 artifact. Keep Auth's staging latest-version label at `1.52`
 until that artifact is confirmed installable from every supported manifest, then advance the label
 through a separate reviewed staging configuration change. Production remains unchanged.
@@ -419,7 +420,7 @@ one-shot rerun. Deploy the matching Product Backend and Auth revisions before pu
 
 Plugin 1.56 hard-cuts every abbreviated MCP tool name to one direct domain-action name, adds the
 sixth `strategy-portfolio` skill, requires closed typed success/error outputs, and separates OAuth
-capabilities by domain. Strategy and Portfolio definitions/backtests use `strategy:*` scopes;
+capabilities by domain. Strategy definitions/backtests and Portfolio research use `strategy:*` scopes;
 `paper_trading:sources.read` is discovery-only; both single-Strategy and Portfolio simulated
 execution use `paper_trading:runs.*`. Agent routing remains object- and operation-based: a
 one-component Strategy is not converted into a Portfolio research object, while either kind may
@@ -438,6 +439,15 @@ shortest plain decimal strings before mutation, for example `0.4` instead of `0.
 input schema and runtime validator remain the machine-enforced source of truth. This is guidance
 only. It adds no backend API, OAuth scope, or production change, and remains unpublished until the
 matching PB/Auth contract repairs are reviewed.
+
+Plugin 1.59 hard-cuts Portfolio research to exact source-run reuse. It adds
+`list_eligible_strategy_portfolio_source_runs`, renames Portfolio run tools and scopes from
+backtest terminology to evaluation terminology, and removes the retired names rather than keeping
+aliases. Evaluation accepts one exact completed non-optimizer source per component plus total
+capital; it creates no child StrategyRun and makes no provider call. New optimizer authoring and
+execution are retired, while historical classification remains read-only. Portfolio Paper keeps
+exact source lineage and uses component allocated cash for each child. Publish only after matching
+PB/Auth PRs are reviewed and merged; production remains unchanged.
 
 ## License
 

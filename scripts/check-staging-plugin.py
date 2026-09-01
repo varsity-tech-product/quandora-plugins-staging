@@ -96,9 +96,10 @@ CANONICAL_TOOL_OWNERS = {
         "revise_strategy_portfolio",
         "get_strategy_portfolio",
         "get_strategy_portfolio_version",
-        "submit_strategy_portfolio_backtest",
-        "get_strategy_portfolio_backtest",
-        "get_strategy_portfolio_backtest_result",
+        "list_eligible_strategy_portfolio_source_runs",
+        "submit_strategy_portfolio_evaluation",
+        "get_strategy_portfolio_evaluation",
+        "get_strategy_portfolio_evaluation_result",
     },
     "paper-trading": {
         "list_paper_trade_sources",
@@ -137,6 +138,8 @@ RETIRED_TOOL_NAMES = {
     "pt_sp_create", "pt_sp_revise", "pt_sp_get", "pt_sp_version",
     "pt_sp_bt_submit", "pt_sp_bt_get", "pt_sp_bt_result", "pt_sp_run_submit",
     "pt_sp_run_get", "pt_sp_run_stop",
+    "submit_strategy_portfolio_backtest", "get_strategy_portfolio_backtest",
+    "get_strategy_portfolio_backtest_result",
 }
 DIRECT_VERSION_MANIFESTS = (
     REPOSITORY_ROOT / "kimi.plugin.json",
@@ -339,8 +342,8 @@ def _check_skills(
     ]
     if len(all_tools) != len(set(all_tools)):
         errors.append("canonical tool ownership map contains duplicate primary owners")
-    if len(all_tools) != 70:
-        errors.append(f"canonical tool ownership map must contain 70 tools, got {len(all_tools)}")
+    if len(all_tools) != 71:
+        errors.append(f"canonical tool ownership map must contain 71 tools, got {len(all_tools)}")
     for owner, owned_tools in CANONICAL_TOOL_OWNERS.items():
         owner_path = skill_files.get(owner)
         if owner_path is None:
