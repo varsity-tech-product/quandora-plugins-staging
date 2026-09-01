@@ -22,6 +22,12 @@ REQUIRED_SKILLS = {
 }
 MAX_MAIN_SKILL_LINES = 220
 MAX_CODEX_DEFAULT_PROMPT_CHARS = 128
+PORTFOLIO_RESULT_METRIC_MARKERS = (
+    "net_profit_pct",
+    "annual_return_pct",
+    "annual_std",
+    "max_drawdown_pct",
+)
 ROUTING_MARKERS = {
     "factor-analysis": ("Do not use for creating", "$factor-mining"),
     "factor-mining": ("Do not use for the Strategy", "$strategy-building", "$factor-analysis"),
@@ -367,6 +373,16 @@ def _check_skills(
         for retired in sorted(RETIRED_TOOL_NAMES):
             if re.search(rf"(?<![A-Za-z0-9_]){re.escape(retired)}(?![A-Za-z0-9_])", text):
                 errors.append(f"{skill_name}/SKILL.md: retired tool name remains: {retired}")
+
+    portfolio_path = skill_files.get("strategy-portfolio")
+    if portfolio_path is not None:
+        portfolio_text = portfolio_path.read_text(encoding="utf-8")
+        for marker in PORTFOLIO_RESULT_METRIC_MARKERS:
+            if marker not in portfolio_text:
+                errors.append(
+                    "strategy-portfolio/SKILL.md: missing canonical Portfolio result metric "
+                    f"{marker!r}"
+                )
 
 
 def _check_runtime_markdown(errors: list[str], skill_files: dict[str, Path]) -> None:

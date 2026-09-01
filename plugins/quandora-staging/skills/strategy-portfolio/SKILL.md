@@ -115,9 +115,13 @@ Use the submit response as the first PortfolioRun snapshot. Observe only that ex
 reports `execution_contract=source_reuse_v1` and preserves the selected owner-local source handle.
 
 After completion, call `get_strategy_portfolio_evaluation_result`. Present normalized aggregate
-metrics and `equity_curve.points[].ts/equity`. Treat `summary.annualized_volatility` as the public
-volatility field. Preserve a returned unavailable/error reason and retryability exactly; do not
-manufacture an empty ready result.
+metrics and `equity_curve.points[].ts/equity`. For new source-reuse results, preserve FM's QuantAI
+metric names and units: `summary.net_profit_pct`, `annual_return_pct`, `annual_std`,
+`max_drawdown_pct`, `start_equity`, `end_equity`, and any returned `sharpe`, `sortino`,
+`total_fees`, or `funding_net_cash_flow`. Percentage-suffixed metrics are percentage values;
+`annual_std` is the annualized standard deviation. Historical results may retain older metric
+aliases; report them as historical evidence and do not relabel new metrics. Preserve a returned
+unavailable/error reason and retryability exactly; do not manufacture an empty ready result.
 
 There is no separate Portfolio-analysis skill. Aggregate Portfolio result reading stays here;
 `$strategy-analysis` owns completed single-Strategy evidence.
