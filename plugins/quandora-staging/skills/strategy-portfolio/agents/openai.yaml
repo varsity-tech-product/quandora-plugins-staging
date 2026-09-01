@@ -1,7 +1,7 @@
 interface:
   display_name: "Strategy Portfolio Staging"
-  short_description: "Compose and backtest multi-strategy portfolios"
-  default_prompt: "Use $strategy-portfolio to compose exact StrategyVersions into a weighted Portfolio and run its aggregate backtest after confirmation."
+  short_description: "Compose and evaluate multi-strategy portfolios"
+  default_prompt: "Use $strategy-portfolio to compose exact StrategyVersions, select exact completed source runs, and evaluate their normalized weighted Portfolio result after confirmation."
 
 dependencies:
   tools:

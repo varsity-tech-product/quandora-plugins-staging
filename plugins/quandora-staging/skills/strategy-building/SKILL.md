@@ -1,20 +1,23 @@
 ---
 name: strategy-building
-description: Use when the user asks to list available or eligible Strategy factors, including “列出可用因子”, or create, revise, backtest, continue, rerun, retrieve, or export one cross-sectional Quandora Staging Strategy using Official, Mine, or Shared factors, including an explicit base/pro optimizer StrategyVersion. Do not use for multi-Strategy Portfolio composition, Paper execution, or deep result diagnosis.
+description: Use when the user asks to list available or eligible Strategy factors, including “列出可用因子”, or create, revise, backtest, continue, rerun, retrieve, or export one non-optimizer cross-sectional Quandora Staging Strategy using Official, Mine, or Shared factors. Do not use for multi-Strategy Portfolio composition, Paper execution, or deep result diagnosis.
 ---
 
 # Quandora Staging Strategy Building
 
-Bundled plugin version: 1.57
+Bundled plugin version: 1.59
 
-This skill owns one Strategy: eligible-factor selection, ordinary Strategy submission, explicit
-versioned/optimizer Strategy definitions, single-Strategy backtests, reruns, and ordinary Strategy
-Result Bundle delivery through `quandora-staging`.
+This skill owns one Strategy: eligible-factor selection, ordinary Strategy submission, immutable
+versioned Strategy definitions, single-Strategy backtests, reruns, and ordinary Strategy Result
+Bundle delivery through `quandora-staging`.
 
-An optimizer policy remains part of one StrategyVersion; it is not a multi-Strategy Portfolio.
-Route two-or-more StrategyVersion composition and aggregate research to `$strategy-portfolio`,
-simulated execution to `$paper-trading`, and deep diagnosis of completed evidence to
-`$strategy-analysis`.
+New optimizer authoring and execution are retired. Never send `portfolio_optimizer`, including
+explicit null, in Strategy create, revise, or run inputs. Historical optimizer-backed versions may
+be read through safe classification only and cannot start a new Strategy, Portfolio, or Paper run.
+
+Route two-or-more StrategyVersion composition and source-reuse evaluation to
+`$strategy-portfolio`, simulated execution to `$paper-trading`, and deep diagnosis of completed
+evidence to `$strategy-analysis`.
 
 ## Tools
 
@@ -28,15 +31,15 @@ Use only the minimum relevant subset:
   `get_strategy_backtest`, `continue_strategy_backtest`, `rerun_strategy_backtest`.
 - Ordinary Result Bundle: `create_strategy_result_bundle_download`,
   `read_strategy_result_bundle_chunk`.
-- Versioned/optimizer definition: `create_strategy`, `revise_strategy`, `get_strategy`,
+- Versioned definition/source: `create_strategy`, `revise_strategy`, `get_strategy`,
   `get_strategy_version`, `submit_strategy_backtest`.
 
 Use `get_quandora_guidance` only for the exact approved workflow described in supporting material.
 `get_paper_trade_source` is a read-only handoff used only to observe an explicit versioned source;
-its primary workflow owner remains `$paper-trading`.
+its primary owner remains `$paper-trading`.
 
 Server-qualified names such as `quandora_staging__submit_adhoc_strategy_backtest` are canonical
-display forms, not aliases. If a canonical action is unavailable, do not use a retired name or
+display forms, not aliases. If a canonical action is unavailable, do not use another name or
 alternate service.
 
 ## Load Supporting Material Selectively
@@ -45,12 +48,12 @@ alternate service.
   [Connection and Security](references/connection-and-security.md).
 - For ordinary factor selection, submission, observation, or rerun, load
   [Ordinary Strategy Workflow](references/ordinary-strategy-workflow.md).
-- Only for an explicit base/pro or versioned source, load
-  [Versioned Optimizer Source](references/versioned-optimizer-source.md).
+- For an immutable versioned definition/source or a historical optimizer read, load
+  [Versioned Strategy Workflow](references/versioned-strategy-workflow.md).
 - Only after an ordinary terminal run/archive or an export request, load
   [Strategy Result Bundle Delivery](references/result-bundle-delivery.md).
 
-Do not load optimizer/YAML or Result Bundle transport instructions for a bare factor-list request.
+Do not load versioned-source or Result Bundle transport instructions for a bare factor-list request.
 
 ## Route First
 
@@ -58,10 +61,9 @@ Do not load optimizer/YAML or Result Bundle transport instructions for a bare fa
   only `list_eligible_strategy_factors`, one bounded page, then stops.
 - Requests for caller-owned Factor Mining families/history route to `$factor-mining`.
 - One ordinary Strategy uses the ordinary workflow.
-- An explicitly requested base/pro optimizer or immutable versioned source uses the versioned
-  workflow.
+- An immutable versioned Strategy definition/source uses the versioned workflow.
 - Two or more exact StrategyVersions with target weights route to `$strategy-portfolio`.
-- “Optimize this result” as analysis routes to `$strategy-analysis`, not optimizer-source creation.
+- “Optimize this result” routes to `$strategy-analysis`, not optimizer authoring.
 
 ## Ordinary Strategy
 
@@ -74,13 +76,13 @@ Follow [Ordinary Strategy Workflow](references/ordinary-strategy-workflow.md):
 5. submit once and observe only the returned run;
 6. treat terminal rerun as a separate explicitly confirmed mutation.
 
-Do not create a Strategy Portfolio for a single Strategy. Do not call Paper start tools here.
+Do not create a Strategy Portfolio for one Strategy. Do not call Paper start tools here.
 
-## Versioned Optimizer Source
+## Versioned Strategy Source
 
-Follow [Versioned Optimizer Source](references/versioned-optimizer-source.md). Definition/revision
-and backtest are separate mutations requiring separate confirmations. Optimizer policy is
-capital-independent; run capital belongs to `submit_strategy_backtest`.
+Follow [Versioned Strategy Workflow](references/versioned-strategy-workflow.md). Definition or
+revision and source backtest are separate mutations requiring separate confirmations. Every new
+specification is non-optimizer and source run capital belongs to `submit_strategy_backtest`.
 
 This path ends with bounded source lifecycle/eligibility evidence. A later Paper request hands the
 exact eligible completed source to `$paper-trading`; no Paper mutation occurs here.
@@ -104,14 +106,14 @@ directory or treat the exported ZIP as server-side analysis evidence.
 - `fmRetryable` is advisory. A failed immutable run may be rerun only after exact lineage checks,
   repetition-risk disclosure, and explicit confirmation.
 - Never infer Paper authority from completed research or start Paper from this skill.
-- Never expose credentials, policy secrets, provider identities, internal URLs, or raw downstream
-  payloads.
+- Never expose credentials, historical policy content, provider identities, internal URLs, or raw
+  downstream payloads.
 
 ## Final Response
 
 State the submitted Strategy name, workflow type, main-run/archive state, safe diagnostics, and the
 verified Result Bundle path when saved. If a run remains in progress, state that bundle delivery
-was not started. If handing off, state clearly that no Portfolio or Paper mutation was performed.
+was not started. If handing off, state clearly that no Portfolio or Paper mutation occurred.
 
 Never expose run handles in a general summary, tickets, download URLs, credentials, base64, or
 internal service metadata.

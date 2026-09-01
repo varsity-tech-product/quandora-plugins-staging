@@ -21,6 +21,19 @@ REQUIRED_SKILLS = {
     "strategy-portfolio",
 }
 MAX_MAIN_SKILL_LINES = 220
+MAX_CODEX_DEFAULT_PROMPT_CHARS = 128
+PORTFOLIO_RESULT_METRIC_MARKERS = (
+    "net_profit_pct",
+    "annual_return_pct",
+    "annual_std",
+    "max_drawdown_pct",
+)
+PORTFOLIO_SOURCE_EVIDENCE_MARKERS = (
+    "summary",
+    "equity_curve",
+    "source_result_evidence_unavailable",
+    "Do not resubmit automatically",
+)
 ROUTING_MARKERS = {
     "factor-analysis": ("Do not use for creating", "$factor-mining"),
     "factor-mining": ("Do not use for the Strategy", "$strategy-building", "$factor-analysis"),
@@ -96,9 +109,10 @@ CANONICAL_TOOL_OWNERS = {
         "revise_strategy_portfolio",
         "get_strategy_portfolio",
         "get_strategy_portfolio_version",
-        "submit_strategy_portfolio_backtest",
-        "get_strategy_portfolio_backtest",
-        "get_strategy_portfolio_backtest_result",
+        "list_eligible_strategy_portfolio_source_runs",
+        "submit_strategy_portfolio_evaluation",
+        "get_strategy_portfolio_evaluation",
+        "get_strategy_portfolio_evaluation_result",
     },
     "paper-trading": {
         "list_paper_trade_sources",
@@ -137,6 +151,8 @@ RETIRED_TOOL_NAMES = {
     "pt_sp_create", "pt_sp_revise", "pt_sp_get", "pt_sp_version",
     "pt_sp_bt_submit", "pt_sp_bt_get", "pt_sp_bt_result", "pt_sp_run_submit",
     "pt_sp_run_get", "pt_sp_run_stop",
+    "submit_strategy_portfolio_backtest", "get_strategy_portfolio_backtest",
+    "get_strategy_portfolio_backtest_result",
 }
 DIRECT_VERSION_MANIFESTS = (
     REPOSITORY_ROOT / "kimi.plugin.json",
@@ -148,6 +164,16 @@ DIRECT_VERSION_MANIFESTS = (
 MARKETPLACE_MANIFESTS = (
     REPOSITORY_ROOT / ".claude-plugin" / "marketplace.json",
     REPOSITORY_ROOT / ".codebuddy-plugin" / "marketplace.json",
+)
+PORTFOLIO_METADATA_MANIFESTS = (
+    REPOSITORY_ROOT / ".claude-plugin" / "marketplace.json",
+    REPOSITORY_ROOT / ".codebuddy-plugin" / "marketplace.json",
+    REPOSITORY_ROOT / ".cursor-plugin" / "marketplace.json",
+    REPOSITORY_ROOT / "kimi.plugin.json",
+    PLUGIN_ROOT / ".claude-plugin" / "plugin.json",
+    PLUGIN_ROOT / ".codebuddy-plugin" / "plugin.json",
+    PLUGIN_ROOT / ".codex-plugin" / "plugin.json",
+    PLUGIN_ROOT / ".cursor-plugin" / "plugin.json",
 )
 FORBIDDEN_RUNTIME_MARKDOWN = {
     "/Users/": "workstation-specific POSIX path",
@@ -241,6 +267,12 @@ def _check_manifests(errors: list[str]) -> str | None:
         errors.append(f"Plugin version drift: {rendered}")
         return None
 
+    for path in PORTFOLIO_METADATA_MANIFESTS:
+        if "Strategy Portfolio" not in path.read_text(encoding="utf-8"):
+            errors.append(
+                f"{path.relative_to(REPOSITORY_ROOT)}: metadata omits Strategy Portfolio"
+            )
+
     codex = _load_json(PLUGIN_ROOT / ".codex-plugin" / "plugin.json")
     prompts = codex.get("interface", {}).get("defaultPrompt") if isinstance(codex, dict) else None
     if not isinstance(prompts, list) or not 1 <= len(prompts) <= 3:
@@ -250,6 +282,14 @@ def _check_manifests(errors: list[str]) -> str | None:
         )
     elif not all(isinstance(prompt, str) and prompt.strip() for prompt in prompts):
         errors.append("Codex defaultPrompt entries must be non-empty strings")
+    else:
+        for index, prompt in enumerate(prompts):
+            if len(prompt) > MAX_CODEX_DEFAULT_PROMPT_CHARS:
+                errors.append(
+                    "plugins/quandora-staging/.codex-plugin/plugin.json: "
+                    f"defaultPrompt[{index}] exceeds the "
+                    f"{MAX_CODEX_DEFAULT_PROMPT_CHARS}-character Codex limit"
+                )
 
     return next(iter(distinct), None)
 
@@ -339,8 +379,8 @@ def _check_skills(
     ]
     if len(all_tools) != len(set(all_tools)):
         errors.append("canonical tool ownership map contains duplicate primary owners")
-    if len(all_tools) != 70:
-        errors.append(f"canonical tool ownership map must contain 70 tools, got {len(all_tools)}")
+    if len(all_tools) != 71:
+        errors.append(f"canonical tool ownership map must contain 71 tools, got {len(all_tools)}")
     for owner, owned_tools in CANONICAL_TOOL_OWNERS.items():
         owner_path = skill_files.get(owner)
         if owner_path is None:
@@ -355,6 +395,22 @@ def _check_skills(
         for retired in sorted(RETIRED_TOOL_NAMES):
             if re.search(rf"(?<![A-Za-z0-9_]){re.escape(retired)}(?![A-Za-z0-9_])", text):
                 errors.append(f"{skill_name}/SKILL.md: retired tool name remains: {retired}")
+
+    portfolio_path = skill_files.get("strategy-portfolio")
+    if portfolio_path is not None:
+        portfolio_text = portfolio_path.read_text(encoding="utf-8")
+        for marker in PORTFOLIO_RESULT_METRIC_MARKERS:
+            if marker not in portfolio_text:
+                errors.append(
+                    "strategy-portfolio/SKILL.md: missing canonical Portfolio result metric "
+                    f"{marker!r}"
+                )
+        for marker in PORTFOLIO_SOURCE_EVIDENCE_MARKERS:
+            if marker not in portfolio_text:
+                errors.append(
+                    "strategy-portfolio/SKILL.md: missing source-evidence workflow marker "
+                    f"{marker!r}"
+                )
 
 
 def _check_runtime_markdown(errors: list[str], skill_files: dict[str, Path]) -> None:

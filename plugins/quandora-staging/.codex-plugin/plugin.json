@@ -1,6 +1,6 @@
 {
   "name": "quandora-staging",
-  "version": "1.57",
+  "version": "1.59",
   "description": "Staging Quandora plugin with Factor, Strategy, Strategy Portfolio, analysis, and Paper Trading skills.",
   "author": {
     "name": "Varsity Tech Product",
@@ -24,7 +24,7 @@
   "interface": {
     "displayName": "Quandora Staging",
     "shortDescription": "Use staging Quandora services from your agent.",
-    "longDescription": "Quandora Staging packages Factor Mining, Factor Analysis, Strategy Building, Strategy Portfolio, Strategy Analysis, and Paper Trading. Strategy Portfolio owns multi-Strategy composition and aggregate backtests; Paper Trading owns only simulated execution from completed evidence.",
+    "longDescription": "Quandora Staging packages Factor Mining, Factor Analysis, Strategy Building, Strategy Portfolio, Strategy Analysis, and Paper Trading. Strategy Portfolio owns multi-Strategy composition and exact source-reuse evaluation; Paper Trading owns only simulated execution from completed evidence.",
     "developerName": "Varsity Tech Product",
     "category": "Productivity",
     "capabilities": [
@@ -34,7 +34,7 @@
     "websiteURL": "https://github.com/varsity-tech-product/quandora-plugins-staging",
     "defaultPrompt": [
       "Use Quandora Staging Factor Mining with my custom factor idea.",
-      "Use Quandora Staging Strategy to combine existing factors into one cross-sectional strategy or use Strategy Portfolio to combine multiple StrategyVersions.",
+      "Use Quandora Staging Strategy Portfolio to combine exact StrategyVersions and evaluate exact completed source runs.",
       "Use Quandora Staging Paper Trading to select an eligible source run and start a simulated run after confirmation."
     ],
     "brandColor": "#F28C00",

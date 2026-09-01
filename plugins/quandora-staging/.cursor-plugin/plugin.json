@@ -1,8 +1,8 @@
 {
   "name": "quandora-staging",
   "displayName": "Quandora Staging",
-  "version": "1.57",
-  "description": "Staging Quandora plugin with Factor and Strategy creation, analysis, and Paper Trading skills.",
+  "version": "1.59",
+  "description": "Staging Quandora plugin with Factor, Strategy, Strategy Portfolio, analysis, and Paper Trading skills.",
   "author": {
     "name": "Varsity Tech Product"
   },
@@ -15,6 +15,7 @@
     "factor-analysis",
     "backtesting",
     "strategy-building",
+    "strategy-portfolio",
     "strategy-analysis",
     "paper-trading",
     "quant"
@@ -24,6 +25,7 @@
     "quandora",
     "factor-mining",
     "strategy-building",
+    "strategy-portfolio",
     "backtesting",
     "quant"
   ],
