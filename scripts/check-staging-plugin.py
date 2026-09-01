@@ -28,6 +28,12 @@ PORTFOLIO_RESULT_METRIC_MARKERS = (
     "annual_std",
     "max_drawdown_pct",
 )
+PORTFOLIO_SOURCE_EVIDENCE_MARKERS = (
+    "summary",
+    "equity_curve",
+    "source_result_evidence_unavailable",
+    "Do not resubmit automatically",
+)
 ROUTING_MARKERS = {
     "factor-analysis": ("Do not use for creating", "$factor-mining"),
     "factor-mining": ("Do not use for the Strategy", "$strategy-building", "$factor-analysis"),
@@ -159,6 +165,16 @@ MARKETPLACE_MANIFESTS = (
     REPOSITORY_ROOT / ".claude-plugin" / "marketplace.json",
     REPOSITORY_ROOT / ".codebuddy-plugin" / "marketplace.json",
 )
+PORTFOLIO_METADATA_MANIFESTS = (
+    REPOSITORY_ROOT / ".claude-plugin" / "marketplace.json",
+    REPOSITORY_ROOT / ".codebuddy-plugin" / "marketplace.json",
+    REPOSITORY_ROOT / ".cursor-plugin" / "marketplace.json",
+    REPOSITORY_ROOT / "kimi.plugin.json",
+    PLUGIN_ROOT / ".claude-plugin" / "plugin.json",
+    PLUGIN_ROOT / ".codebuddy-plugin" / "plugin.json",
+    PLUGIN_ROOT / ".codex-plugin" / "plugin.json",
+    PLUGIN_ROOT / ".cursor-plugin" / "plugin.json",
+)
 FORBIDDEN_RUNTIME_MARKDOWN = {
     "/Users/": "workstation-specific POSIX path",
     "C:\\Users\\": "workstation-specific Windows path",
@@ -250,6 +266,12 @@ def _check_manifests(errors: list[str]) -> str | None:
         )
         errors.append(f"Plugin version drift: {rendered}")
         return None
+
+    for path in PORTFOLIO_METADATA_MANIFESTS:
+        if "Strategy Portfolio" not in path.read_text(encoding="utf-8"):
+            errors.append(
+                f"{path.relative_to(REPOSITORY_ROOT)}: metadata omits Strategy Portfolio"
+            )
 
     codex = _load_json(PLUGIN_ROOT / ".codex-plugin" / "plugin.json")
     prompts = codex.get("interface", {}).get("defaultPrompt") if isinstance(codex, dict) else None
@@ -381,6 +403,12 @@ def _check_skills(
             if marker not in portfolio_text:
                 errors.append(
                     "strategy-portfolio/SKILL.md: missing canonical Portfolio result metric "
+                    f"{marker!r}"
+                )
+        for marker in PORTFOLIO_SOURCE_EVIDENCE_MARKERS:
+            if marker not in portfolio_text:
+                errors.append(
+                    "strategy-portfolio/SKILL.md: missing source-evidence workflow marker "
                     f"{marker!r}"
                 )
 

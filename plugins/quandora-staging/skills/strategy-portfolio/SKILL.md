@@ -94,7 +94,10 @@ returned `source_strategy_run_id` for every component and preserve its paired
 Show the exact source mapping and let the user confirm the selection. Never invent, reuse across
 components, or substitute an FM/internal identifier. If `complete=false`, a component has no
 eligible source, or the selected source is absent from the returned component, do not submit an
-evaluation. Hand that component to `$strategy-building` for a new Strategy backtest and stop.
+evaluation. Retained `summary` or `equity_curve` evidence may still be synchronizing, so make one
+bounded re-read of the same source-discovery tool before reporting the incomplete state. Do not
+start a replacement backtest solely because discovery is incomplete. Hand the component to
+`$strategy-building` only when the user chooses to create new research evidence, then stop.
 
 ### Evaluate and Read Result
 
@@ -109,6 +112,11 @@ Submit only `portfolio_version_id`, `total_initial_cash`, and `source_runs`. Do 
 fees, optimizer fields, or execution overrides. PB verifies that selected source runs share the
 required execution facts. Portfolio definition and evaluation are separate mutations with
 separate confirmations.
+
+If submit returns retryable `source_result_evidence_unavailable`, treat it as retained-evidence
+synchronization, not proof that the StrategyRun failed. Do not resubmit automatically and do not
+start a replacement backtest. Re-read eligible sources once with the same exact PortfolioVersion,
+then report the remaining unavailable state for user direction.
 
 Use the submit response as the first PortfolioRun snapshot. Observe only that exact run with
 `get_strategy_portfolio_evaluation`; keep polling bounded and user-visible. Confirm each component

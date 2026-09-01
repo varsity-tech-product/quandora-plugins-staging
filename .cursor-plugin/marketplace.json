@@ -4,13 +4,13 @@
     "name": "Varsity Tech Product"
   },
   "metadata": {
-    "description": "Quandora staging marketplace for Factor Mining, Factor Analysis, Strategy Building, Strategy Analysis, and Paper Trading."
+    "description": "Quandora staging marketplace for Factor Mining, Factor Analysis, Strategy Building, Strategy Portfolio, Strategy Analysis, and Paper Trading."
   },
   "plugins": [
     {
       "name": "quandora-staging",
       "source": "plugins/quandora-staging",
-      "description": "Staging Quandora plugin with Factor and Strategy creation, analysis, and Paper Trading skills."
+      "description": "Staging Quandora plugin with Factor, Strategy, Strategy Portfolio, analysis, and Paper Trading skills."
     }
   ]
 }
