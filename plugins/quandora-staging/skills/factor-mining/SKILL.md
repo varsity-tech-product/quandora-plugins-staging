@@ -5,7 +5,7 @@ description: Use when the user explicitly asks about caller-owned or reusable Fa
 
 # Quandora Staging Factor Mining
 
-Bundled plugin version: 1.57
+Bundled plugin version: 1.58
 
 This skill owns Factor Mining research creation, caller-owned Factor family/history reads, Factor
 backtests, and Factor Result Bundle delivery through the authenticated `quandora-staging`

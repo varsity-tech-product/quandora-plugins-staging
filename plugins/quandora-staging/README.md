@@ -167,3 +167,9 @@ manifest.
 Plugin 1.57 enables Factor Analysis for active official factors through their public `factor_id`.
 It consumes the already deployed official Factor Card, IS chart-data, source, and Result Bundle
 actions without changing backend APIs, public tools, OAuth scopes, or production metadata.
+
+Plugin 1.58 preserves the 1.57 tool and scope inventory and makes Strategy Portfolio decimal
+preflight executable for Agents: exact values are normalized to shortest plain decimal strings
+before confirmation, so equivalent spellings such as `0.40` are never sent to the strict backend.
+This is guidance and package-validation only. It adds no backend API, OAuth scope, or production
+change, and remains unpublished until the matching PB/Auth contract repairs are reviewed.

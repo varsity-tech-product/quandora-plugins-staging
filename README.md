@@ -432,6 +432,12 @@ public `factor_id`. It uses the already deployed official Factor Card, IS chart-
 Result Bundle actions, preserves owner/private boundaries, and introduces no backend API, tool,
 OAuth-scope, migration, or production-plugin change.
 
+Plugin 1.58 preserves the 1.57 tool and scope inventory and makes Strategy Portfolio decimal
+preflight executable for Agents: exact values are normalized to shortest plain decimal strings
+before confirmation, so equivalent spellings such as `0.40` are never sent to the strict backend.
+This is guidance and package-validation only. It adds no backend API, OAuth scope, or production
+change, and remains unpublished until the matching PB/Auth contract repairs are reviewed.
+
 ## License
 
 This repository is licensed under the Apache License 2.0. See [LICENSE](LICENSE).
