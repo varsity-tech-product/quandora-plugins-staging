@@ -1,21 +1,18 @@
 ---
 name: strategy-analysis
-description: Analyze, diagnose, compare, and propose controlled improvements for existing Quandora cross-sectional Strategy results from owner-scoped server-persisted evidence. Use when a user asks why a Strategy worked or failed, wants six-chart diagnostics, requests factor-combination optimization ideas, or asks whether a completed backtest is ready for Paper Trading. Do not use to compose or submit a Strategy; route those requests to strategy-building.
+description: Analyzes existing Quandora cross-sectional Strategy results from owner-scoped server evidence. Use when the user asks about pass/fail, six-chart diagnosis, controlled improvements, or Paper readiness. Do not use to compose or submit a Strategy.
 ---
 
 # Strategy Analysis
 
-Bundled plugin version: 1.60
-
-Analyze one exact cross-sectional Strategy run as a non-submitting research workflow. Pair Product
-Backend's canonical run snapshot with owner-scoped retained artifacts and bounded six-chart data.
+Analyze one exact cross-sectional Strategy run as a non-submitting research workflow. Pair the
+canonical run snapshot with owner-scoped retained artifacts and bounded six-chart data.
 Distinguish observed evidence from inference, alternatives, and proposed experiments. Mint a
 short-lived artifact download ticket only when the user explicitly requests an export.
 
-OAuth and all credentials are handled by the host. Quandora access tokens expire after 7 days, and
-the host MCP client should use its stored rotating refresh token automatically. Never inspect,
-print, copy, store, or ask the user to paste API keys, bearer tokens, authorization codes, access
-tokens, refresh tokens, PKCE verifiers, service tokens, or other credentials.
+OAuth and all credentials are handled by the host. Never inspect, print, copy, store, or ask the
+user to paste API keys, bearer tokens, authorization codes, access tokens, refresh tokens, PKCE
+verifiers, service tokens, or other credentials.
 
 ## Scope And Routing
 
@@ -47,12 +44,16 @@ Trading.
 - Treat grade and score as QuantAI-relayed evidence, not as a promotion or research verdict.
 - Treat `ALL` as a combined scope that includes IS. Never describe it as pure OOS.
 
-## Available Actions
+## Primary And Discovery Actions
 
-Use only the actions owned by this analysis boundary:
+Use these primary analysis actions:
 
 - `get_strategy_backtest_artifact`
 - `get_strategy_backtest_analysis_data`
+
+The allowed read-only discovery prerequisites are `list_strategy_backtests` and
+`get_strategy_backtest`. They locate and establish one canonical run; they do not authorize a
+continue, rerun, archive, or other Strategy mutation.
 
 For an explicit user-requested artifact export only, use
 `create_strategy_artifact_download`. Do not mint a ticket speculatively, use a download as an
@@ -65,12 +66,14 @@ analysis prerequisite, or treat a ticket as permission to submit, rerun, or chan
 Prefer an exact `run_id` supplied by the user or already returned in the conversation. When no
 exact run id is supplied:
 
-1. Call `list_strategy_backtests` once with `{}`. It returns the owner's newest-first page with default
-   `limit: 10` and `offset: 0`.
+1. Call `list_strategy_backtests` once with a bounded `page_size`. Send a supplied Strategy name or
+   keyword as `query`, and send an exact public status, Strategy kind, or Strategy name as
+   `filters`. Omit search fields only for a browse or latest-run request; do not combine cursor
+   search with legacy `limit` or `offset`.
 2. Use returned identity, name, timestamps, status, and optional summary only to select a run.
 3. If more than one plausible run remains, ask the user to choose. Do not guess.
-4. Do not auto-page. Request another page only for an explicit older-run request that the first page
-   cannot satisfy.
+4. Do not auto-page. Request another page only when the explicit request cannot be satisfied by the
+   first page. Keep the same query, filters, and page size and copy `next_page_token` byte-for-byte.
 
 If an exact run id is supplied, skip discovery.
 
@@ -80,9 +83,9 @@ Call `get_strategy_backtest` with the exact `run_id`. Treat its canonical `compo
 authority for factor ids or weights, ranking, strategy type, window, capital, fees, rebalance bars,
 and attribution.
 
-If ranking was omitted at submission, the current Strategy default is neutral Top/Bottom 20%:
-`ranking: {mode: "percent", value: 20}` with `strategy_type: "neutral"`. Report the effective
-snapshot returned by `get_strategy_backtest`; do not infer parameters from chart labels.
+Report only the effective ranking and Strategy type returned by `get_strategy_backtest`. If an
+effective value is absent, mark it unavailable rather than inserting a remembered product default
+or inferring parameters from chart labels.
 
 If the run is not terminal, report the current state. Do not call `continue_strategy_backtest` from this
 read-only skill and do not substitute local files.
@@ -143,17 +146,10 @@ For every consequential conclusion, label it **Observed**, **Inference**, **Alte
 
 ### 6. Keep Portfolio Selection Separate From Diagnostic Buckets
 
-Actual Strategy selection comes only from `get_strategy_backtest.parameters.ranking`. Six-chart diagnostics use
-an adaptive grouping scheme based on the median daily cross-section:
-
-- median at least 20: 10 quantiles, minimum cross-section 20, diagnostic `top_pct: 0.10`;
-- median at least 15: 5 quantiles, minimum 10, diagnostic `top_pct: 0.20`;
-- median at least 9: 3 quantiles, minimum 6, diagnostic `top_pct: 0.30`;
-- median below 9: 2 quantiles, minimum `max(2, min(4, median))`, diagnostic `top_pct: 0.50`.
-
-`Q1` is the lowest prediction group and `QN` the highest. The diagnostic spread is
-`(QN - Q1) / 2`. Do not call these adaptive buckets the actual Top/Bottom 20% portfolio unless the
-effective run snapshot independently confirms a 20% ranking.
+Actual Strategy selection comes only from `get_strategy_backtest.parameters.ranking`. Interpret
+the separate adaptive diagnostic grouping only from the returned chart parameters and the rules in
+[six-chart-diagnostics.md](references/six-chart-diagnostics.md). Never relabel diagnostic buckets
+as the actual portfolio selection unless the effective run snapshot independently confirms it.
 
 ### 7. Propose Controlled Experiments
 

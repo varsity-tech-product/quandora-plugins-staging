@@ -22,8 +22,8 @@ Useful controlled tests include:
 - rerun with one suspected style control;
 - change one fee assumption to assess implementation fragility.
 
-Current server evidence does not guarantee per-factor correlations or automatic ablations. Propose them
-as future controlled runs rather than reporting nonexistent results.
+The public evidence described by this Skill does not guarantee per-factor correlations or automatic
+ablations. Propose them as future controlled runs rather than reporting nonexistent results.
 
 ## Paper Readiness Questions
 

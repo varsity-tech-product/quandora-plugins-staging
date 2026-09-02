@@ -1,11 +1,9 @@
 ---
 name: paper-trading
-description: Use when the user asks to start, inspect, monitor, or stop simulated Paper trading on Quandora Staging, including current assets/PnL, positions, equity, fills, funding, code, or Paper execution from a completed source-reuse Strategy Portfolio evaluation. Do not use to create or backtest Strategies or to create or evaluate Strategy Portfolios.
+description: Starts, monitors, inspects, or terminally stops simulated Quandora Paper execution. Use when the user asks about Paper PnL, positions, equity, fills, funding, code, or a completed Portfolio handoff. Do not use to create or backtest Strategies or Portfolios.
 ---
 
 # Quandora Staging Paper Trading
-
-Bundled plugin version: 1.60
 
 Use this skill through the authenticated `quandora-staging` MCP connection. It owns simulated
 execution only: eligible-source discovery, Paper start, lifecycle monitoring, execution data, and
@@ -44,10 +42,15 @@ Never call Strategy or Portfolio definition/evaluation tools here. In particular
 `create_strategy_portfolio`, `revise_strategy_portfolio`, or
 `submit_strategy_portfolio_evaluation`.
 
-Some hosts display a server-qualified current name such as
-`quandora_staging__start_paper_trade`. This is the same canonical tool, not an alias. If a
-canonical tool is unavailable, report the state and use only the host-native
-update/reconnect/browser-consent flow. Never bypass MCP with raw HTTP or pasted credentials.
+Tool names in this Skill are canonical actions on the configured `quandora-staging` MCP
+dependency. Let the host resolve its required server-qualified form. If an action is unavailable,
+use only the host-native update/reconnect/browser-consent flow. Never invent an alias, bypass MCP
+with raw HTTP, or paste credentials.
+
+For list actions, use a supplied name or keyword as `query` and exact public status, submit state,
+source kind, or Strategy kind as `filters`. Omit search fields only for browse or recent-items
+requests. Preserve the same query, filters, archive mode, and page size on continuation and copy
+opaque page tokens byte-for-byte. Never combine legacy `limit`/`offset` fields with cursor search.
 
 ## Safety and Data Model
 
@@ -74,7 +77,7 @@ If no handle is supplied, list one bounded page and show the safe Strategy label
 lifecycle and submit state, source capital, eligibility, and closed `eligibility_reasons`. Ask the
 user to select one exact source.
 
-`eligible` is a conservative PB preflight; final submit authority remains downstream.
+`eligible` is a conservative server preflight; final submit authority remains the submit action.
 `provider_validation_required` is not proof of eligibility. Unknown, missing, contradictory, or
 unsupported evidence fails closed.
 
@@ -125,29 +128,28 @@ completed evaluation exists, hand off and stop.
 Before `start_strategy_portfolio_paper_trade`, show the exact PortfolioRun, start date, leverage,
 each component's selected owner-local `source_strategy_run_id`, and allocated cash. Explain that
 each child is an independent static sleeve and its `initial_balance` equals that component's
-`allocated_cash`. The Paper command has no capital override. To change total capital, complete a
-new Portfolio through `$strategy-portfolio`; evaluation and Paper submit both inherit the
-creation-time frozen capital. Then obtain a new Portfolio evaluation and Paper confirmation.
+`allocated_cash`. The Paper command has no capital override. To change total capital, create a new
+Portfolio through `$strategy-portfolio`; evaluation and Paper both inherit creation-time capital.
+Then obtain a new Portfolio evaluation and Paper confirmation.
 
 Use `get_strategy_portfolio_paper_trade` for the parent lifecycle and ordered children. Verify and
 present the exact source lineage, safe Strategy/StrategyVersion identity, child Paper handle,
 allocated cash, and state for each sleeve.
 
-For a child sleeve with a non-null exact `child_paper_run_id`, ordinary single-Paper read tools may
-read that child: use `get_paper_trade` for lifecycle, one
-`refresh_paper_trade_account_snapshot` call for current assets/positions/PnL, and the equity,
-closed-position, fill, or funding tool only when requested. Apply the same freshness and no-polling
-rules to every child. Never pass the parent PortfolioPaperRun ID to a child Paper read.
+For a child sleeve with a non-null exact `child_paper_run_id`, ordinary single-Paper read actions
+may read that child. Use `get_paper_trade` for lifecycle, at most one
+`refresh_paper_trade_account_snapshot` call for current assets, positions, and PnL, and the equity,
+closed-position, fill, or funding action only when requested. Apply the same freshness and
+no-polling rules to every child. Never pass the parent PortfolioPaperRun identifier to a child
+Paper read.
 
-When the user asks which child contributes the most current profit, compare current child Paper
-PnL on one consistent observation pass and report each snapshot's freshness. This is Paper PnL
-contribution, not historical backtest return. Use each exact `source_strategy_run_id` with
-`get_paper_trade_source` to confirm its Strategy and StrategyVersion lineage. Hand off to
-`$strategy-analysis` or `$strategy-building` for a historical artifact only when an exact public
-Strategy run handle is returned; never substitute the StrategyVersion ID, child Paper ID, or an
-internal FM identifier. Current APIs may expose only the bound full-window source and not every
-older custom-window artifact under the same Strategy ID; report that limitation rather than
-inventing history.
+When the user asks which child contributes the most current profit, compare child Paper PnL on one
+consistent observation pass and report each snapshot's freshness. This is Paper PnL contribution,
+not historical backtest return. Use each exact `source_strategy_run_id` with
+`get_paper_trade_source` to confirm Strategy and StrategyVersion lineage. Hand off to
+`$strategy-analysis` or `$strategy-building` for historical evidence only when an exact public
+Strategy run handle is returned; never substitute a StrategyVersion, child Paper, or downstream
+identifier.
 
 Never claim shared margin, capital transfer, signal fusion, order netting, parent aggregate
 positions, parent real-time PnL, or a parent equity curve.
@@ -162,3 +164,6 @@ State whether the result concerns one Paper trade or Portfolio Paper, its lifecy
 relevant freshness or lineage semantics. If a handoff is needed, state that no Paper mutation was
 performed. Never expose credentials, provider identifiers, internal topology, or raw downstream
 payloads.
+
+Use the user's language for the answer while preserving tool names, schema fields, and returned
+identifiers exactly.

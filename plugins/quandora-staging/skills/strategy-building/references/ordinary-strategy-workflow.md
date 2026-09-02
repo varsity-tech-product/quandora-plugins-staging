@@ -4,9 +4,12 @@ Load this reference after routing to a single ordinary cross-sectional Strategy.
 
 ## Capabilities and Factor Selection
 
-For a bare available-factor request, call only `list_eligible_strategy_factors`: one page of 10 by
-default, or one explicitly requested page from 1 through 100. Do not auto-page or call Factor
-Mining inventory/status.
+For a bare available-factor request, call only `list_eligible_strategy_factors` with one bounded
+page. Put a supplied name or keyword in `query`; put exact public status, task, universe, or bar
+values in `filters`; use `include_factor_ids`, `factor_type`, or `tags` only when the user provided
+that constraint. Omit search fields only for a browse request. Do not auto-page or call Factor
+Mining inventory/status. A continuation preserves every search constraint and copies the opaque
+page token byte-for-byte.
 
 For composition, call `get_strategy_capabilities` once. Its `contract` is the request boundary and
 `product_defaults` explains omission behavior. The canonical
@@ -45,18 +48,18 @@ weights, ranking, direction, dates, capital, fees, rebalance, and attribution, t
 confirmation.
 
 Call the mutation once. Store only returned `result.run.id` as the Strategy run handle.
-`result.run.strategyId`, Factor IDs, rating provenance, and FM identifiers are not substitutes.
+`result.run.strategyId`, Factor IDs, rating provenance, and downstream identifiers are not substitutes.
 An ambiguous response without a handle does not authorize resubmission.
 
 ## Observation and Failure
 
-The submit response is the first snapshot. For a non-terminal run, wait 30 seconds and call
-`continue_strategy_backtest` at most twelve times. It re-drives work; do not interleave
-`get_strategy_backtest`. If still running, report it and stop before archive/bundle work.
+The submit response is the first snapshot. For a non-terminal run, follow returned retry guidance
+and use a bounded, user-visible sequence of `continue_strategy_backtest` calls. It re-drives work;
+do not interleave `get_strategy_backtest`. If the run remains active after the bounded observation
+window, report it and stop before archive or bundle work.
 
-After terminal status, observe archive state with the same run using at most five
-`get_strategy_backtest` calls separated by 30 seconds. Request a Result Bundle only after archive
-state is completed or partial.
+After terminal status, observe archive state on the same run with bounded reads and returned retry
+guidance. Request a Result Bundle only after archive state is completed or partial.
 
 `resultOutcome={status:"no_result",reasonCode:"zero_orders",orderCount:0}` is successful execution
 with no orders and no performance/Paper eligibility. Do not continue or rerun it to manufacture
@@ -64,6 +67,6 @@ evidence.
 
 For a failed terminal run, safe diagnostics and `fmRetryable` are advisory. A compile/Lean failure
 or false/absent retryability means repetition risk, not a prohibition. Use
-`rerun_strategy_backtest` only after the user requests a rerun, the exact failed source has FM run
-and immutable StrategyVersion lineage, the repetition risk is shown, and a separate explicit
+`rerun_strategy_backtest` only after the user requests a rerun, the exact failed source has the
+required immutable run and StrategyVersion lineage, the repetition risk is shown, and a separate explicit
 confirmation is obtained. Call it once; never resume the failed source or rebuild a new payload.

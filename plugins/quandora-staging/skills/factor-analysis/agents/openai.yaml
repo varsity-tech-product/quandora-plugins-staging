@@ -1,5 +1,5 @@
 interface:
-  display_name: "Factor Analysis"
+  display_name: "Factor Analysis Staging"
   short_description: "Diagnose factor health, ratings, and results"
   icon_small: "./assets/factor-analysis.png"
   icon_large: "./assets/factor-analysis.png"

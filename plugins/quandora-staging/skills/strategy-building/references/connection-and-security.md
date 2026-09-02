@@ -20,6 +20,9 @@ Use only the host-native reconnect path:
 - CodeBuddy/WorkBuddy: update or reinstall the plugin, reconnect its managed MCP server, finish
   browser authorization, then start a new chat.
 
-Do not use raw HTTP, local helper scripts, internal service paths, or credential paste. The only
-direct HTTP exception is immediate consumption of the opaque short-lived URL returned by
-`create_strategy_result_bundle_download`; never construct, modify, persist, reuse, or summarize it.
+Do not use raw HTTP, undocumented local helper scripts, internal service paths, or credential
+paste. The package's two documented Claude Desktop Code launchers are a narrow
+installation/authorization exception; they are not Strategy-workflow tools and never bypass the
+plugin-managed MCP identity. The only direct HTTP exception is immediate consumption of the opaque
+short-lived URL returned by `create_strategy_result_bundle_download`; never construct, modify,
+persist, reuse, or summarize it.

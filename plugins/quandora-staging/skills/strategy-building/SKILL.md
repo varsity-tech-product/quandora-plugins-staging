@@ -1,11 +1,9 @@
 ---
 name: strategy-building
-description: Use when the user asks to list available or eligible Strategy factors, including “列出可用因子”, or create, revise, backtest, continue, rerun, retrieve, or export one non-optimizer cross-sectional Quandora Staging Strategy using Official, Mine, or Shared factors. Do not use for multi-Strategy Portfolio composition, Paper execution, or deep result diagnosis.
+description: Builds one non-optimizer Quandora Strategy and lists available, eligible, or selectable factors. Use when the user asks to create, revise, backtest, continue, rerun, retrieve, or export that Strategy. Do not use for multi-Strategy Portfolio composition, Paper execution, or deep diagnosis.
 ---
 
 # Quandora Staging Strategy Building
-
-Bundled plugin version: 1.60
 
 This skill owns one Strategy: eligible-factor selection, ordinary Strategy submission, immutable
 versioned Strategy definitions, single-Strategy backtests, reruns, and ordinary Strategy Result
@@ -38,9 +36,9 @@ Use `get_quandora_guidance` only for the exact approved workflow described in su
 `get_paper_trade_source` is a read-only handoff used only to observe an explicit versioned source;
 its primary owner remains `$paper-trading`.
 
-Server-qualified names such as `quandora_staging__submit_adhoc_strategy_backtest` are canonical
-display forms, not aliases. If a canonical action is unavailable, do not use another name or
-alternate service.
+Tool names in this Skill are canonical actions on the configured `quandora-staging` MCP
+dependency. Let the host resolve its required server-qualified form. If an action is unavailable,
+do not invent another name or use an alternate service.
 
 ## Load Supporting Material Selectively
 
@@ -57,13 +55,15 @@ Do not load versioned-source or Result Bundle transport instructions for a bare 
 
 ## Route First
 
-- Bare “列出可用因子”, “available factors”, “eligible factors”, or “selectable factors” calls
-  only `list_eligible_strategy_factors`, one bounded page, then stops.
+- Bare requests for available, eligible, or selectable factors call only
+  `list_eligible_strategy_factors`, one bounded page, then stop. Use a supplied name or keyword as
+  `query`; use exact public status, task, universe, or bar values as `filters`; use
+  `include_factor_ids`, `factor_type`, or `tags` only when the user provided that constraint.
 - Requests for caller-owned Factor Mining families/history route to `$factor-mining`.
 - One ordinary Strategy uses the ordinary workflow.
 - An immutable versioned Strategy definition/source uses the versioned workflow.
-- Two or more exact StrategyVersions requested as one Portfolio route to `$strategy-portfolio`;
-  Portfolio weights are backend-derived equal weights, not Strategy-building input.
+- Two to five exact StrategyVersions requested as one Portfolio route to `$strategy-portfolio`;
+  Portfolio weights are backend-derived and are not Strategy-building input.
 - “Optimize this result” routes to `$strategy-analysis`, not optimizer authoring.
 
 ## Ordinary Strategy
@@ -100,8 +100,8 @@ directory or treat the exported ZIP as server-side analysis evidence.
 
 ## Safety
 
-- Treat Strategy, StrategyVersion, StrategyRun, FM lineage, Paper source, and Portfolio handles as
-  distinct opaque owner-scoped identifiers.
+- Treat Strategy, StrategyVersion, StrategyRun, downstream lineage, Paper source, and Portfolio
+  handles as distinct opaque owner-scoped identifiers.
 - An ambiguous mutation response is not permission to resubmit, revise, rerun, or switch payloads.
 - `continue_strategy_backtest` re-drives only a known non-terminal run.
 - `fmRetryable` is advisory. A failed immutable run may be rerun only after exact lineage checks,
@@ -118,3 +118,6 @@ was not started. If handing off, state clearly that no Portfolio or Paper mutati
 
 Never expose run handles in a general summary, tickets, download URLs, credentials, base64, or
 internal service metadata.
+
+Use the user's language for the answer while preserving tool names, schema fields, and returned
+identifiers exactly.

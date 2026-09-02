@@ -20,6 +20,39 @@ REQUIRED_SKILLS = {
     "strategy-building",
     "strategy-portfolio",
 }
+ALLOWED_REPOSITORY_ROOT_ENTRIES = {
+    ".agents",
+    ".claude-plugin",
+    ".codebuddy-plugin",
+    ".cursor-plugin",
+    ".github",
+    ".gitignore",
+    "CONTRIBUTING.md",
+    "LICENSE",
+    "README.md",
+    "assets",
+    "kimi.plugin.json",
+    "plugins",
+    "scripts",
+}
+ALLOWED_PLUGIN_ROOT_ENTRIES = {
+    ".claude-plugin",
+    ".codebuddy-plugin",
+    ".codex-plugin",
+    ".cursor-plugin",
+    ".mcp.json",
+    "README.md",
+    "assets",
+    "mcp.json",
+    "scripts",
+    "skills",
+}
+ALLOWED_SKILL_ENTRIES = {"SKILL.md", "agents", "assets", "references", "scripts"}
+CLAUDE_PLUGIN_SUPPORT_SCRIPTS = {
+    "claude-mcp-login-macos.sh",
+    "claude-mcp-login-windows.ps1",
+}
+PUBLIC_PROSE_CJK = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]")
 MAX_MAIN_SKILL_LINES = 220
 MAX_CODEX_DEFAULT_PROMPT_CHARS = 128
 PORTFOLIO_RESULT_METRIC_MARKERS = (
@@ -185,6 +218,17 @@ FORBIDDEN_RUNTIME_MARKDOWN = {
     "quandora-results/": "obsolete local result root",
     "10 MiB ZIP cap": "stale client-wide bundle cap",
     "at most 40 chunk calls": "stale fixed chunk-call cap",
+    "Bundled plugin version:": "release version coupled to Skill instructions",
+    "Release invariant:": "release-process history in user-facing documentation",
+    "## Release Order": "deployment sequencing in user-facing documentation",
+}
+SEARCH_DISCOVERY_SKILLS = {
+    "factor-analysis",
+    "factor-mining",
+    "paper-trading",
+    "strategy-analysis",
+    "strategy-building",
+    "strategy-portfolio",
 }
 REQUIRED_RESULT_DESTINATIONS = {
     PLUGIN_ROOT / "README.md": (
@@ -272,9 +316,21 @@ def _check_manifests(errors: list[str]) -> str | None:
         return None
 
     for path in PORTFOLIO_METADATA_MANIFESTS:
-        if "Strategy Portfolio" not in path.read_text(encoding="utf-8"):
+        manifest_text = path.read_text(encoding="utf-8")
+        if "Strategy Portfolio" not in manifest_text:
             errors.append(
                 f"{path.relative_to(REPOSITORY_ROOT)}: metadata omits Strategy Portfolio"
+            )
+        if "Staging Quandora" in manifest_text:
+            errors.append(
+                f"{path.relative_to(REPOSITORY_ROOT)}: use the canonical Quandora Staging name"
+            )
+        if ('"keywords"' in manifest_text or '"tags"' in manifest_text) and (
+            '"strategy-building"' not in manifest_text
+        ):
+            errors.append(
+                f"{path.relative_to(REPOSITORY_ROOT)}: discovery metadata omits "
+                "strategy-building"
             )
 
     codex = _load_json(PLUGIN_ROOT / ".codex-plugin" / "plugin.json")
@@ -298,6 +354,97 @@ def _check_manifests(errors: list[str]) -> str | None:
     return next(iter(distinct), None)
 
 
+def _check_package_shape(errors: list[str]) -> None:
+    for entry in REPOSITORY_ROOT.iterdir():
+        if entry.name == ".git":
+            continue
+        if entry.name not in ALLOWED_REPOSITORY_ROOT_ENTRIES:
+            errors.append(
+                f"{entry.name}: undeclared repository-root package or maintainer entry"
+            )
+
+    for entry in PLUGIN_ROOT.iterdir():
+        if entry.name not in ALLOWED_PLUGIN_ROOT_ENTRIES:
+            errors.append(
+                f"plugins/quandora-staging/{entry.name}: undeclared public package entry"
+            )
+
+    plugin_scripts = PLUGIN_ROOT / "scripts"
+    unsupported_script_entries = (
+        sorted(
+            path.name
+            for path in plugin_scripts.iterdir()
+            if path.is_symlink() or not path.is_file()
+        )
+        if plugin_scripts.is_dir()
+        else []
+    )
+    if unsupported_script_entries:
+        errors.append(
+            "plugins/quandora-staging/scripts: only regular files are allowed; "
+            f"unsupported={unsupported_script_entries}"
+        )
+    actual_plugin_scripts = (
+        {
+            path.name
+            for path in plugin_scripts.iterdir()
+            if path.is_file() and not path.is_symlink()
+        }
+        if plugin_scripts.is_dir()
+        else set()
+    )
+    if actual_plugin_scripts != CLAUDE_PLUGIN_SUPPORT_SCRIPTS:
+        missing = sorted(CLAUDE_PLUGIN_SUPPORT_SCRIPTS - actual_plugin_scripts)
+        unexpected = sorted(actual_plugin_scripts - CLAUDE_PLUGIN_SUPPORT_SCRIPTS)
+        errors.append(
+            "plugins/quandora-staging/scripts: expected only the documented Claude "
+            f"authorization launchers; missing={missing}, unexpected={unexpected}"
+        )
+    else:
+        package_readmes = (
+            REPOSITORY_ROOT / "README.md",
+            PLUGIN_ROOT / "README.md",
+        )
+        for script_name in sorted(CLAUDE_PLUGIN_SUPPORT_SCRIPTS):
+            script_path = plugin_scripts / script_name
+            script_text = script_path.read_text(encoding="utf-8")
+            if "plugin:quandora-staging:quandora-staging" not in script_text:
+                errors.append(
+                    f"{script_path.relative_to(REPOSITORY_ROOT)}: launcher must remain "
+                    "bound to the plugin-managed staging MCP identity"
+                )
+            for readme in package_readmes:
+                if script_name not in readme.read_text(encoding="utf-8"):
+                    errors.append(
+                        f"{readme.relative_to(REPOSITORY_ROOT)}: documented Claude "
+                        f"authorization bridge omits {script_name!r}"
+                    )
+        macos_launcher = plugin_scripts / "claude-mcp-login-macos.sh"
+        if macos_launcher.stat().st_mode & 0o111 == 0:
+            errors.append(
+                "plugins/quandora-staging/scripts/claude-mcp-login-macos.sh: "
+                "launcher must remain executable"
+            )
+
+    for skill_dir in sorted(path for path in SKILLS_ROOT.iterdir() if path.is_dir()):
+        for entry in skill_dir.iterdir():
+            if entry.name not in ALLOWED_SKILL_ENTRIES:
+                errors.append(
+                    f"{entry.relative_to(REPOSITORY_ROOT)}: undeclared Skill package entry"
+                )
+
+        scripts_dir = skill_dir / "scripts"
+        if scripts_dir.is_dir():
+            skill_text = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
+            for script in sorted(path for path in scripts_dir.rglob("*") if path.is_file()):
+                relative = script.relative_to(skill_dir).as_posix()
+                if relative not in skill_text:
+                    errors.append(
+                        f"{script.relative_to(REPOSITORY_ROOT)}: Skill script is not routed "
+                        "from SKILL.md"
+                    )
+
+
 def _skill_files(errors: list[str]) -> dict[str, Path]:
     files = {path.parent.name: path for path in SKILLS_ROOT.glob("*/SKILL.md")}
     missing = REQUIRED_SKILLS - set(files)
@@ -311,7 +458,6 @@ def _skill_files(errors: list[str]) -> dict[str, Path]:
 
 def _check_skills(
     errors: list[str],
-    package_version: str | None,
     skill_files: dict[str, Path],
 ) -> None:
     for skill_name, path in sorted(skill_files.items()):
@@ -328,6 +474,10 @@ def _check_skills(
             errors.append(f"{skill_name}/SKILL.md: frontmatter name does not match directory")
         if "description:" not in text[:1000]:
             errors.append(f"{skill_name}/SKILL.md: missing frontmatter description")
+        if "Use when" not in text[:1500] or "Do not use" not in text[:1500]:
+            errors.append(
+                f"{skill_name}/SKILL.md: description must state positive and negative triggers"
+            )
         for marker in ROUTING_MARKERS.get(skill_name, ()):
             if marker not in text:
                 errors.append(f"{skill_name}/SKILL.md: missing routing boundary {marker!r}")
@@ -336,12 +486,8 @@ def _check_skills(
                 f"{skill_name}/SKILL.md: version checks must remain explicit diagnostics, "
                 "not a mandatory entry probe"
             )
-        match = re.search(r"^Bundled plugin version: (\S+)$", text, re.MULTILINE)
-        if package_version and (match is None or match.group(1) != package_version):
-            actual = match.group(1) if match else "missing"
-            errors.append(
-                f"{skill_name}/SKILL.md: bundled version {actual!r} != {package_version!r}"
-            )
+        if "Use the user's language" not in text:
+            errors.append(f"{skill_name}/SKILL.md: missing user-language output policy")
 
         agent_file = path.parent / "agents" / "openai.yaml"
         if not agent_file.is_file():
@@ -356,6 +502,19 @@ def _check_skills(
                 errors.append(
                     f"{skill_name}/agents/openai.yaml: missing Quandora Staging MCP dependency"
                 )
+            for metadata_key in ("icon_small", "icon_large", "brand_color"):
+                if f"  {metadata_key}:" not in agent_text:
+                    errors.append(
+                        f"{skill_name}/agents/openai.yaml: missing interface.{metadata_key}"
+                    )
+            for icon_path in re.findall(
+                r'^\s+icon_(?:small|large):\s+"([^"]+)"$', agent_text, re.MULTILINE
+            ):
+                resolved_icon = (path.parent / icon_path).resolve()
+                if not resolved_icon.is_file():
+                    errors.append(
+                        f"{skill_name}/agents/openai.yaml: icon does not exist: {icon_path!r}"
+                    )
 
         for target in re.findall(r"\[[^\]]+\]\(([^)]+)\)", text):
             if target.startswith(("http://", "https://", "#")):
@@ -378,13 +537,25 @@ def _check_skills(
                         "linked from its primary SKILL.md"
                     )
 
+        if skill_name in SEARCH_DISCOVERY_SKILLS:
+            support_text = text
+            reference_dir = path.parent / "references"
+            if reference_dir.is_dir():
+                support_text += "\n" + "\n".join(
+                    reference.read_text(encoding="utf-8")
+                    for reference in sorted(reference_dir.glob("*.md"))
+                )
+            for marker in ("`query`", "`filters`", "byte-for-byte"):
+                if marker not in support_text:
+                    errors.append(
+                        f"{skill_name}: search/pagination guidance is missing {marker!r}"
+                    )
+
     all_tools = [
         tool for owned_tools in CANONICAL_TOOL_OWNERS.values() for tool in owned_tools
     ]
     if len(all_tools) != len(set(all_tools)):
         errors.append("canonical tool ownership map contains duplicate primary owners")
-    if len(all_tools) != 71:
-        errors.append(f"canonical tool ownership map must contain 71 tools, got {len(all_tools)}")
     for owner, owned_tools in CANONICAL_TOOL_OWNERS.items():
         owner_path = skill_files.get(owner)
         if owner_path is None:
@@ -427,6 +598,13 @@ def _check_runtime_markdown(errors: list[str], skill_files: dict[str, Path]) -> 
     ]
     for path in sorted(paths):
         text = path.read_text(encoding="utf-8")
+        cjk_match = PUBLIC_PROSE_CJK.search(text)
+        if cjk_match:
+            line = text.count("\n", 0, cjk_match.start()) + 1
+            errors.append(
+                f"{path.relative_to(REPOSITORY_ROOT)}:{line}: public package prose "
+                "must remain in consistent English"
+            )
         for needle, meaning in FORBIDDEN_RUNTIME_MARKDOWN.items():
             if needle in text:
                 errors.append(
@@ -452,8 +630,9 @@ def main() -> int:
     errors: list[str] = []
     try:
         package_version = _check_manifests(errors)
+        _check_package_shape(errors)
         skills = _skill_files(errors)
-        _check_skills(errors, package_version, skills)
+        _check_skills(errors, skills)
         _check_runtime_markdown(errors, skills)
     except ValueError as exc:
         errors.append(str(exc))

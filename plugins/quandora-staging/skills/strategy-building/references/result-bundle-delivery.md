@@ -3,9 +3,9 @@
 Load this reference only after an ordinary Strategy main run is terminal and archive state permits
 bundle metadata, or when the user explicitly requests that Result Bundle.
 
-Call `create_strategy_result_bundle_download` with the exact public PB Strategy run handle. Never
-substitute an FM run/version identifier. Treat the immutable metadata and manifest as authoritative;
-readable `available` and persisted readable `partial` snapshots may be delivered.
+Call `create_strategy_result_bundle_download` with the exact public Strategy run handle. Never
+substitute a downstream run/version identifier. Treat the immutable metadata and manifest as
+authoritative; readable `available` and persisted readable `partial` snapshots may be delivered.
 
 If the initial response is `pending` with `bundle_materializing`, wait at most ten seconds and make
 one fresh metadata call without a revision. If a readable partial reports pending items, one

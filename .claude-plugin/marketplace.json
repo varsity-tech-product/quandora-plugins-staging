@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "quandora-staging",
-      "description": "Staging Quandora plugin with Factor, Strategy, Strategy Portfolio, analysis, and Paper Trading skills.",
+      "description": "Quandora Staging plugin with Factor, Strategy, Strategy Portfolio, analysis, and Paper Trading skills.",
       "version": "1.60",
       "source": "./plugins/quandora-staging",
       "category": "Productivity",
@@ -17,7 +17,7 @@
         "quandora",
         "factor-mining",
         "factor-analysis",
-        "strategy",
+        "strategy-building",
         "strategy-portfolio",
         "strategy-analysis",
         "paper-trading",

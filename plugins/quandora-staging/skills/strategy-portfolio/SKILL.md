@@ -1,11 +1,9 @@
 ---
 name: strategy-portfolio
-description: Use when the user asks to combine two to five exact Quandora StrategyVersions into a backend-enforced equal-weight Portfolio, create or revise it, resolve compatible completed source runs, evaluate the normalized Portfolio result, or read that result. Do not use for single-Strategy construction or any Paper-trading execution.
+description: Composes two to five exact Quandora StrategyVersions into a backend-enforced equal-weight Portfolio and evaluates one compatible completed source set. Use when the user asks to create, revise, inspect, or evaluate a Strategy Portfolio. Do not use for single-Strategy construction or Paper execution.
 ---
 
 # Quandora Staging Strategy Portfolio
-
-Bundled plugin version: 1.60
 
 Use this skill through the authenticated `quandora-staging` MCP connection. It owns immutable
 multi-Strategy composition, versioning, exact source-run selection, source-reuse evaluation, and
@@ -42,36 +40,32 @@ Never call `start_strategy_portfolio_paper_trade`, `get_strategy_portfolio_paper
 `stop_strategy_portfolio_paper_trade` in this skill. Never submit a single-Strategy run as an
 implicit prerequisite.
 
-Some hosts display a server-qualified current name such as
-`quandora_staging__create_strategy_portfolio`. This is the same canonical tool, not an alias. If a
-canonical tool is unavailable, report that exact state and use only the host-native
-reconnect/update flow; do not bypass MCP with raw HTTP or pasted credentials.
+Tool names in this Skill are canonical actions on the configured `quandora-staging` MCP
+dependency. Let the host resolve its required server-qualified form. If an action is unavailable,
+use only the host-native reconnect/update flow; never invent an alias, bypass MCP with raw HTTP,
+or paste credentials.
 
 ## Portfolio Model
 
-- The current executable contract accepts two to five distinct exact `strategy_version_id` values.
-  One-sleeve Portfolio is a product target blocked on FM; until that contract exists, route one
-  Strategy to `$strategy-building` and do not advertise it as Portfolio execution.
-- Public create/revise input contains exact `strategy_version_id` values only. Do not ask for,
-  calculate, or submit `target_weight`; the backend derives equal weights and the returned
-  PortfolioVersion is authoritative.
-- Creation may include `initial_cash`; omitting it uses the backend default. Auth/PB enforce the
-  minimum and increment contract before mutation. Preserve and present the backend's exact value
-  or safe validation error instead of trying to repair an invalid value in the skill.
+- The executable contract accepts two to five distinct exact `strategy_version_id` values. Route
+  one Strategy to `$strategy-building`; do not advertise a one-sleeve Portfolio.
+- Public create and revise inputs contain only exact component `strategy_version_id` values. Do
+  not ask for, calculate, or submit `target_weight`; the backend derives equal weights and the
+  returned PortfolioVersion is authoritative.
+- Creation may include `initial_cash`; omission uses the backend default. Treat the schema and
+  returned validation as authority for the minimum and increment, and never repair an invalid
+  value silently.
 - A PortfolioVersion is immutable. A changed component creates a new version. Creation-time
   capital is frozen for the Portfolio; changing it requires a new Portfolio rather than an
   evaluation or Paper override.
-- A legacy Portfolio may return `initial_cash=null` when no trustworthy creation-time capital was
-  persisted. It remains readable, but do not evaluate or deploy it; report the backend migration
-  requirement instead of substituting the 10k default.
+- A legacy Portfolio with `initial_cash=null` remains readable but cannot be evaluated or deployed.
+  Report the backend migration requirement instead of substituting a default.
 - Components are independent capital sleeves. There is no signal fusion, shared margin, capital
   transfer, periodic rebalance, provider-order netting, or position netting.
 - Evaluation reuses one exact completed, non-optimizer source StrategyRun per component. It does
   not create child StrategyRuns and does not call QuantAI or another provider.
-- Reuse is valid only when all selected sources have one compatible backtest window and execution
-  facts. An independently eligible source per component is not sufficient.
-- FM normalizes each source equity curve by that source's initial equity, then applies the
-  Portfolio target-capital weights. The result is research evidence, not a Paper account.
+- The evaluation normalizes each source equity curve by that source's initial equity, then applies
+  the Portfolio target-capital weights. The result is research evidence, not a Paper account.
 - Treat Portfolio, PortfolioVersion, PortfolioRun, StrategyVersion, and source StrategyRun handles
   as distinct opaque owner-scoped identifiers.
 
@@ -80,8 +74,10 @@ reconnect/update flow; do not bypass MCP with raw HTTP or pasted credentials.
 ### Discover, Create, or Revise
 
 When no exact Portfolio handle is supplied, call `list_strategy_portfolios` once with a bounded
-`page_size` and default `include_archived=false`. Preserve `next_page_token` byte-for-byte and use
-it only when the user asks for another page.
+`page_size` and `include_archived=false` unless archived records were requested. Send a supplied
+name or keyword as `query` and an exact public status through `filters`; omit search fields only
+for browse or recent-items requests. Use another page only when the user requests it, preserving
+the same query, filters, archive mode, and page size and copying `next_page_token` byte-for-byte.
 
 For a new composition, require two to five exact StrategyVersion handles. Never guess versions
 from similar names. If exact versions do not exist, hand off to `$strategy-building` and stop.
@@ -100,27 +96,23 @@ ambiguity and stop for user direction.
 
 After selecting one exact PortfolioVersion, call
 `list_eligible_strategy_portfolio_source_runs` with a bounded `per_component_limit`. It returns
-each ordered component, its eligible completed non-optimizer sources, each source's exact
+each ordered component, eligible completed non-optimizer sources, each source's exact
 `backtest_period`, and an `alignment` decision.
 
-- `compatible`: require `complete=true` and choose one exact returned
-  `compatible_source_sets[]` mapping. Preserve every paired `strategy_version_id` and
-  `source_strategy_run_id`; never build a selector set by mixing rows from different returned
-  compatible sets.
-- `alignment_required`: every component has some eligible evidence, but no common execution
-  window exists. Do not submit. The intended product behavior is automatic backend-default
-  full-window StrategyVersion/StrategyRun preparation under the same Strategy ID, but current FM
-  does not provide that mutation contract. Report the upstream block; do not fake a version,
-  manually reinterpret a custom-window run, or trigger replacement backtests from this skill.
-- `source_evidence_incomplete`: retained `summary` or `equity_curve` evidence may still be
-  synchronizing. Make one bounded re-read, then report the incomplete state without resubmitting
-  or starting a replacement backtest.
-- `alignment_unknown`: fail closed during a rolling PB/Auth deployment. Do not submit.
+- `alignment.status=compatible`: require `complete=true` and choose one exact returned
+  `alignment.compatible_source_sets[]` mapping. Preserve every paired `strategy_version_id` and
+  `source_strategy_run_id`; never combine rows from different returned sets.
+- `alignment.status=alignment_required`: each component has eligible evidence but no common
+  execution window. Do not submit or trigger replacement backtests. Report that automatic
+  full-window preparation is unavailable until the upstream mutation contract exists.
+- `alignment.status=source_evidence_incomplete`: make one bounded re-read because retained `summary` or
+  `equity_curve` evidence may still be synchronizing, then report the incomplete state.
+- `alignment.status=alignment_unknown`: fail closed during a rolling backend deployment and do not
+  submit.
 
-Do not ask the user to customize source-run selectors. If several compatible sets are returned
-without an authoritative backend default, report ambiguous readiness and stop instead of silently
-choosing by identifier order. Never invent, reuse across components, or substitute an FM/internal
-identifier.
+Do not ask the user to customize source selectors. If several compatible sets are returned without
+an authoritative backend default, report ambiguous readiness and stop. Never invent, reuse across
+components, or substitute a downstream/internal identifier.
 
 ### Evaluate and Read Result
 
@@ -128,13 +120,13 @@ Before `submit_strategy_portfolio_evaluation`, show and confirm:
 
 - the exact PortfolioVersion;
 - the exact creation-time `initial_cash` returned by the Portfolio read;
-- one exact source selector for every component;
-- that the selected sources are already aligned, so no Strategy is rerun and no provider is called.
+- one intact compatible source set;
+- that the aligned sources are reused without rerunning a Strategy or calling a provider.
 
-Submit only `portfolio_version_id` and one exact returned compatible `source_runs` set. Do not send
-capital, dates, fees, weights, optimizer fields, or execution overrides. The backend obtains the
-frozen Portfolio capital and verifies that selected source runs share the required execution
-facts. Portfolio definition and evaluation are separate mutations with separate confirmations.
+Submit only `portfolio_version_id` and the exact returned compatible `source_runs` set. Do not send
+capital, dates, fees, weights, optimizer fields, or execution overrides. The server obtains frozen
+Portfolio capital and re-verifies the selected sources' execution facts. Portfolio definition and
+evaluation are separate mutations with separate confirmations.
 
 If submit returns retryable `source_result_evidence_unavailable`, treat it as retained-evidence
 synchronization, not proof that the StrategyRun failed. Do not resubmit automatically and do not
@@ -146,7 +138,7 @@ Use the submit response as the first PortfolioRun snapshot. Observe only that ex
 reports `execution_contract=source_reuse_v1` and preserves the selected owner-local source handle.
 
 After completion, call `get_strategy_portfolio_evaluation_result`. Present normalized aggregate
-metrics and `equity_curve.points[].ts/equity`. For new source-reuse results, preserve FM's QuantAI
+metrics and `equity_curve.points[].ts/equity`. For new source-reuse results, preserve the returned
 metric names and units: `summary.net_profit_pct`, `annual_return_pct`, `annual_std`,
 `max_drawdown_pct`, `start_equity`, `end_equity`, and any returned `sharpe`, `sortino`,
 `total_fees`, or `funding_net_cash_flow`. Percentage-suffixed metrics are percentage values;
@@ -169,3 +161,6 @@ State whether the outcome is a Portfolio definition/version, source selection, P
 aggregate result. Summarize the user-visible composition, source lineage, and independent-sleeve
 model. When handing off, state that no Paper run has started. Do not expose credentials, provider
 identifiers, internal topology, or raw downstream payloads.
+
+Use the user's language for the answer while preserving tool names, schema fields, and returned
+identifiers exactly.

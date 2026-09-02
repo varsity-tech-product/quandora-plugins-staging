@@ -33,8 +33,9 @@ Diagnostic grouping is separate from actual portfolio selection:
 
 - Inspect whether style exposure is persistent, episodic, or changes sign.
 - A stable exposure can explain persistent performance but also reduce incremental alpha.
-- Size currently means the logarithm of trailing 90 natural-day median positive quote volume. It is
-  not open-interest notional.
+- Interpret Size from returned chart/style metadata. When that metadata declares the trailing
+  90-natural-day median-positive-quote-volume convention, Size is its logarithm rather than
+  open-interest notional.
 
 ## Chart 4: Prediction Decay
 
@@ -50,7 +51,8 @@ Diagnostic grouping is separate from actual portfolio selection:
 
 ## Chart 6: Daily Turnover
 
-- Read the current Strategy single-sided `/2` convention.
+- Apply the returned or declared Strategy turnover convention; the standard retained projection is
+  single-sided `/2`.
 - Relate spikes to exposure changes, rebalance cadence, or regime transitions.
 - Use the retained EMA only as a smoother; do not replace the raw series with it.
 
