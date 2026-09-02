@@ -28,6 +28,22 @@ When a required action is unavailable, update or reinstall the plugin, reconnect
 server, and retry only after the host reports a healthy authorized connection. Never bypass MCP
 with raw internal HTTP requests.
 
+### Claude Desktop Code authorization bridge
+
+The plugin intentionally ships these two host-support assets:
+
+```text
+scripts/claude-mcp-login-macos.sh
+scripts/claude-mcp-login-windows.ps1
+```
+
+They support the authorization step of the one-click Claude Desktop Code Agent installation flow,
+where redirected command input/output cannot host the official interactive `claude mcp login`
+prompt. Both launch only `plugin:quandora-staging:quandora-staging` in a native interactive
+terminal, keep OAuth output out of status files, and require manual browser identity and consent.
+They are not general shell utilities, local MCP servers, or credential helpers. Interactive Claude
+Code users should use the direct host command instead.
+
 ## Search and pagination
 
 Discovery actions use a user-provided name or keyword as `query`, exact public fields as

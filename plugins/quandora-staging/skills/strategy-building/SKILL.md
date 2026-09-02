@@ -1,6 +1,6 @@
 ---
 name: strategy-building
-description: Builds one non-optimizer Quandora Strategy and lists eligible factors, including “列出可用因子”. Use when the user asks to create, revise, backtest, continue, rerun, retrieve, or export that Strategy. Do not use for multi-Strategy Portfolio composition, Paper execution, or deep diagnosis.
+description: Builds one non-optimizer Quandora Strategy and lists available, eligible, or selectable factors. Use when the user asks to create, revise, backtest, continue, rerun, retrieve, or export that Strategy. Do not use for multi-Strategy Portfolio composition, Paper execution, or deep diagnosis.
 ---
 
 # Quandora Staging Strategy Building
@@ -55,9 +55,9 @@ Do not load versioned-source or Result Bundle transport instructions for a bare 
 
 ## Route First
 
-- Bare “列出可用因子”, “available factors”, “eligible factors”, or “selectable factors” calls
-  only `list_eligible_strategy_factors`, one bounded page, then stops. Use a supplied name or
-  keyword as `query`; use exact public status, task, universe, or bar values as `filters`; use
+- Bare requests for available, eligible, or selectable factors call only
+  `list_eligible_strategy_factors`, one bounded page, then stop. Use a supplied name or keyword as
+  `query`; use exact public status, task, universe, or bar values as `filters`; use
   `include_factor_ids`, `factor_type`, or `tags` only when the user provided that constraint.
 - Requests for caller-owned Factor Mining families/history route to `$factor-mining`.
 - One ordinary Strategy uses the ordinary workflow.

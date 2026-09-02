@@ -22,7 +22,9 @@ Use the host-native recovery path:
 - CodeBuddy/WorkBuddy: update or reinstall the plugin, reconnect its managed Remote MCP server,
   finish browser authorization, then start a new chat.
 
-Do not use raw HTTP, local helper scripts, internal service endpoints, local execution keys, or a
-credential-paste flow. The only direct HTTP exception is immediate consumption of an unmodified,
-short-lived Result Bundle URL returned by the canonical bundle-ticket action. Never construct,
-persist, log, reuse, or summarize that URL.
+Do not use raw HTTP, undocumented local helper scripts, internal service endpoints, local execution
+keys, or a credential-paste flow. The package's two documented Claude Desktop Code launchers are a
+narrow installation/authorization exception; they are not business-workflow tools and never bypass
+the plugin-managed MCP identity. The only direct HTTP exception is immediate consumption of an
+unmodified, short-lived Result Bundle URL returned by the canonical bundle-ticket action. Never
+construct, persist, log, reuse, or summarize that URL.

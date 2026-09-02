@@ -48,11 +48,10 @@ Do not load Result Bundle transport rules for a list/history-only request.
 
 ## Route First
 
-- Bare “列出可用因子”, “available factors”, “eligible factors”, “selectable factors”, or the
-  Strategy factor pool exits to `$strategy-building` without calling a Factor Mining status or
-  inventory action.
-- “我的 Factor Mining 因子”, reusable Factor families, branches, versions, history, or prior
-  Factor runs remains here.
+- Bare requests for available, eligible, or selectable factors in the Strategy factor pool exit
+  to `$strategy-building` without calling a Factor Mining status or inventory action.
+- Caller-owned Factor Mining families, branches, versions, history, or prior Factor runs remain
+  here.
 - New public-task or custom-factor work remains here.
 
 For a normal creation workflow, call `get_factor_mining_status` once after routing. Do not call it

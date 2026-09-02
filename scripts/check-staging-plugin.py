@@ -44,9 +44,15 @@ ALLOWED_PLUGIN_ROOT_ENTRIES = {
     "README.md",
     "assets",
     "mcp.json",
+    "scripts",
     "skills",
 }
 ALLOWED_SKILL_ENTRIES = {"SKILL.md", "agents", "assets", "references", "scripts"}
+CLAUDE_PLUGIN_SUPPORT_SCRIPTS = {
+    "claude-mcp-login-macos.sh",
+    "claude-mcp-login-windows.ps1",
+}
+PUBLIC_PROSE_CJK = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]")
 MAX_MAIN_SKILL_LINES = 220
 MAX_CODEX_DEFAULT_PROMPT_CHARS = 128
 PORTFOLIO_RESULT_METRIC_MARKERS = (
@@ -359,6 +365,63 @@ def _check_package_shape(errors: list[str]) -> None:
                 f"plugins/quandora-staging/{entry.name}: undeclared public package entry"
             )
 
+    plugin_scripts = PLUGIN_ROOT / "scripts"
+    unsupported_script_entries = (
+        sorted(
+            path.name
+            for path in plugin_scripts.iterdir()
+            if path.is_symlink() or not path.is_file()
+        )
+        if plugin_scripts.is_dir()
+        else []
+    )
+    if unsupported_script_entries:
+        errors.append(
+            "plugins/quandora-staging/scripts: only regular files are allowed; "
+            f"unsupported={unsupported_script_entries}"
+        )
+    actual_plugin_scripts = (
+        {
+            path.name
+            for path in plugin_scripts.iterdir()
+            if path.is_file() and not path.is_symlink()
+        }
+        if plugin_scripts.is_dir()
+        else set()
+    )
+    if actual_plugin_scripts != CLAUDE_PLUGIN_SUPPORT_SCRIPTS:
+        missing = sorted(CLAUDE_PLUGIN_SUPPORT_SCRIPTS - actual_plugin_scripts)
+        unexpected = sorted(actual_plugin_scripts - CLAUDE_PLUGIN_SUPPORT_SCRIPTS)
+        errors.append(
+            "plugins/quandora-staging/scripts: expected only the documented Claude "
+            f"authorization launchers; missing={missing}, unexpected={unexpected}"
+        )
+    else:
+        package_readmes = (
+            REPOSITORY_ROOT / "README.md",
+            PLUGIN_ROOT / "README.md",
+        )
+        for script_name in sorted(CLAUDE_PLUGIN_SUPPORT_SCRIPTS):
+            script_path = plugin_scripts / script_name
+            script_text = script_path.read_text(encoding="utf-8")
+            if "plugin:quandora-staging:quandora-staging" not in script_text:
+                errors.append(
+                    f"{script_path.relative_to(REPOSITORY_ROOT)}: launcher must remain "
+                    "bound to the plugin-managed staging MCP identity"
+                )
+            for readme in package_readmes:
+                if script_name not in readme.read_text(encoding="utf-8"):
+                    errors.append(
+                        f"{readme.relative_to(REPOSITORY_ROOT)}: documented Claude "
+                        f"authorization bridge omits {script_name!r}"
+                    )
+        macos_launcher = plugin_scripts / "claude-mcp-login-macos.sh"
+        if macos_launcher.stat().st_mode & 0o111 == 0:
+            errors.append(
+                "plugins/quandora-staging/scripts/claude-mcp-login-macos.sh: "
+                "launcher must remain executable"
+            )
+
     for skill_dir in sorted(path for path in SKILLS_ROOT.iterdir() if path.is_dir()):
         for entry in skill_dir.iterdir():
             if entry.name not in ALLOWED_SKILL_ENTRIES:
@@ -531,6 +594,13 @@ def _check_runtime_markdown(errors: list[str], skill_files: dict[str, Path]) -> 
     ]
     for path in sorted(paths):
         text = path.read_text(encoding="utf-8")
+        cjk_match = PUBLIC_PROSE_CJK.search(text)
+        if cjk_match:
+            line = text.count("\n", 0, cjk_match.start()) + 1
+            errors.append(
+                f"{path.relative_to(REPOSITORY_ROOT)}:{line}: public package prose "
+                "must remain in consistent English"
+            )
         for needle, meaning in FORBIDDEN_RUNTIME_MARKDOWN.items():
             if needle in text:
                 errors.append(

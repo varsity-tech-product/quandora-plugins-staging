@@ -26,7 +26,7 @@ fields, casts, runtime expressions, or supported columns from memory.
 
 ## Custom Classification
 
-Before `create_custom_factor_session`, obtain one complete current successful
+Before `create_custom_factor_session`, obtain one complete successful
 `list_factor_mining_tasks` response. Every row must be open, uniquely identified, bounded, and
 contain the required category, allowed-data, and research-semantics fields. A malformed or empty
 response is a contract mismatch.
@@ -35,7 +35,8 @@ Compare the thesis with all returned research semantics. Choose the exact catego
 honest match, or the explicit `Other` fallback when no row fits. Never classify from task ID/title,
 invent a category vocabulary, fabricate an `Other` row, or copy a public task ID into the custom
 session. Create the session with exactly `title`, `description`, `category`, `allowed_data`, and
-`fwd_period` (normally 7 unless the user chose another supported horizon).
+the supported `fwd_period` selected by the user or returned workflow contract; do not insert a
+remembered default.
 
 Keep Task category and `FACTOR_TYPE` distinct but aligned: category is the product label;
 `FACTOR_TYPE` is a unique mechanism-specific identifier, never a bare category. If the mechanism

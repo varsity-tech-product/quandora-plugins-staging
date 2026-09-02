@@ -65,6 +65,22 @@ claude plugin install quandora-staging@quandora-staging
 claude mcp login plugin:quandora-staging:quandora-staging
 ```
 
+Claude Desktop Code Agents can run commands with redirected input/output even though the official
+login command needs an interactive terminal. The installed plugin therefore retains two
+fixed-purpose authorization launchers:
+
+```text
+plugins/quandora-staging/scripts/claude-mcp-login-macos.sh
+plugins/quandora-staging/scripts/claude-mcp-login-windows.ps1
+```
+
+The one-click Agent flow first installs the plugin with the official Claude plugin commands, then
+uses the platform launcher for the authorization step. The launcher invokes only the exact
+plugin-managed MCP identity, opens a native interactive terminal, suppresses OAuth output, and
+leaves browser sign-in, MFA, and consent with the user. It does not create a local MCP server or
+accept pasted credentials. Interactive Claude Code users should continue using the direct
+`claude mcp login` command above.
+
 For the Claude Desktop Chat connector, add and authorize:
 
 ```text

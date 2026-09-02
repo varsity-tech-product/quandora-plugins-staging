@@ -41,7 +41,7 @@ Possible causes include source-field availability, warm-up, invalid denominators
 or intentional filters and abstention. Inspect inert source and declared applicability. Compare the
 target universe with effective cross-sectional breadth over time when that evidence exists. Do not
 remove a meaningful filter merely to pass Health; first determine whether the factor definition and
-the current Health basis express the same research domain.
+the recorded Health basis express the same research domain.
 
 ### Health Passed But Final Grade Failed
 
@@ -74,7 +74,7 @@ specific runtime error.
 - **Style control:** neutralize or stratify one suspected style; expect residual spread if the factor
   has incremental content.
 - **Window stability:** rerun the same definition on a distinct declared window when the product
-  workflow supports it. Do not call current external-agent evidence OOS.
+  workflow supports it. Do not call the available external-agent evidence OOS.
 
 For each proposal, state the independent variable, expected change, confirmation metric, and
 tradeoff. Prefer two or three high-information tests over a long optimization list.

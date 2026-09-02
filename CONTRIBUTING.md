@@ -13,4 +13,8 @@ search/pagination guidance. It also rejects orphaned Skill scripts, release-proc
 runtime documentation, per-Skill bundled-version copy, retired tool names, and mandatory version
 probes in normal entry paths.
 
+The public package has one explicit host-support exception: the two fixed-purpose Claude Desktop
+Code authorization launchers under `plugins/quandora-staging/scripts/`. The validator rejects every
+other plugin-root script and requires both launchers to remain documented.
+
 The check is database-free and must remain suitable for pull-request CI.
