@@ -4,6 +4,7 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -14,5 +15,21 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Validate manifests and skills
         run: python3 scripts/check-staging-plugin.py
+      - name: Test internal plugin auditor
+        run: python3 .agents/skills/quandora-plugin-audit/scripts/test_audit_plugin.py
+      - name: Audit changed or release package
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ -n "$BASE_REF" ]; then
+            python3 .agents/skills/quandora-plugin-audit/scripts/audit_plugin.py \
+              --mode changed \
+              --base-ref "$BASE_REF"
+          else
+            python3 .agents/skills/quandora-plugin-audit/scripts/audit_plugin.py \
+              --mode full
+          fi

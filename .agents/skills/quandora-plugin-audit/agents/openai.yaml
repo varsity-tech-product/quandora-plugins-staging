@@ -1,0 +1,7 @@
+interface:
+  display_name: "Quandora Plugin Audit"
+  short_description: "Audit Quandora plugin quality and contract alignment"
+  default_prompt: "Use $quandora-plugin-audit to run a full release-readiness audit of the staging plugin."
+
+policy:
+  allow_implicit_invocation: true
