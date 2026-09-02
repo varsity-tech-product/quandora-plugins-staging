@@ -5,7 +5,7 @@ description: Use when the user asks to list available or eligible Strategy facto
 
 # Quandora Staging Strategy Building
 
-Bundled plugin version: 1.59
+Bundled plugin version: 1.60
 
 This skill owns one Strategy: eligible-factor selection, ordinary Strategy submission, immutable
 versioned Strategy definitions, single-Strategy backtests, reruns, and ordinary Strategy Result
@@ -62,7 +62,8 @@ Do not load versioned-source or Result Bundle transport instructions for a bare 
 - Requests for caller-owned Factor Mining families/history route to `$factor-mining`.
 - One ordinary Strategy uses the ordinary workflow.
 - An immutable versioned Strategy definition/source uses the versioned workflow.
-- Two or more exact StrategyVersions with target weights route to `$strategy-portfolio`.
+- Two or more exact StrategyVersions requested as one Portfolio route to `$strategy-portfolio`;
+  Portfolio weights are backend-derived equal weights, not Strategy-building input.
 - “Optimize this result” routes to `$strategy-analysis`, not optimizer authoring.
 
 ## Ordinary Strategy

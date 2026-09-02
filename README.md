@@ -114,10 +114,12 @@ Quandora Staging Strategy Building owns one non-optimizer Strategy through direc
 tools. New optimizer authoring and execution are retired; historical optimizer-backed versions are
 read-only and cannot start a new Strategy, Portfolio, or Paper run.
 
-Quandora Staging Strategy Portfolio combines at least two exact StrategyVersions with positive
-weights summing to one, selects one exact completed non-optimizer source run per component, and
-evaluates their normalized weighted equity without rerunning a Strategy or calling a provider. It
-hands a completed source-reuse PortfolioRun to Paper Trading only after a separate user request.
+Quandora Staging Strategy Portfolio combines two to five exact StrategyVersions with backend-
+derived equal weights, accepts creation-time capital with a 10k default, 2k minimum, and 1k steps,
+resolves one exact compatible completed non-optimizer source set, and evaluates normalized equity
+with the frozen Portfolio capital without rerunning an already aligned Strategy or calling a
+provider. It fails closed when full-window alignment is not yet prepared. It hands a completed
+source-reuse PortfolioRun to Paper Trading only after a separate user request.
 
 Quandora Staging Paper Trading discovers eligible non-optimizer sources, then starts and monitors
 single-strategy or static-sleeve Strategy Portfolio Paper runs after confirmation. Portfolio Paper
@@ -332,12 +334,13 @@ The verified FM-owned Strategy ZIP is retained without automatic extraction or r
 Use the skill command when available:
 
 ```text
-/quandora-staging:strategy-portfolio combine these StrategyVersions with 60/40 weights
+/quandora-staging:strategy-portfolio combine these StrategyVersions with 12000 initial capital
 /quandora-staging:strategy-portfolio evaluate my portfolio from exact completed source runs
 ```
 
-Strategy Portfolio requires at least two exact StrategyVersions and positive decimal weights that
-sum to one. It owns Portfolio definition/versioning, exact source selection, and source-reuse
+Strategy Portfolio currently requires two to five exact StrategyVersions and derives equal weights
+in the backend. Creation capital defaults to 10k, has a 2k minimum, and changes in 1k steps. It owns
+Portfolio definition/versioning, compatible source-set resolution, and frozen-capital source-reuse
 evaluation only. Starting Paper from a completed PortfolioRun is a separate `$paper-trading`
 workflow and confirmation.
 
@@ -448,6 +451,16 @@ capital; it creates no child StrategyRun and makes no provider call. New optimiz
 execution are retired, while historical classification remains read-only. Portfolio Paper keeps
 exact source lineage and uses component allocated cash for each child. Publish only after matching
 PB/Auth PRs are reviewed and merged; production remains unchanged.
+
+Plugin 1.60 hardens Portfolio readiness around the latest product consensus. The executable staging
+path accepts two to five sleeves, relies on backend-enforced equal weights and creation-time capital
+(10k default, 2k minimum, 1k steps), exposes exact source backtest periods, and submits only an
+intact compatible source set without a capital override. Alignment-required and mixed-rollout
+states fail closed because FM does not yet provide automatic backend-default full-window
+StrategyVersion preparation. Portfolio Paper guidance reads child lifecycle/PnL with ordinary
+child Paper handles and keeps current Paper profit contribution distinct from historical backtest
+return. Publish only after the matching PB/Auth PRs are reviewed and merged; production remains
+unchanged.
 
 ## License
 
