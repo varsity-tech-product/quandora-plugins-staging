@@ -10,13 +10,18 @@ for pre-release Quandora workflow testing, not production research or live-money
 | `factor-mining` | Factor creation, validation, backtests, continuation, history, and export | Deep result diagnosis or the Strategy eligible-factor pool |
 | `factor-analysis` | Read-only diagnosis of owned or active-official Factor evidence | Factor submission or automatic optimization |
 | `strategy-building` | One Strategy's factor selection, definition, backtests, reruns, and export | Multi-Strategy composition or Paper execution |
-| `strategy-portfolio` | Multi-Strategy definition, exact source selection, evaluation, and result reads | Single-Strategy creation or Paper execution |
+| `strategy-portfolio` | Two-to-five-sleeve equal-weight definition, compatible source selection, evaluation, and result reads | Single-Strategy creation or Paper execution |
 | `strategy-analysis` | Read-only diagnosis of one Strategy result | Strategy mutation or Paper execution |
 | `paper-trading` | Confirmed simulated execution and monitoring | Strategy or Portfolio research creation |
 
 Each Skill uses the minimum required MCP actions, preserves opaque identifiers and continuation
 tokens exactly, and keeps observed evidence separate from inference. Tool schemas, authorization,
 live defaults, and mutation authority remain server-owned.
+
+Strategy Portfolio capital is fixed at creation. The backend derives equal component weights,
+defaults omitted creation capital to `10000`, accepts whole-thousand values from `2000` upward,
+and admits evaluation only from one intact returned compatible source set. Revision, evaluation,
+and Portfolio Paper do not accept capital overrides.
 
 ## Connection
 

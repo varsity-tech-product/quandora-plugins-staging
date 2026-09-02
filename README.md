@@ -22,7 +22,7 @@ live-money trading. Production users should install
 | Factor Mining | Create, validate, backtest, continue, and export one Factor Mining result. |
 | Factor Analysis | Diagnose an existing owned or active-official Factor result without submitting changes. |
 | Strategy Building | Select eligible factors and create, revise, backtest, rerun, or export one Strategy. |
-| Strategy Portfolio | Compose exact StrategyVersions and evaluate exact completed source runs. |
+| Strategy Portfolio | Compose two to five exact StrategyVersions with backend-derived equal weights and evaluate one compatible completed source set. |
 | Strategy Analysis | Diagnose one Strategy result and propose controlled experiments. |
 | Paper Trading | Start, monitor, inspect, or terminally stop simulated execution after confirmation. |
 
@@ -128,7 +128,7 @@ Ask naturally or invoke a Skill explicitly when the host supports Skill commands
 /quandora-staging:factor-mining show public factor tasks
 /quandora-staging:factor-analysis analyze my latest factor result
 /quandora-staging:strategy-building list eligible factors matching momentum
-/quandora-staging:strategy-portfolio combine these StrategyVersions with 60/40 weights
+/quandora-staging:strategy-portfolio combine these StrategyVersions with 12000 initial capital
 /quandora-staging:strategy-analysis analyze my latest completed strategy
 /quandora-staging:paper-trading show my current paper PnL
 ```

@@ -1,6 +1,6 @@
 ---
 name: strategy-portfolio
-description: Composes two or more exact Quandora StrategyVersions and evaluates exact completed sources. Use when the user asks to create, revise, inspect, or evaluate a Strategy Portfolio. Do not use for single-Strategy construction or Paper execution.
+description: Composes two to five exact Quandora StrategyVersions into a backend-enforced equal-weight Portfolio and evaluates one compatible completed source set. Use when the user asks to create, revise, inspect, or evaluate a Strategy Portfolio. Do not use for single-Strategy construction or Paper execution.
 ---
 
 # Quandora Staging Strategy Portfolio
@@ -47,11 +47,19 @@ or paste credentials.
 
 ## Portfolio Model
 
-- A Strategy Portfolio contains at least two distinct exact `strategy_version_id` values.
-- Every `target_weight` is a positive canonical decimal string whose exact sum is `1`.
-- Show the shortest plain non-exponent decimal form with no leading `+` or trailing fractional
-  zero; for example, show and submit `0.4`, `0.3`, `0.3`, never JSON numbers.
-- A PortfolioVersion is immutable. A changed component or weight creates a new version.
+- The executable contract accepts two to five distinct exact `strategy_version_id` values. Route
+  one Strategy to `$strategy-building`; do not advertise a one-sleeve Portfolio.
+- Public create and revise inputs contain only exact component `strategy_version_id` values. Do
+  not ask for, calculate, or submit `target_weight`; the backend derives equal weights and the
+  returned PortfolioVersion is authoritative.
+- Creation may include `initial_cash`; omission uses the backend default. Treat the schema and
+  returned validation as authority for the minimum and increment, and never repair an invalid
+  value silently.
+- A PortfolioVersion is immutable. A changed component creates a new version. Creation-time
+  capital is frozen for the Portfolio; changing it requires a new Portfolio rather than an
+  evaluation or Paper override.
+- A legacy Portfolio with `initial_cash=null` remains readable but cannot be evaluated or deployed.
+  Report the backend migration requirement instead of substituting a default.
 - Components are independent capital sleeves. There is no signal fusion, shared margin, capital
   transfer, periodic rebalance, provider-order netting, or position netting.
 - Evaluation reuses one exact completed, non-optimizer source StrategyRun per component. It does
@@ -71,13 +79,14 @@ name or keyword as `query` and an exact public status through `filters`; omit se
 for browse or recent-items requests. Use another page only when the user requests it, preserving
 the same query, filters, archive mode, and page size and copying `next_page_token` byte-for-byte.
 
-For a new composition, require two or more exact StrategyVersion handles. Never guess versions
+For a new composition, require two to five exact StrategyVersion handles. Never guess versions
 from similar names. If exact versions do not exist, hand off to `$strategy-building` and stop.
 
-Before the first create or revise mutation, read the authoritative Portfolio guidance. Validate
-weights with exact decimal arithmetic. Show the complete composition and independent-sleeve
-semantics, then obtain explicit confirmation. A revise replaces the complete composition from one
-exact base PortfolioVersion and requires its own confirmation.
+Before the first create or revise mutation, read the authoritative Portfolio guidance. Show the
+complete StrategyVersion selection, optional name, creation-time capital, and independent-sleeve
+semantics, then obtain explicit confirmation. Do not add weights to the payload. A revise replaces
+the complete StrategyVersion selection from one exact base PortfolioVersion, retains the frozen
+Portfolio capital, and requires its own confirmation.
 
 A timeout or ambiguous mutation response is not proof of failure. Do not submit a changed request
 or create a replacement. Reconcile only with an exact returned handle; otherwise report the
@@ -87,31 +96,37 @@ ambiguity and stop for user direction.
 
 After selecting one exact PortfolioVersion, call
 `list_eligible_strategy_portfolio_source_runs` with a bounded `per_component_limit`. It returns
-each ordered component and its eligible completed, non-optimizer sources. Require exactly one
-returned `source_strategy_run_id` for every component and preserve its paired
-`strategy_version_id`.
+each ordered component, eligible completed non-optimizer sources, each source's exact
+`backtest_period`, and an `alignment` decision.
 
-Show the exact source mapping and let the user confirm the selection. Never invent, reuse across
-components, or substitute a downstream/internal identifier. If `complete=false`, a component has no
-eligible source, or the selected source is absent from the returned component, do not submit an
-evaluation. Retained `summary` or `equity_curve` evidence may still be synchronizing, so make one
-bounded re-read of the same source-discovery tool before reporting the incomplete state. Do not
-start a replacement backtest solely because discovery is incomplete. Hand the component to
-`$strategy-building` only when the user chooses to create new research evidence, then stop.
+- `alignment.status=compatible`: require `complete=true` and choose one exact returned
+  `alignment.compatible_source_sets[]` mapping. Preserve every paired `strategy_version_id` and
+  `source_strategy_run_id`; never combine rows from different returned sets.
+- `alignment.status=alignment_required`: each component has eligible evidence but no common
+  execution window. Do not submit or trigger replacement backtests. Report that automatic
+  full-window preparation is unavailable until the upstream mutation contract exists.
+- `alignment.status=source_evidence_incomplete`: make one bounded re-read because retained `summary` or
+  `equity_curve` evidence may still be synchronizing, then report the incomplete state.
+- `alignment.status=alignment_unknown`: fail closed during a rolling backend deployment and do not
+  submit.
+
+Do not ask the user to customize source selectors. If several compatible sets are returned without
+an authoritative backend default, report ambiguous readiness and stop. Never invent, reuse across
+components, or substitute a downstream/internal identifier.
 
 ### Evaluate and Read Result
 
 Before `submit_strategy_portfolio_evaluation`, show and confirm:
 
 - the exact PortfolioVersion;
-- exact positive canonical `total_initial_cash`;
-- one exact source selector for every component;
-- that no Strategy is rerun and no provider is called.
+- the exact creation-time `initial_cash` returned by the Portfolio read;
+- one intact compatible source set;
+- that the aligned sources are reused without rerunning a Strategy or calling a provider.
 
-Submit only `portfolio_version_id`, `total_initial_cash`, and `source_runs`. Do not send dates,
-fees, optimizer fields, or execution overrides. The server verifies that selected source runs
-share the required execution facts. Portfolio definition and evaluation are separate mutations with
-separate confirmations.
+Submit only `portfolio_version_id` and the exact returned compatible `source_runs` set. Do not send
+capital, dates, fees, weights, optimizer fields, or execution overrides. The server obtains frozen
+Portfolio capital and re-verifies the selected sources' execution facts. Portfolio definition and
+evaluation are separate mutations with separate confirmations.
 
 If submit returns retryable `source_result_evidence_unavailable`, treat it as retained-evidence
 synchronization, not proof that the StrategyRun failed. Do not resubmit automatically and do not

@@ -66,6 +66,10 @@ PORTFOLIO_SOURCE_EVIDENCE_MARKERS = (
     "equity_curve",
     "source_result_evidence_unavailable",
     "Do not resubmit automatically",
+    "backtest_period",
+    "compatible_source_sets",
+    "alignment_required",
+    "alignment_unknown",
 )
 ROUTING_MARKERS = {
     "factor-analysis": ("Do not use for creating", "$factor-mining"),

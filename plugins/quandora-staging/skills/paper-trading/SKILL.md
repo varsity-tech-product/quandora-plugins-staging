@@ -128,11 +128,29 @@ completed evaluation exists, hand off and stop.
 Before `start_strategy_portfolio_paper_trade`, show the exact PortfolioRun, start date, leverage,
 each component's selected owner-local `source_strategy_run_id`, and allocated cash. Explain that
 each child is an independent static sleeve and its `initial_balance` equals that component's
-`allocated_cash`. The Paper command has no capital override. To change total capital, complete a
-new source-reuse evaluation through `$strategy-portfolio`, then obtain a new Paper confirmation.
+`allocated_cash`. The Paper command has no capital override. To change total capital, create a new
+Portfolio through `$strategy-portfolio`; evaluation and Paper both inherit creation-time capital.
+Then obtain a new Portfolio evaluation and Paper confirmation.
 
 Use `get_strategy_portfolio_paper_trade` for the parent lifecycle and ordered children. Verify and
-present the exact source lineage, child Paper handle, allocated cash, and state for each sleeve.
+present the exact source lineage, safe Strategy/StrategyVersion identity, child Paper handle,
+allocated cash, and state for each sleeve.
+
+For a child sleeve with a non-null exact `child_paper_run_id`, ordinary single-Paper read actions
+may read that child. Use `get_paper_trade` for lifecycle, at most one
+`refresh_paper_trade_account_snapshot` call for current assets, positions, and PnL, and the equity,
+closed-position, fill, or funding action only when requested. Apply the same freshness and
+no-polling rules to every child. Never pass the parent PortfolioPaperRun identifier to a child
+Paper read.
+
+When the user asks which child contributes the most current profit, compare child Paper PnL on one
+consistent observation pass and report each snapshot's freshness. This is Paper PnL contribution,
+not historical backtest return. Use each exact `source_strategy_run_id` with
+`get_paper_trade_source` to confirm Strategy and StrategyVersion lineage. Hand off to
+`$strategy-analysis` or `$strategy-building` for historical evidence only when an exact public
+Strategy run handle is returned; never substitute a StrategyVersion, child Paper, or downstream
+identifier.
+
 Never claim shared margin, capital transfer, signal fusion, order netting, parent aggregate
 positions, parent real-time PnL, or a parent equity curve.
 
