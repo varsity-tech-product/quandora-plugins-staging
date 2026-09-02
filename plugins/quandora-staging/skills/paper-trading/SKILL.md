@@ -5,7 +5,7 @@ description: Use when the user asks to start, inspect, monitor, or stop simulate
 
 # Quandora Staging Paper Trading
 
-Bundled plugin version: 1.59
+Bundled plugin version: 1.60
 
 Use this skill through the authenticated `quandora-staging` MCP connection. It owns simulated
 execution only: eligible-source discovery, Paper start, lifecycle monitoring, execution data, and
@@ -126,10 +126,29 @@ Before `start_strategy_portfolio_paper_trade`, show the exact PortfolioRun, star
 each component's selected owner-local `source_strategy_run_id`, and allocated cash. Explain that
 each child is an independent static sleeve and its `initial_balance` equals that component's
 `allocated_cash`. The Paper command has no capital override. To change total capital, complete a
-new source-reuse evaluation through `$strategy-portfolio`, then obtain a new Paper confirmation.
+new Portfolio through `$strategy-portfolio`; evaluation and Paper submit both inherit the
+creation-time frozen capital. Then obtain a new Portfolio evaluation and Paper confirmation.
 
 Use `get_strategy_portfolio_paper_trade` for the parent lifecycle and ordered children. Verify and
-present the exact source lineage, child Paper handle, allocated cash, and state for each sleeve.
+present the exact source lineage, safe Strategy/StrategyVersion identity, child Paper handle,
+allocated cash, and state for each sleeve.
+
+For a child sleeve with a non-null exact `child_paper_run_id`, ordinary single-Paper read tools may
+read that child: use `get_paper_trade` for lifecycle, one
+`refresh_paper_trade_account_snapshot` call for current assets/positions/PnL, and the equity,
+closed-position, fill, or funding tool only when requested. Apply the same freshness and no-polling
+rules to every child. Never pass the parent PortfolioPaperRun ID to a child Paper read.
+
+When the user asks which child contributes the most current profit, compare current child Paper
+PnL on one consistent observation pass and report each snapshot's freshness. This is Paper PnL
+contribution, not historical backtest return. Use each exact `source_strategy_run_id` with
+`get_paper_trade_source` to confirm its Strategy and StrategyVersion lineage. Hand off to
+`$strategy-analysis` or `$strategy-building` for a historical artifact only when an exact public
+Strategy run handle is returned; never substitute the StrategyVersion ID, child Paper ID, or an
+internal FM identifier. Current APIs may expose only the bound full-window source and not every
+older custom-window artifact under the same Strategy ID; report that limitation rather than
+inventing history.
+
 Never claim shared margin, capital transfer, signal fusion, order netting, parent aggregate
 positions, parent real-time PnL, or a parent equity curve.
 

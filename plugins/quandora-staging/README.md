@@ -58,10 +58,12 @@ Paper submission.
 
 ## What Strategy Portfolio Does
 
-Strategy Portfolio combines at least two exact StrategyVersions with positive decimal weights that
-sum to one, creates immutable PortfolioVersions, selects one exact completed non-optimizer source
-run per component, and evaluates normalized weighted equity without rerunning Strategies or calling
-a provider. Components remain independent capital sleeves. It never starts Paper; a completed
+Strategy Portfolio currently combines two to five exact StrategyVersions with backend-derived
+equal weights, accepts creation-time capital with a 10k default, 2k minimum, and 1k steps, creates
+immutable PortfolioVersions, resolves one intact compatible completed non-optimizer source set,
+and evaluates normalized equity with frozen Portfolio capital without rerunning already aligned
+Strategies or calling a provider. Alignment-required states fail closed until FM supports
+automatic full-window preparation. Components remain independent capital sleeves. It never starts Paper; a completed
 source-reuse PortfolioRun is handed to Paper Trading only after a separate request and confirmation.
 
 ## What Paper Trading Does
@@ -180,3 +182,12 @@ and total capital, creates no child StrategyRun, and makes no provider call. New
 authoring/execution are retired; historical classification remains read-only. Portfolio Paper
 persists source lineage and allocates child initial balance from component allocated cash. Publish
 only after the matching PB/Auth PRs are reviewed and merged.
+
+Plugin 1.60 hardens the current Portfolio path to two-to-five sleeves, backend-enforced equal
+weights, creation-time capital with a 10k default/2k minimum/1k steps, exact source
+`backtest_period`, and intact `compatible_source_sets`. Evaluation and Paper do not accept capital
+overrides. Alignment-required and rolling-deploy unknown states fail closed because FM does not yet
+provide automatic backend-default full-window StrategyVersion preparation. Portfolio Paper
+guidance uses exact child Paper handles for child assets/positions/PnL and separates live Paper
+contribution from historical backtest return. Publish only after the matching PB/Auth PRs are
+reviewed and merged.
