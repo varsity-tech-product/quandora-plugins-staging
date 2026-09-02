@@ -10,7 +10,7 @@
     {
       "name": "quandora-staging",
       "source": "plugins/quandora-staging",
-      "description": "Staging Quandora plugin with Factor, Strategy, Strategy Portfolio, analysis, and Paper Trading skills."
+      "description": "Quandora Staging plugin with Factor, Strategy, Strategy Portfolio, analysis, and Paper Trading skills."
     }
   ]
 }

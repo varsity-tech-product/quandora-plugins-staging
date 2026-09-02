@@ -1,11 +1,9 @@
 ---
 name: paper-trading
-description: Use when the user asks to start, inspect, monitor, or stop simulated Paper trading on Quandora Staging, including current assets/PnL, positions, equity, fills, funding, code, or Paper execution from a completed source-reuse Strategy Portfolio evaluation. Do not use to create or backtest Strategies or to create or evaluate Strategy Portfolios.
+description: Starts, monitors, inspects, or terminally stops simulated Quandora Paper execution. Use when the user asks about Paper PnL, positions, equity, fills, funding, code, or a completed Portfolio handoff. Do not use to create or backtest Strategies or Portfolios.
 ---
 
 # Quandora Staging Paper Trading
-
-Bundled plugin version: 1.59
 
 Use this skill through the authenticated `quandora-staging` MCP connection. It owns simulated
 execution only: eligible-source discovery, Paper start, lifecycle monitoring, execution data, and
@@ -44,10 +42,15 @@ Never call Strategy or Portfolio definition/evaluation tools here. In particular
 `create_strategy_portfolio`, `revise_strategy_portfolio`, or
 `submit_strategy_portfolio_evaluation`.
 
-Some hosts display a server-qualified current name such as
-`quandora_staging__start_paper_trade`. This is the same canonical tool, not an alias. If a
-canonical tool is unavailable, report the state and use only the host-native
-update/reconnect/browser-consent flow. Never bypass MCP with raw HTTP or pasted credentials.
+Tool names in this Skill are canonical actions on the configured `quandora-staging` MCP
+dependency. Let the host resolve its required server-qualified form. If an action is unavailable,
+use only the host-native update/reconnect/browser-consent flow. Never invent an alias, bypass MCP
+with raw HTTP, or paste credentials.
+
+For list actions, use a supplied name or keyword as `query` and exact public status, submit state,
+source kind, or Strategy kind as `filters`. Omit search fields only for browse or recent-items
+requests. Preserve the same query, filters, archive mode, and page size on continuation and copy
+opaque page tokens byte-for-byte. Never combine legacy `limit`/`offset` fields with cursor search.
 
 ## Safety and Data Model
 
@@ -74,7 +77,7 @@ If no handle is supplied, list one bounded page and show the safe Strategy label
 lifecycle and submit state, source capital, eligibility, and closed `eligibility_reasons`. Ask the
 user to select one exact source.
 
-`eligible` is a conservative PB preflight; final submit authority remains downstream.
+`eligible` is a conservative server preflight; final submit authority remains the submit action.
 `provider_validation_required` is not proof of eligibility. Unknown, missing, contradictory, or
 unsupported evidence fails closed.
 
@@ -143,3 +146,6 @@ State whether the result concerns one Paper trade or Portfolio Paper, its lifecy
 relevant freshness or lineage semantics. If a handoff is needed, state that no Paper mutation was
 performed. Never expose credentials, provider identifiers, internal topology, or raw downstream
 payloads.
+
+Use the user's language for the answer while preserving tool names, schema fields, and returned
+identifiers exactly.

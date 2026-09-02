@@ -1,11 +1,9 @@
 ---
 name: factor-analysis
-description: Analyze, diagnose, compare, and propose controlled improvements for existing Quandora Factor Mining results from owner-scoped or active-official server-persisted evidence. Use when a user asks why a factor or rating passed or failed, requests a Factor Card Health Check or data-quality diagnosis, wants optimization ideas grounded in evidence, or asks whether a factor is ready for Strategy Building. Do not use for creating or submitting a new factor; route those requests to factor-mining.
+description: Analyzes existing owned or active-official Quandora Factor results from server evidence. Use when the user asks about pass/fail, Health, ratings, data quality, mechanisms, controlled improvements, or Strategy readiness. Do not use for creating or submitting a factor.
 ---
 
 # Factor Analysis
-
-Bundled plugin version: 1.59
 
 Analyze one exact factor result as a non-submitting research workflow. Use Quandora's owner-scoped
 or active-official server-persisted Factor Card, chart data, and exact source. Separate observed evidence from
@@ -13,10 +11,9 @@ inference, alternative explanations, and proposed experiments. Never turn an opt
 into an automatic submission. Mint a short-lived download ticket only when the user explicitly
 requests an export.
 
-OAuth and all credentials are handled by the host. Quandora access tokens expire after 7 days, and
-the host MCP client should use its stored rotating refresh token automatically. Never inspect,
-print, copy, store, or ask the user to paste API keys, bearer tokens, authorization codes, access
-tokens, refresh tokens, PKCE verifiers, service tokens, or other credentials.
+OAuth and all credentials are handled by the host. Never inspect, print, copy, store, or ask the
+user to paste API keys, bearer tokens, authorization codes, access tokens, refresh tokens, PKCE
+verifiers, service tokens, or other credentials.
 
 ## Scope And Routing
 
@@ -53,9 +50,9 @@ chooses a proposed Strategy experiment.
 - Do not automatically classify intentional factor NaNs as source-data loss or exempt them from the
   recorded Health Check. Test whether factor applicability and the check basis are aligned.
 
-## Available Actions
+## Primary And Discovery Actions
 
-Use only the evidence actions owned by this analysis boundary:
+Use these primary evidence actions:
 
 - `get_factor_backtest_window_cards`
 - `get_factor_backtest_chart_data`
@@ -64,8 +61,11 @@ Use only the evidence actions owned by this analysis boundary:
 - `get_official_factor_chart_data`
 - `get_official_factor_source`
 
-For bounded active-official discovery only, use `list_eligible_strategy_factors` and retain the
-selected row's top-level `factor_id`; do not expose or ask for its evidence job.
+The allowed read-only discovery prerequisites are `list_owned_factor_families`,
+`get_factor_family_history`, and `list_eligible_strategy_factors`. They locate one exact target;
+they do not expand this Skill into Factor creation or Strategy construction. For active-official
+discovery, retain the selected row's top-level `factor_id` and do not expose or ask for its
+evidence job.
 
 For an explicit user-requested export only, use the narrow ticket and chunk actions appropriate to
 the selected evidence:
@@ -76,8 +76,8 @@ the selected evidence:
 - `create_official_factor_result_bundle_download`
 - `read_official_factor_result_bundle_chunk`
 
-Do not mint tickets speculatively, use downloads as a prerequisite for analysis, or treat a ticket
-as permission to submit or change a factor.
+Do not mint tickets speculatively, require downloads for analysis, or treat a ticket as mutation
+authority.
 
 ## Workflow
 
@@ -89,7 +89,8 @@ top-level `factor_id` and do not ask for or expose its evidence job. For caller-
 prefer an exact terminal `job_id` supplied by the user or already returned in the conversation. If
 the user supplies only a caller-owned factor name, a vague reference, or asks for the latest result:
 
-1. Call `list_owned_factor_families` with `page_size: 10`.
+1. Call `list_owned_factor_families` with a bounded `page_size`. Send a supplied name or keyword as
+   `query`, exact public fields through `filters`, and no search fields only for browse/latest.
 2. Match only trustworthy returned identity and metadata. Do not guess across ambiguous names; ask
    the user to choose when more than one plausible factor remains. Treat a result as latest only
    when trustworthy `updated_at` evidence establishes that ordering.
@@ -100,8 +101,8 @@ the user supplies only a caller-owned factor name, a vague reference, or asks fo
 Use an active official `factor_id` only with the official evidence actions. Never send it to an
 owner-scoped evidence action or substitute its admission version, run, or hidden evidence job.
 
-Do not auto-page discovery. Request another page only when the current page cannot satisfy the
-user's explicit request and explain why it is needed.
+Request another discovery page only when needed. Preserve the same query, filters, archive mode,
+and page size while copying `next_page_token` byte-for-byte into `page_token`.
 
 ### 2. Read Server-Persisted Evidence
 
@@ -147,53 +148,25 @@ prerequisite or substitute for these reads. See
 
 ### 4. Diagnose From Result To Mechanism
 
-Use [metric-semantics.md](references/metric-semantics.md) and
-[diagnosis-and-experiments.md](references/diagnosis-and-experiments.md). Evaluate:
+Read [metric-semantics.md](references/metric-semantics.md) and
+[diagnosis-and-experiments.md](references/diagnosis-and-experiments.md) only for diagnosis. Start
+with the Health Check and rating propagation, then evaluate return/risk, cross-sectional behavior,
+drawdown, turnover, persistence, coverage, and plausible confounds within the declared scope.
 
-- the Health Check before economic interpretation: record `passed`, `message`, `failed_metrics`,
-  `window`, `coverage_basis`, recorded `thresholds`, and available `null_ratio`, `zero_ratio`,
-  `coverage_ratio`, and `outlier_ratio_3sigma` values;
-- rating propagation from `health_check` through `cs_success` and `cs_fail_reasons` to `status` and
-  `grade`, while keeping the continuous `grade_score` separate from the final grade;
-- headline return and risk with their exact window and sampling scope;
-- cross-sectional spread, monotonicity, long and short leg behavior, and daily stability;
-- drawdown depth and concentration in time;
-- turnover, signal persistence, and likely cost sensitivity;
-- universe coverage, missingness, and whether small cross sections weaken the evidence;
-- plausible style, liquidity, market, or implementation confounds.
+Compare Health Checks only when windows, universes, missing-value handling, and thresholds match.
+When Health fails, lower confidence and separate data, design, applicability, and statistical-basis
+explanations. Read inert source only when it can distinguish those explanations, and attribute a
+grade outcome to Health only when an authoritative field establishes that propagation.
 
-Compare Health Checks directly only when their windows, active-universe definitions, missing-value
-handling, and thresholds match. Never substitute `coverage_mean` for
-`health_check.metrics.coverage_ratio`; their denominators and aggregation can differ.
-
-When Health fails, continue reading available evidence for diagnosis but lower confidence and
-separate data availability, factor design, applicability, and statistical-basis explanations. Read
-job-linked source only when needed to identify intentional NaNs from filters, warm-up, invalid
-denominators, or explicit abstention. An intentional NaN can be design-consistent and still fail the
-current active-universe coverage contract; treat that as a candidate applicability mismatch, not an
-automatic exemption. Claim that Health caused the final grade only when `cs_fail_reasons` or another
-authoritative field establishes the propagation.
-
-For every important conclusion, label it as one of:
-
-- **Observed:** directly present in trusted server evidence.
-- **Inference:** a mechanism consistent with the observations.
-- **Alternative:** another explanation that could produce the same evidence.
-- **Experiment:** a controlled test that can distinguish explanations.
+Label every consequential conclusion **Observed**, **Inference**, **Alternative**, or
+**Experiment**.
 
 ### 5. Propose Controlled Improvements
 
-Prioritize a small set of experiments. Change one mechanism at a time when practical and state:
-
-- the change;
-- the evidence motivating it;
-- the expected effect;
-- the metric or chart that would confirm or reject it;
-- the principal tradeoff or failure mode.
-
-Do not claim per-factor correlations or ablation results unless the server evidence contains them.
-Do not auto-create a new factor or Strategy. Ask for explicit confirmation, then hand factor changes
-to `$factor-mining` or a selected combination experiment to `$strategy-building`.
+Prioritize a small set of one-mechanism experiments with motivation, expected effect, confirmation
+evidence, and tradeoff. Do not claim unavailable correlations or ablations. Ask for explicit
+confirmation before handing factor changes to `$factor-mining` or a combination experiment to
+`$strategy-building`; never create either automatically.
 
 ## Output Contract
 

@@ -1,6 +1,6 @@
 # Strategy Server Evidence Contract
 
-Strategy Analysis pairs Product Backend's owner-scoped run snapshot with server-retained artifacts
+Strategy Analysis pairs Quandora's owner-scoped canonical run snapshot with server-retained artifacts
 and bounded six-chart numerical evidence. It does not depend on a user-local archive or runtime.
 
 ## Identity And Configuration
@@ -8,8 +8,8 @@ and bounded six-chart numerical evidence. It does not depend on a user-local arc
 - `list_strategy_backtests` discovers one bounded owner-scoped page, newest first.
 - `get_strategy_backtest` is authoritative for canonical composition and effective parameters.
 - `get_strategy_backtest_artifact` and `get_strategy_backtest_analysis_data` must remain correlated to the exact selected `run_id`.
-- Never substitute an FM run id, Strategy id, StrategyVersion id, name, local filename, or chart
-  identity for the Product Backend run id.
+- Never substitute a downstream run id, Strategy id, StrategyVersion id, name, local filename, or
+  chart identity for the public Strategy run id.
 
 ## Core Artifacts
 

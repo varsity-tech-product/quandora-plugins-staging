@@ -1,11 +1,9 @@
 ---
 name: factor-mining
-description: Use when the user explicitly asks about caller-owned or reusable Factor Mining factor families or history, or asks to construct, submit, backtest, continue, retrieve, or briefly summarize a Factor Mining plugin result. Do not use for the Strategy eligible-factor pool or deep diagnosis of an existing result.
+description: Creates, validates, backtests, continues, retrieves, or summarizes one Quandora Factor and reads owned Factor families or history. Use when the user asks for Factor Mining authoring or reuse. Do not use for the Strategy eligible-factor pool or deep result diagnosis.
 ---
 
 # Quandora Staging Factor Mining
-
-Bundled plugin version: 1.59
 
 This skill owns Factor Mining research creation, caller-owned Factor family/history reads, Factor
 backtests, and Factor Result Bundle delivery through the authenticated `quandora-staging`
@@ -30,9 +28,9 @@ Use only the minimum relevant subset:
 - Approved semantics/diagnostics: `get_quandora_guidance`,
   `check_quandora_plugin_version`.
 
-Server-qualified display names such as `quandora_staging__submit_factor_backtest` are the same
-canonical action, not aliases. If a canonical tool is absent, do not use a retired name or another
-service path.
+Tool names in this Skill are canonical actions on the configured `quandora-staging` MCP
+dependency. Let the host resolve its required server-qualified form. If an action is absent, do not
+invent an alias or use another service path.
 
 Use `check_quandora_plugin_version` only for a requested version diagnostic or a plausible
 package/server mismatch; never as a mandatory entry probe.
@@ -63,14 +61,17 @@ for a completed list/history-only request when the relevant read is already avai
 ## Reuse and History
 
 Call `list_owned_factor_families` for caller-owned reusable Factor families; it is not the Strategy
-eligible pool. Show one bounded page and never hydrate every row. A failed list is not an empty
-inventory and does not authorize a history fallback.
+eligible pool. Use a supplied name or keyword as `query` and exact public status, availability, or
+task identity as `filters`; omit them only for a browse request. Show one bounded page and never
+hydrate every row. A failed list is not an empty inventory and does not authorize a history
+fallback.
 
 Ask the user to select one exact returned `factor_id`, then call `get_factor_family_history`.
 Default to `summary`; request only the needed `branches`, `versions`, or `runs` view. Preserve
 opaque IDs and page tokens exactly. Never substitute a job, run, plugin, session, Strategy
 admission, or cached identifier. History is read-only and does not authorize source editing or
-resubmission.
+resubmission. A continuation keeps the same query, filters, archive mode, and page size and copies
+the returned opaque page token byte-for-byte.
 
 When controlled history/result semantics are needed, use `get_quandora_guidance` only with the
 known guide `operation.factor.history.read` or `operation.result.read` and only supported sections.
@@ -118,3 +119,6 @@ pending reasons. If the host cannot write, say that no verified ZIP was saved.
 
 Never expose task IDs in public task lists, job/run identifiers in a general summary, credentials,
 tickets, download URLs, base64, internal topology, or full plugin source.
+
+Use the user's language for the answer while preserving tool names, schema fields, and returned
+identifiers exactly.

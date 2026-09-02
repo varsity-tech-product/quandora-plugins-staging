@@ -1,11 +1,9 @@
 ---
 name: strategy-portfolio
-description: Use when the user asks to combine two or more exact Quandora StrategyVersions with target weights, create or revise a Strategy Portfolio, select exact completed source runs, evaluate the normalized weighted Portfolio result, or read that result. Do not use for single-Strategy construction or any Paper-trading execution.
+description: Composes two or more exact Quandora StrategyVersions and evaluates exact completed sources. Use when the user asks to create, revise, inspect, or evaluate a Strategy Portfolio. Do not use for single-Strategy construction or Paper execution.
 ---
 
 # Quandora Staging Strategy Portfolio
-
-Bundled plugin version: 1.59
 
 Use this skill through the authenticated `quandora-staging` MCP connection. It owns immutable
 multi-Strategy composition, versioning, exact source-run selection, source-reuse evaluation, and
@@ -42,10 +40,10 @@ Never call `start_strategy_portfolio_paper_trade`, `get_strategy_portfolio_paper
 `stop_strategy_portfolio_paper_trade` in this skill. Never submit a single-Strategy run as an
 implicit prerequisite.
 
-Some hosts display a server-qualified current name such as
-`quandora_staging__create_strategy_portfolio`. This is the same canonical tool, not an alias. If a
-canonical tool is unavailable, report that exact state and use only the host-native
-reconnect/update flow; do not bypass MCP with raw HTTP or pasted credentials.
+Tool names in this Skill are canonical actions on the configured `quandora-staging` MCP
+dependency. Let the host resolve its required server-qualified form. If an action is unavailable,
+use only the host-native reconnect/update flow; never invent an alias, bypass MCP with raw HTTP,
+or paste credentials.
 
 ## Portfolio Model
 
@@ -58,8 +56,8 @@ reconnect/update flow; do not bypass MCP with raw HTTP or pasted credentials.
   transfer, periodic rebalance, provider-order netting, or position netting.
 - Evaluation reuses one exact completed, non-optimizer source StrategyRun per component. It does
   not create child StrategyRuns and does not call QuantAI or another provider.
-- FM normalizes each source equity curve by that source's initial equity, then applies the
-  Portfolio target-capital weights. The result is research evidence, not a Paper account.
+- The evaluation normalizes each source equity curve by that source's initial equity, then applies
+  the Portfolio target-capital weights. The result is research evidence, not a Paper account.
 - Treat Portfolio, PortfolioVersion, PortfolioRun, StrategyVersion, and source StrategyRun handles
   as distinct opaque owner-scoped identifiers.
 
@@ -68,8 +66,10 @@ reconnect/update flow; do not bypass MCP with raw HTTP or pasted credentials.
 ### Discover, Create, or Revise
 
 When no exact Portfolio handle is supplied, call `list_strategy_portfolios` once with a bounded
-`page_size` and default `include_archived=false`. Preserve `next_page_token` byte-for-byte and use
-it only when the user asks for another page.
+`page_size` and `include_archived=false` unless archived records were requested. Send a supplied
+name or keyword as `query` and an exact public status through `filters`; omit search fields only
+for browse or recent-items requests. Use another page only when the user requests it, preserving
+the same query, filters, archive mode, and page size and copying `next_page_token` byte-for-byte.
 
 For a new composition, require two or more exact StrategyVersion handles. Never guess versions
 from similar names. If exact versions do not exist, hand off to `$strategy-building` and stop.
@@ -92,7 +92,7 @@ returned `source_strategy_run_id` for every component and preserve its paired
 `strategy_version_id`.
 
 Show the exact source mapping and let the user confirm the selection. Never invent, reuse across
-components, or substitute an FM/internal identifier. If `complete=false`, a component has no
+components, or substitute a downstream/internal identifier. If `complete=false`, a component has no
 eligible source, or the selected source is absent from the returned component, do not submit an
 evaluation. Retained `summary` or `equity_curve` evidence may still be synchronizing, so make one
 bounded re-read of the same source-discovery tool before reporting the incomplete state. Do not
@@ -109,8 +109,8 @@ Before `submit_strategy_portfolio_evaluation`, show and confirm:
 - that no Strategy is rerun and no provider is called.
 
 Submit only `portfolio_version_id`, `total_initial_cash`, and `source_runs`. Do not send dates,
-fees, optimizer fields, or execution overrides. PB verifies that selected source runs share the
-required execution facts. Portfolio definition and evaluation are separate mutations with
+fees, optimizer fields, or execution overrides. The server verifies that selected source runs
+share the required execution facts. Portfolio definition and evaluation are separate mutations with
 separate confirmations.
 
 If submit returns retryable `source_result_evidence_unavailable`, treat it as retained-evidence
@@ -123,7 +123,7 @@ Use the submit response as the first PortfolioRun snapshot. Observe only that ex
 reports `execution_contract=source_reuse_v1` and preserves the selected owner-local source handle.
 
 After completion, call `get_strategy_portfolio_evaluation_result`. Present normalized aggregate
-metrics and `equity_curve.points[].ts/equity`. For new source-reuse results, preserve FM's QuantAI
+metrics and `equity_curve.points[].ts/equity`. For new source-reuse results, preserve the returned
 metric names and units: `summary.net_profit_pct`, `annual_return_pct`, `annual_std`,
 `max_drawdown_pct`, `start_equity`, `end_equity`, and any returned `sharpe`, `sortino`,
 `total_fees`, or `funding_net_cash_flow`. Percentage-suffixed metrics are percentage values;
@@ -146,3 +146,6 @@ State whether the outcome is a Portfolio definition/version, source selection, P
 aggregate result. Summarize the user-visible composition, source lineage, and independent-sleeve
 model. When handing off, state that no Paper run has started. Do not expose credentials, provider
 identifiers, internal topology, or raw downstream payloads.
+
+Use the user's language for the answer while preserving tool names, schema fields, and returned
+identifiers exactly.
