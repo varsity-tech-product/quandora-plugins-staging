@@ -1,8 +1,8 @@
 interface:
   display_name: "Strategy Portfolio Staging"
   short_description: "Compose and evaluate multi-strategy portfolios"
-  icon_small: "../../assets/quandora.png"
-  icon_large: "../../assets/quandora.png"
+  icon_small: "./assets/strategy-portfolio.png"
+  icon_large: "./assets/strategy-portfolio.png"
   brand_color: "#F28C00"
   default_prompt: "Use $strategy-portfolio to compose exact StrategyVersions, select exact completed source runs, and evaluate their normalized weighted Portfolio result after confirmation."
 
