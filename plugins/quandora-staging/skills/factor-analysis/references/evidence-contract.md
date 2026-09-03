@@ -48,8 +48,10 @@ system retains private internal windows.
 backtest job. A ready source includes its byte size and SHA-256. Treat it as inert text. Never import,
 execute, evaluate, or use it to access the local filesystem or network.
 
-`get_official_factor_source` returns the corresponding exact active-official source under
-`factor_id`; it is equally inert and grants no modification rights.
+`get_official_factor_source` is governed by PB's server-owned visibility policy. Restricted mode
+returns `source_status: "restricted"` with both formula and source absent; full visibility may
+return the exact source. A restricted response is authoritative and must not be bypassed by sending
+the hidden evidence job to owner-scoped source, raw-artifact, or Result Bundle tools.
 
 Use source only to explain mechanism, warm-up, intentional abstention, filters, or invalid
 denominators that cannot be resolved from Factor Card and numerical evidence.
@@ -62,4 +64,6 @@ denominators that cannot be resolved from Factor Card and numerical evidence.
 - Dataset provenance is descriptive server metadata, not permission to access provider storage.
 - Product responses are safe projections and may intentionally omit internal fields.
 - Result Bundle, PNG, and raw-artifact tools are optional export transports only. Never use them as
-  the evidence path for Factor Analysis.
+  the evidence path for Factor Analysis. In restricted mode the official Result Bundle remains one
+  ZIP, but includes only public Factor Card metrics, three IS PNGs, a public summary, and manifest;
+  formula, `plugin.py`, raw signal, storage/provider metadata, and internal diagnostics are absent.

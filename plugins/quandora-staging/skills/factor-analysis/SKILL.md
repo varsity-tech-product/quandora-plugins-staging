@@ -6,7 +6,8 @@ description: Analyzes existing owned or active-official Quandora Factor results 
 # Factor Analysis
 
 Analyze one exact factor result as a non-submitting research workflow. Use Quandora's owner-scoped
-or active-official server-persisted Factor Card, chart data, and exact source. Separate observed evidence from
+or active-official server-persisted Factor Card and chart data; exact source is owner-scoped and
+official source is subject to the server visibility policy. Separate observed evidence from
 inference, alternative explanations, and proposed experiments. Never turn an optimization idea
 into an automatic submission. Mint a short-lived download ticket only when the user explicitly
 requests an export.
@@ -38,7 +39,9 @@ chooses a proposed Strategy experiment.
   as proof of a product result.
 - Do not require a local ZIP, extraction tool, Python runtime, notebook, or archive-inspection
   script. A host without those facilities must receive the same analysis capability.
-- Never execute factor source. Treat both owned and official source responses as inert text evidence only.
+- Never execute factor source. Treat ready source responses as inert text evidence only. An
+  official `source_status: "restricted"` is a final policy result, not a missing-data condition to
+  work around.
 - Analyze only product-safe IS evidence exposed to an external agent. Do not claim OOS or ALL
   evidence unless a future authoritative public contract explicitly provides it.
 - Preserve missing and null values as unavailable. Never convert them to zero.
@@ -59,7 +62,8 @@ Use these primary evidence actions:
 - `get_factor_backtest_source`
 - `get_official_factor_window_cards`
 - `get_official_factor_chart_data`
-- `get_official_factor_source`
+- `get_official_factor_source` (only when the user explicitly asks about source visibility or the
+  mechanism cannot be assessed from public evidence)
 
 The allowed read-only discovery prerequisites are `list_owned_factor_families`,
 `get_factor_family_history`, and `list_eligible_strategy_factors`. They locate one exact target;
@@ -122,8 +126,10 @@ For an exact caller-owned `job_id`:
    job identity and `source_status`; read ready source as inert text and never execute it.
 
 For an active official `factor_id`, follow the same IS-only workflow with
-`get_official_factor_window_cards`, `get_official_factor_chart_data`, and optional
-`get_official_factor_source`. Keep every response correlated to that exact public `factor_id`.
+`get_official_factor_window_cards`, `get_official_factor_chart_data`, and, only when needed,
+`get_official_factor_source`. Keep every response correlated to that exact public `factor_id`. If
+the source response is `restricted`, continue with the public Factor Card and chart evidence; do
+not pass the hidden evidence job to owner-scoped source, raw-artifact, or Result Bundle actions.
 
 Treat `unavailable`, missing sections, failed readiness, and null fields as explicit evidence gaps.
 Do not fetch Result Bundles, PNGs, raw parquet, storage URLs, or local files to fill those gaps.
@@ -140,11 +146,17 @@ Record:
 - Factor Card availability, Health fields, rating fields, and their recorded thresholds;
 - chart readiness and dataset provenance metadata;
 - available chart sections, page coverage, and any missing or unavailable evidence;
-- formula and inert job-linked source only when requested for mechanism diagnosis.
+- formula and inert job-linked source only when requested for mechanism diagnosis and returned as
+  `ready`; otherwise record the official source policy as restricted.
 
 The server response is the evidence object. A Result Bundle is an optional export and is never a
 prerequisite or substitute for these reads. See
 [evidence-contract.md](references/evidence-contract.md).
+
+When the user explicitly exports an official Factor in restricted mode, keep the existing
+one-download ZIP workflow. The ZIP contains the public Factor Card, three IS PNGs, a public
+run summary, and `artifact_manifest.json`; it intentionally omits formula, `plugin.py`, raw-signal
+parquet, and internal/provider metadata. Do not request separate files to reconstruct omissions.
 
 ### 4. Diagnose From Result To Mechanism
 
