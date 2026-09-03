@@ -1,7 +1,7 @@
 {
   "name": "quandora-staging",
   "displayName": "Quandora Staging",
-  "version": "1.61",
+  "version": "2.0",
   "description": "Quandora Staging plugin with Factor, Strategy, Strategy Portfolio, analysis, and Paper Trading skills.",
   "author": {
     "name": "Varsity Tech Product"
