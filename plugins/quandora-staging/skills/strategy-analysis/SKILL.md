@@ -62,14 +62,16 @@ analysis prerequisite, or treat a ticket as permission to submit, rerun, or chan
 
 ### 1. Establish The Exact Run
 
-Prefer an exact `run_id` supplied by the user or already returned in the conversation. When no
-exact run id is supplied:
+Prefer an exact canonical FM `strategyRunId` supplied by the user or already returned in the
+conversation, and pass it as `run_id`. A PB `commandRequestId` is not a valid analysis selector.
+When no exact run id is supplied:
 
 1. Call `list_strategy_backtests` once with a bounded `page_size`. Send a supplied Strategy name or
    keyword as `query`, and send an exact public status, Strategy kind, or Strategy name as
    `filters`. Omit search fields only for a browse or latest-run request; do not combine cursor
    search with legacy `limit` or `offset`.
-2. Use returned identity, name, timestamps, status, and optional summary only to select a run.
+2. Use returned `strategyRunId`, name, timestamps, status, and optional summary only to select a
+   run. Never substitute `commandRequestId`, `strategyFolderId`, or `strategyId`.
 3. If more than one plausible run remains, ask the user to choose. Do not guess.
 4. Do not auto-page. Request another page only when the explicit request cannot be satisfied by the
    first page. Keep the same query, filters, and page size and copy `next_page_token` byte-for-byte.

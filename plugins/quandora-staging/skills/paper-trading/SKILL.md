@@ -49,8 +49,10 @@ opaque page tokens byte-for-byte. Never combine legacy `limit`/`offset` fields w
 
 ## Safety and Data Model
 
-- Treat StrategyRun, PaperTradeRun, PortfolioRun, PortfolioPaperRun, source handles, child Paper
-  handles, and cursors as distinct opaque identifiers.
+- Treat canonical FM StrategyRun, Portfolio-local source selectors, PaperTradeRun, PortfolioRun,
+  PortfolioPaperRun, child Paper handles, and cursors as distinct opaque owner-scoped identifiers.
+  A PB command id is never a Paper source, and a Portfolio-local selector is not a canonical FM
+  StrategyRun identifier.
 - Money, leverage, and allocated cash are canonical decimal strings. Never send JSON numbers.
 - Paper inherits its source Strategy universe; it is not caller-configurable.
 - A mutation timeout or ambiguous response is not proof of failure. Do not retry with a fresh or
@@ -66,9 +68,11 @@ opaque page tokens byte-for-byte. Never combine legacy `limit`/`offset` fields w
 
 ### Select an Eligible Source
 
-Paper starts from one exact existing completed StrategyRun returned by
+Paper starts from one exact existing completed canonical FM StrategyRun returned by
 `list_paper_trade_sources` or supplied by the user. This skill must not create or revise the source.
-If no handle is supplied, list one bounded page and show the safe Strategy label/version,
+Use the returned `source_strategy_run_id` unchanged for source detail and Paper start; never
+substitute a StrategyFolder, Strategy, StrategyVersion, PB command, or Paper run id. If no handle
+is supplied, list one bounded page and show the safe Strategy label/version,
 lifecycle and submit state, source capital, eligibility, and closed `eligibility_reasons`. Ask the
 user to select one exact source.
 
@@ -140,11 +144,12 @@ Paper read.
 
 When the user asks which child contributes the most current profit, compare child Paper PnL on one
 consistent observation pass and report each snapshot's freshness. This is Paper PnL contribution,
-not historical backtest return. Use each exact `source_strategy_run_id` with
-`get_paper_trade_source` to confirm Strategy and StrategyVersion lineage. Hand off to
-`$strategy-analysis` or `$strategy-building` for historical evidence only when an exact public
-Strategy run handle is returned; never substitute a StrategyVersion, child Paper, or downstream
-identifier.
+not historical backtest return. The parent Portfolio projection is authoritative for each
+component's safe Strategy and StrategyVersion lineage. Do not pass its Portfolio-local
+`source_strategy_run_id` to ordinary `get_paper_trade_source` or Strategy tools. Hand off to
+`$strategy-analysis` or `$strategy-building` for historical evidence only when a separate exact
+canonical FM `strategyRunId` is explicitly returned; never substitute a Portfolio-local selector,
+StrategyVersion, child Paper, or downstream identifier.
 
 Never claim shared margin, capital transfer, signal fusion, order netting, parent aggregate
 positions, parent real-time PnL, or a parent equity curve.
