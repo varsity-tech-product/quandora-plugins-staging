@@ -71,6 +71,15 @@ PORTFOLIO_SOURCE_EVIDENCE_MARKERS = (
     "alignment_required",
     "alignment_unknown",
 )
+STRATEGY_FIXED_RUN_GUIDANCE_MARKERS = (
+    "`fixed_fields`",
+    "`initial_cash=100000`",
+    "`taker_fee_rate=0.0004`",
+    "`maker_fee_rate=0.0002`",
+    "`attribution=true`",
+    "`caller_supplied=false`",
+    "never send them as tool arguments",
+)
 ROUTING_MARKERS = {
     "factor-analysis": ("Do not use for creating", "$factor-mining"),
     "factor-mining": ("Do not use for the Strategy", "$strategy-building", "$factor-analysis"),
@@ -586,6 +595,24 @@ def _check_skills(
                     "strategy-portfolio/SKILL.md: missing source-evidence workflow marker "
                     f"{marker!r}"
                 )
+
+    strategy_path = skill_files.get("strategy-building")
+    if strategy_path is not None:
+        ordinary_workflow = strategy_path.parent / "references" / "ordinary-strategy-workflow.md"
+        ordinary_text = " ".join(
+            ordinary_workflow.read_text(encoding="utf-8").split()
+        )
+        for marker in STRATEGY_FIXED_RUN_GUIDANCE_MARKERS:
+            if marker not in ordinary_text:
+                errors.append(
+                    "strategy-building ordinary workflow: missing fixed StrategyRun marker "
+                    f"{marker!r}"
+                )
+        if "dates, cash, fee rates" in ordinary_text:
+            errors.append(
+                "strategy-building ordinary workflow: fixed StrategyRun values remain "
+                "documented as caller fields"
+            )
 
 
 def _check_runtime_markdown(errors: list[str], skill_files: dict[str, Path]) -> None:
