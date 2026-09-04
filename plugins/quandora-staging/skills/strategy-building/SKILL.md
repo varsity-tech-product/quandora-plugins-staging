@@ -101,15 +101,13 @@ directory or treat the exported ZIP as server-side analysis evidence.
 ## Safety
 
 - Treat Strategy, StrategyVersion, StrategyRun, downstream lineage, Paper source, and Portfolio
-  handles as distinct opaque owner-scoped identifiers.
+  handles as distinct opaque identifiers.
 - An ambiguous mutation response is not permission to resubmit, revise, rerun, or switch payloads.
 - `continue_strategy_backtest` re-drives only the exact returned `commandRequestId`; all detail,
   result, artifact, rerun, and downstream reads use the distinct canonical `strategyRunId`.
 - `fmRetryable` is advisory. A failed immutable run may be rerun only after exact lineage checks,
   repetition-risk disclosure, and explicit confirmation.
 - Never infer Paper authority from completed research or start Paper from this skill.
-- Never expose credentials, historical policy content, provider identities, internal URLs, or raw
-  downstream payloads.
 
 ## Final Response
 
@@ -117,8 +115,8 @@ State the submitted Strategy name, workflow type, main-run/archive state, safe d
 verified Result Bundle path when saved. If a run remains in progress, state that bundle delivery
 was not started. If handing off, state clearly that no Portfolio or Paper mutation occurred.
 
-Never expose run handles in a general summary, tickets, download URLs, credentials, base64, or
-internal service metadata.
+Include a public run handle only when it supports continuation, recovery, export, or handoff.
+Never include tickets, download URLs, or base64 in a general summary.
 
 Use the user's language for the answer while preserving tool names, schema fields, and returned
 identifiers exactly.

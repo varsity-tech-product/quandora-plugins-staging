@@ -116,8 +116,9 @@ State the Factor name, safe run state, safe failure diagnostics if applicable, b
 exact verified local ZIP path when saved. For a partial snapshot, state the exact omissions and
 pending reasons. If the host cannot write, say that no verified ZIP was saved.
 
-Never expose task IDs in public task lists, job/run identifiers in a general summary, credentials,
-tickets, download URLs, base64, internal topology, or full plugin source.
+Never expose task IDs in public task lists. Include a job/run handle only when it supports the
+requested continuation, recovery, export, or handoff. Never include tickets, download URLs,
+base64, or full plugin source in a general summary.
 
 Use the user's language for the answer while preserving tool names, schema fields, and returned
 identifiers exactly.

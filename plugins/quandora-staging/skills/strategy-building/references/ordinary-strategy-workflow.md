@@ -13,12 +13,10 @@ page token byte-for-byte.
 
 For composition, call `get_strategy_capabilities` once. Treat the live
 `submit_adhoc_strategy_backtest` input schema and capability `caller_supplied_fields` as the sole
-request boundary. The canonical caller fields are `name`, exactly one of `factor_ids` or
-`factor_weights`, `ranking`, `strategy_type`, `start_date`, `end_date`, and `rebalance_bars`.
-Do not copy server-managed values into Skill guidance, payloads, or confirmation, and do not add
-any field absent from the live submit schema. Treat capability metadata marked as not caller
-supplied as read-only server behavior. Stop on any contract/schema mismatch; never send semantic,
-response-only, local-only, universe, or idempotency fields.
+request boundary. Preserve only caller choices allowed by both, omit optional fields the user did
+not choose, and treat metadata marked as not caller supplied as read-only server behavior. Do not
+copy server-managed values into Skill guidance or confirmation, and do not add any field absent
+from the live submit schema. Stop on any contract/schema mismatch.
 
 Every selected Factor must be returned by `list_eligible_strategy_factors`. Display returned ID,
 name, Task category, rating/grade status, Source, and CS Sharpe when present. Classify Source only
