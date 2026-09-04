@@ -103,7 +103,8 @@ directory or treat the exported ZIP as server-side analysis evidence.
 - Treat Strategy, StrategyVersion, StrategyRun, downstream lineage, Paper source, and Portfolio
   handles as distinct opaque owner-scoped identifiers.
 - An ambiguous mutation response is not permission to resubmit, revise, rerun, or switch payloads.
-- `continue_strategy_backtest` re-drives only a known non-terminal run.
+- `continue_strategy_backtest` re-drives only the exact returned `commandRequestId`; all detail,
+  result, artifact, rerun, and downstream reads use the distinct canonical `strategyRunId`.
 - `fmRetryable` is advisory. A failed immutable run may be rerun only after exact lineage checks,
   repetition-risk disclosure, and explicit confirmation.
 - Never infer Paper authority from completed research or start Paper from this skill.

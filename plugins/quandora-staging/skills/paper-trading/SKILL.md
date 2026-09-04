@@ -54,8 +54,9 @@ opaque page tokens byte-for-byte. Never combine legacy `limit`/`offset` fields w
 
 ## Safety and Data Model
 
-- Treat StrategyRun, PaperTradeRun, PortfolioRun, PortfolioPaperRun, source handles, child Paper
-  handles, and cursors as distinct opaque owner-scoped identifiers.
+- Treat canonical FM StrategyRun, PaperTradeRun, PortfolioRun, PortfolioPaperRun, child Paper
+  handles, and cursors as distinct opaque owner-scoped identifiers. A PB command id is never a
+  Paper source.
 - Money, leverage, and allocated cash are canonical decimal strings. Never send JSON numbers.
 - Never send `symbols`, `universe`, or `universe_policy`, even as null or empty values.
 - A mutation timeout or ambiguous response is not proof of failure. Do not retry with a fresh or
@@ -71,9 +72,11 @@ opaque page tokens byte-for-byte. Never combine legacy `limit`/`offset` fields w
 
 ### Select an Eligible Source
 
-Paper starts from one exact existing completed StrategyRun returned by
+Paper starts from one exact existing completed canonical FM StrategyRun returned by
 `list_paper_trade_sources` or supplied by the user. This skill must not create or revise the source.
-If no handle is supplied, list one bounded page and show the safe Strategy label/version,
+Use the returned `source_strategy_run_id` unchanged for source detail and Paper start; never
+substitute a StrategyFolder, Strategy, StrategyVersion, PB command, or Paper run id. If no handle
+is supplied, list one bounded page and show the safe Strategy label/version,
 lifecycle and submit state, source capital, eligibility, and closed `eligibility_reasons`. Ask the
 user to select one exact source.
 

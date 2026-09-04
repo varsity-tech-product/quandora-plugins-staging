@@ -51,15 +51,20 @@ configuration. Before `submit_adhoc_strategy_backtest`, show the complete safe n
 weights, ranking, direction, dates, and rebalance choices that will actually be sent, then obtain
 explicit confirmation. Do not display or ask for confirmation of server-managed fields.
 
-Call the mutation once. Store only returned `result.run.id` as the Strategy run handle.
-`result.run.strategyId`, Factor IDs, rating provenance, and downstream identifiers are not substitutes.
-An ambiguous response without a handle does not authorize resubmission.
+Call the mutation once. Preserve returned `result.run.commandRequestId` only as the command
+continuation handle. Once non-null, preserve `result.run.strategyRunId` as the canonical FM
+StrategyRun handle for detail, result, artifact, rerun, and downstream reads. The two identifiers
+are never interchangeable. `strategyFolderId`, `strategyId`, Factor IDs, rating provenance, and
+downstream identifiers are not substitutes. An ambiguous response without a command handle does
+not authorize resubmission.
 
 ## Observation and Failure
 
-The submit response is the first snapshot. For a non-terminal run, follow returned retry guidance
-and use a bounded, user-visible sequence of `continue_strategy_backtest` calls. It re-drives work;
-do not interleave `get_strategy_backtest`. If the run remains active after the bounded observation
+The submit response is the first snapshot. While no canonical `strategyRunId` is available, follow
+returned retry guidance and use a bounded, user-visible sequence of
+`continue_strategy_backtest(command_request_id=<commandRequestId>)` calls. It re-drives only that
+command; do not pass the command id to `get_strategy_backtest`. Once `strategyRunId` exists, use it
+as `run_id` for detail and result reads. If the run remains active after the bounded observation
 window, report it and stop before archive or bundle work.
 
 After terminal status, observe archive state on the same run with bounded reads and returned retry
