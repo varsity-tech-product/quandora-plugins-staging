@@ -11,12 +11,14 @@ that constraint. Omit search fields only for a browse request. Do not auto-page 
 Mining inventory/status. A continuation preserves every search constraint and copies the opaque
 page token byte-for-byte.
 
-For composition, call `get_strategy_capabilities` once. Its `contract` is the request boundary and
-`product_defaults` explains omission behavior. The canonical
-`submit_adhoc_strategy_backtest` caller fields are `name`, exactly one of `factor_ids` or
-`factor_weights`, `ranking`, `strategy_type`, dates, cash, fee rates, `rebalance_bars`, and
-`attribution`. Stop on any contract/schema mismatch; never send semantic, response-only,
-local-only, universe, or idempotency fields.
+For composition, call `get_strategy_capabilities` once. Treat the live
+`submit_adhoc_strategy_backtest` input schema and capability `caller_supplied_fields` as the sole
+request boundary. The canonical caller fields are `name`, exactly one of `factor_ids` or
+`factor_weights`, `ranking`, `strategy_type`, `start_date`, `end_date`, and `rebalance_bars`.
+Do not copy server-managed values into Skill guidance, payloads, or confirmation, and do not add
+any field absent from the live submit schema. Treat capability metadata marked as not caller
+supplied as read-only server behavior. Stop on any contract/schema mismatch; never send semantic,
+response-only, local-only, universe, or idempotency fields.
 
 Every selected Factor must be returned by `list_eligible_strategy_factors`. Display returned ID,
 name, Task category, rating/grade status, Source, and CS Sharpe when present. Classify Source only
@@ -39,13 +41,15 @@ current-owner session and the approved import guidance; never invent lifecycle i
 
 For equal weights use distinct `factor_ids`; for custom weights use distinct positive finite
 entries totaling 1 within the contract tolerance. Validate finite numeric values, ranking,
-direction, dates, cash, fees, and rebalance bounds against the current contract. Preserve explicit
-choices and omit optional fields the user did not choose.
+direction, dates, and rebalance bounds against the current contract. Preserve explicit caller
+choices and omit optional fields the user did not choose. If the user requests a field absent from
+the live submit schema, explain that it is not caller-configurable without guessing or quoting
+server-managed values.
 
 Choose the submitted name from a valid user name or the exact selected Factor themes and effective
 configuration. Before `submit_adhoc_strategy_backtest`, show the complete safe name, factors or
-weights, ranking, direction, dates, capital, fees, rebalance, and attribution, then obtain explicit
-confirmation.
+weights, ranking, direction, dates, and rebalance choices that will actually be sent, then obtain
+explicit confirmation. Do not display or ask for confirmation of server-managed fields.
 
 Call the mutation once. Store only returned `result.run.id` as the Strategy run handle.
 `result.run.strategyId`, Factor IDs, rating provenance, and downstream identifiers are not substitutes.

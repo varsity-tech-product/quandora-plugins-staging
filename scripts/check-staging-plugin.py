@@ -71,6 +71,19 @@ PORTFOLIO_SOURCE_EVIDENCE_MARKERS = (
     "alignment_required",
     "alignment_unknown",
 )
+STRATEGY_CALLER_BOUNDARY_GUIDANCE_MARKERS = (
+    "`caller_supplied_fields`",
+    "the sole request boundary",
+    "Do not copy server-managed values into Skill guidance",
+    "do not add any field absent from the live submit schema",
+    "Do not display or ask for confirmation of server-managed fields",
+)
+STRATEGY_SERVER_VALUE_GUIDANCE_MARKERS = (
+    "`initial_cash=100000`",
+    "`taker_fee_rate=0.0004`",
+    "`maker_fee_rate=0.0002`",
+    "`attribution=true`",
+)
 ROUTING_MARKERS = {
     "factor-analysis": ("Do not use for creating", "$factor-mining"),
     "factor-mining": ("Do not use for the Strategy", "$strategy-building", "$factor-analysis"),
@@ -586,6 +599,30 @@ def _check_skills(
                     "strategy-portfolio/SKILL.md: missing source-evidence workflow marker "
                     f"{marker!r}"
                 )
+
+    strategy_path = skill_files.get("strategy-building")
+    if strategy_path is not None:
+        ordinary_workflow = strategy_path.parent / "references" / "ordinary-strategy-workflow.md"
+        ordinary_text = " ".join(
+            ordinary_workflow.read_text(encoding="utf-8").split()
+        )
+        for marker in STRATEGY_CALLER_BOUNDARY_GUIDANCE_MARKERS:
+            if marker not in ordinary_text:
+                errors.append(
+                    "strategy-building ordinary workflow: missing caller-boundary marker "
+                    f"{marker!r}"
+                )
+        for marker in STRATEGY_SERVER_VALUE_GUIDANCE_MARKERS:
+            if marker in ordinary_text:
+                errors.append(
+                    "strategy-building ordinary workflow: server-managed value leaked into "
+                    f"Agent guidance via {marker!r}"
+                )
+        if "dates, cash, fee rates" in ordinary_text:
+            errors.append(
+                "strategy-building ordinary workflow: server-managed fields remain "
+                "documented as caller fields"
+            )
 
 
 def _check_runtime_markdown(errors: list[str], skill_files: dict[str, Path]) -> None:

@@ -73,7 +73,7 @@ Follow [Ordinary Strategy Workflow](references/ordinary-strategy-workflow.md):
 1. read the current capability contract once;
 2. verify exact selected Factors in the eligible inventory;
 3. validate one canonical equal- or custom-weight payload;
-4. show all effective choices and obtain explicit confirmation;
+4. show only caller-controlled choices and obtain explicit confirmation;
 5. submit once and observe only the returned run;
 6. treat terminal rerun as a separate explicitly confirmed mutation.
 
