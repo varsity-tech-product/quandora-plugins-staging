@@ -71,14 +71,18 @@ PORTFOLIO_SOURCE_EVIDENCE_MARKERS = (
     "alignment_required",
     "alignment_unknown",
 )
-STRATEGY_FIXED_RUN_GUIDANCE_MARKERS = (
-    "`fixed_fields`",
+STRATEGY_CALLER_BOUNDARY_GUIDANCE_MARKERS = (
+    "`caller_supplied_fields`",
+    "the sole request boundary",
+    "Do not copy server-managed values into Skill guidance",
+    "do not add any field absent from the live submit schema",
+    "Do not display or ask for confirmation of server-managed fields",
+)
+STRATEGY_SERVER_VALUE_GUIDANCE_MARKERS = (
     "`initial_cash=100000`",
     "`taker_fee_rate=0.0004`",
     "`maker_fee_rate=0.0002`",
     "`attribution=true`",
-    "`caller_supplied=false`",
-    "never send them as tool arguments",
 )
 ROUTING_MARKERS = {
     "factor-analysis": ("Do not use for creating", "$factor-mining"),
@@ -602,15 +606,21 @@ def _check_skills(
         ordinary_text = " ".join(
             ordinary_workflow.read_text(encoding="utf-8").split()
         )
-        for marker in STRATEGY_FIXED_RUN_GUIDANCE_MARKERS:
+        for marker in STRATEGY_CALLER_BOUNDARY_GUIDANCE_MARKERS:
             if marker not in ordinary_text:
                 errors.append(
-                    "strategy-building ordinary workflow: missing fixed StrategyRun marker "
+                    "strategy-building ordinary workflow: missing caller-boundary marker "
                     f"{marker!r}"
+                )
+        for marker in STRATEGY_SERVER_VALUE_GUIDANCE_MARKERS:
+            if marker in ordinary_text:
+                errors.append(
+                    "strategy-building ordinary workflow: server-managed value leaked into "
+                    f"Agent guidance via {marker!r}"
                 )
         if "dates, cash, fee rates" in ordinary_text:
             errors.append(
-                "strategy-building ordinary workflow: fixed StrategyRun values remain "
+                "strategy-building ordinary workflow: server-managed fields remain "
                 "documented as caller fields"
             )
 
