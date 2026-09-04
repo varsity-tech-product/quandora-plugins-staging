@@ -624,6 +624,28 @@ def _check_skills(
                 "documented as caller fields"
             )
 
+    paper_path = skill_files.get("paper-trading")
+    if paper_path is not None:
+        paper_text = " ".join(paper_path.read_text(encoding="utf-8").split())
+        if (
+            "Use each exact `source_strategy_run_id` with `get_paper_trade_source`"
+            in paper_text
+        ):
+            errors.append(
+                "paper-trading: Portfolio-local source selector is cross-wired into the "
+                "ordinary canonical FM source tool"
+            )
+        for marker in (
+            "a Portfolio-local selector is not a canonical FM StrategyRun identifier",
+            "Do not pass its Portfolio-local `source_strategy_run_id` to ordinary "
+            "`get_paper_trade_source` or Strategy tools",
+        ):
+            if marker not in paper_text:
+                errors.append(
+                    "paper-trading: missing Portfolio/FM source identity boundary "
+                    f"{marker!r}"
+                )
+
 
 def _check_runtime_markdown(errors: list[str], skill_files: dict[str, Path]) -> None:
     references = sorted(SKILLS_ROOT.glob("*/references/*.md"))

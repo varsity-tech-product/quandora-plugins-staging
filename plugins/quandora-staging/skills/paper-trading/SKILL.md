@@ -49,9 +49,10 @@ opaque page tokens byte-for-byte. Never combine legacy `limit`/`offset` fields w
 
 ## Safety and Data Model
 
-- Treat canonical FM StrategyRun, PaperTradeRun, PortfolioRun, PortfolioPaperRun, child Paper
-  handles, and cursors as distinct opaque owner-scoped identifiers. A PB command id is never a
-  Paper source.
+- Treat canonical FM StrategyRun, Portfolio-local source selectors, PaperTradeRun, PortfolioRun,
+  PortfolioPaperRun, child Paper handles, and cursors as distinct opaque owner-scoped identifiers.
+  A PB command id is never a Paper source, and a Portfolio-local selector is not a canonical FM
+  StrategyRun identifier.
 - Money, leverage, and allocated cash are canonical decimal strings. Never send JSON numbers.
 - Paper inherits its source Strategy universe; it is not caller-configurable.
 - A mutation timeout or ambiguous response is not proof of failure. Do not retry with a fresh or
@@ -143,11 +144,12 @@ Paper read.
 
 When the user asks which child contributes the most current profit, compare child Paper PnL on one
 consistent observation pass and report each snapshot's freshness. This is Paper PnL contribution,
-not historical backtest return. Use each exact `source_strategy_run_id` with
-`get_paper_trade_source` to confirm Strategy and StrategyVersion lineage. Hand off to
-`$strategy-analysis` or `$strategy-building` for historical evidence only when an exact public
-Strategy run handle is returned; never substitute a StrategyVersion, child Paper, or downstream
-identifier.
+not historical backtest return. The parent Portfolio projection is authoritative for each
+component's safe Strategy and StrategyVersion lineage. Do not pass its Portfolio-local
+`source_strategy_run_id` to ordinary `get_paper_trade_source` or Strategy tools. Hand off to
+`$strategy-analysis` or `$strategy-building` for historical evidence only when a separate exact
+canonical FM `strategyRunId` is explicitly returned; never substitute a Portfolio-local selector,
+StrategyVersion, child Paper, or downstream identifier.
 
 Never claim shared margin, capital transfer, signal fusion, order netting, parent aggregate
 positions, parent real-time PnL, or a parent equity curve.
