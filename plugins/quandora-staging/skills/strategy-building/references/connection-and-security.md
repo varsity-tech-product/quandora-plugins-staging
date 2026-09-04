@@ -3,10 +3,9 @@
 Load this reference only when a required canonical Quandora Staging action is unavailable or the
 host reports terminal authorization failure.
 
-OAuth and credentials are host-managed. Never inspect, print, copy, store, or ask for API keys,
-bearer/access/refresh tokens, authorization codes, PKCE verifiers, service tokens, or pasted
-credentials. Do not reauthorize merely because an access token expired while the host is
-refreshing.
+Use only the configured `quandora-staging` MCP connection and never ask the user to paste secrets
+into chat. If the host is refreshing an expired session, do not start a duplicate authorization
+flow.
 
 Use only the host-native reconnect path:
 
@@ -20,9 +19,7 @@ Use only the host-native reconnect path:
 - CodeBuddy/WorkBuddy: update or reinstall the plugin, reconnect its managed MCP server, finish
   browser authorization, then start a new chat.
 
-Do not use raw HTTP, undocumented local helper scripts, internal service paths, or credential
-paste. The package's two documented Claude Desktop Code launchers are a narrow
-installation/authorization exception; they are not Strategy-workflow tools and never bypass the
-plugin-managed MCP identity. The only direct HTTP exception is immediate consumption of the opaque
+The package's two documented Claude Desktop Code launchers are authorization-only; they are not
+Strategy-workflow tools. The sole direct HTTP exception is immediate consumption of the opaque
 short-lived URL returned by `create_strategy_result_bundle_download`; never construct, modify,
 persist, reuse, or summarize it.

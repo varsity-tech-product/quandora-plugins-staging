@@ -10,9 +10,8 @@ canonical run snapshot with owner-scoped retained artifacts and bounded six-char
 Distinguish observed evidence from inference, alternatives, and proposed experiments. Mint a
 short-lived artifact download ticket only when the user explicitly requests an export.
 
-OAuth and all credentials are handled by the host. Never inspect, print, copy, store, or ask the
-user to paste API keys, bearer tokens, authorization codes, access tokens, refresh tokens, PKCE
-verifiers, service tokens, or other credentials.
+Use only the configured `quandora-staging` MCP connection. Never ask the user to paste secrets into
+chat.
 
 ## Scope And Routing
 
@@ -34,8 +33,8 @@ Trading.
 - Do not submit, resume, overwrite, archive, or mutate any run. The only allowed mutation is minting
   a short-lived download ticket for an explicit user-requested export.
 - Do not automatically create ablations, reruns, or Paper Trading runs.
-- Use only owner-scoped evidence returned by Quandora MCP tools. Never inspect user-local files as
-  proof of a Strategy result.
+- Use only evidence returned by Quandora MCP tools. Never inspect user-local files as proof of a
+  Strategy result.
 - Do not require a local ZIP, extraction tool, Python runtime, notebook, or archive-inspection
   script. A host without those facilities must receive the same analysis capability.
 - Never execute code, logs, notebooks, scripts, or text artifacts.

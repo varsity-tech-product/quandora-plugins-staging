@@ -19,8 +19,7 @@ Build one closed non-optimizer cross-sectional specification:
 - optional long-only, short-only, or neutral direction;
 - optional rebalance bars.
 
-Never include `portfolio_optimizer`, including explicit null. Do not invent provider keys,
-historical policy fields, internal URLs, paths, or environment-specific values.
+Never include `portfolio_optimizer`, including explicit null.
 
 Show exact Factors and the complete specification, then obtain confirmation. Use `create_strategy`
 for a new definition or read the exact base with `get_strategy` and `get_strategy_version` before

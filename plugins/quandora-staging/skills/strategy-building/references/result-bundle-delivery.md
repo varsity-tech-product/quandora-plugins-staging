@@ -35,5 +35,6 @@ Use a safe user-requested destination when supplied. Never overwrite unrelated b
 extract/rebuild/re-ZIP the archive, synthesize missing items, or create a second completed
 `run_summary.json`. A pending run may have one redacted pending summary in the authoring workspace.
 
-For partial delivery, state exact omissions and reasons. Never expose run IDs in a general summary,
-revisions, tickets, URLs, credentials, base64, or internal storage metadata.
+For partial delivery, state exact omissions and reasons. Include the public run handle only when
+needed for recovery, export, or handoff. Never include revisions, tickets, URLs, or base64 in the
+final summary.
