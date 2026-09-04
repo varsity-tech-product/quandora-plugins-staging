@@ -9,19 +9,13 @@ Use this skill through the authenticated `quandora-staging` MCP connection. It o
 multi-Strategy composition, versioning, exact source-run selection, source-reuse evaluation, and
 aggregate result reads. It never starts, monitors, or stops Paper trading.
 
-Portfolio definitions use `strategy:portfolios.read` or `strategy:portfolios.write`. Source
-discovery and evaluation reads use `strategy:portfolio_evaluations.read`; evaluation submit uses
-`strategy:portfolio_evaluations.create`. A later Paper operation is a separate workflow using
-`paper_trading:runs.*`.
-
 Route single-Strategy factor selection, Strategy authoring, and single-Strategy backtests to
 `$strategy-building`. Route simulated execution from a completed Portfolio evaluation to
 `$paper-trading`. A one-component request remains a Strategy workflow; do not create a Portfolio
 to represent it.
 
-OAuth and credentials are host-managed. Never inspect, print, copy, store, or ask the user to paste
-API keys, bearer/access/refresh tokens, authorization codes, PKCE verifiers, service tokens, or
-account credentials.
+Use only the configured `quandora-staging` MCP connection. Never ask the user to paste secrets into
+chat.
 
 ## Tools
 
@@ -42,8 +36,8 @@ implicit prerequisite.
 
 Tool names in this Skill are canonical actions on the configured `quandora-staging` MCP
 dependency. Let the host resolve its required server-qualified form. If an action is unavailable,
-use only the host-native reconnect/update flow; never invent an alias, bypass MCP with raw HTTP,
-or paste credentials.
+use only the host-native reconnect/update flow; never invent an alias or bypass the configured MCP
+connection.
 
 ## Portfolio Model
 
@@ -67,7 +61,7 @@ or paste credentials.
 - The evaluation normalizes each source equity curve by that source's initial equity, then applies
   the Portfolio target-capital weights. The result is research evidence, not a Paper account.
 - Treat Portfolio, PortfolioVersion, PortfolioRun, StrategyVersion, and source StrategyRun handles
-  as distinct opaque owner-scoped identifiers.
+  as distinct opaque identifiers.
 
 ## Workflow
 
@@ -123,10 +117,10 @@ Before `submit_strategy_portfolio_evaluation`, show and confirm:
 - one intact compatible source set;
 - that the aligned sources are reused without rerunning a Strategy or calling a provider.
 
-Submit only `portfolio_version_id` and the exact returned compatible `source_runs` set. Do not send
-capital, dates, fees, weights, optimizer fields, or execution overrides. The server obtains frozen
-Portfolio capital and re-verifies the selected sources' execution facts. Portfolio definition and
-evaluation are separate mutations with separate confirmations.
+Submit only `portfolio_version_id` and the exact returned compatible `source_runs` set. Portfolio
+capital and equal weights come from the stored definition, and the server re-verifies the selected
+sources' execution facts. Portfolio definition and evaluation are separate mutations with separate
+confirmations.
 
 If submit returns retryable `source_result_evidence_unavailable`, treat it as retained-evidence
 synchronization, not proof that the StrategyRun failed. Do not resubmit automatically and do not
@@ -159,8 +153,7 @@ mutation with its own confirmation. Never start it merely because evaluation com
 
 State whether the outcome is a Portfolio definition/version, source selection, PortfolioRun, or
 aggregate result. Summarize the user-visible composition, source lineage, and independent-sleeve
-model. When handing off, state that no Paper run has started. Do not expose credentials, provider
-identifiers, internal topology, or raw downstream payloads.
+model. When handing off, state that no Paper run has started.
 
 Use the user's language for the answer while preserving tool names, schema fields, and returned
 identifiers exactly.

@@ -57,6 +57,6 @@ matching `FACTOR_TYPE` literals; never silently fall back to a generic `factor` 
 user-requested safe destination when supplied. Never overwrite unrelated bytes, extract/rebuild the
 archive, synthesize entries, or create a second completed `run_summary.json`.
 
-If the selected snapshot is partial, report its exact omissions and pending reasons. Never expose
-job IDs, revisions, tickets, URLs, credentials, base64, or internal storage metadata in the final
-summary.
+If the selected snapshot is partial, report its exact omissions and pending reasons. Include the
+public job handle only when needed for continuation, recovery, export, or handoff. Never include
+revisions, tickets, URLs, or base64 in the final summary.

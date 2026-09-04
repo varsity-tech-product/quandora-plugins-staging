@@ -9,18 +9,13 @@ Use this skill through the authenticated `quandora-staging` MCP connection. It o
 execution only: eligible-source discovery, Paper start, lifecycle monitoring, execution data, and
 terminal stop. It is staging-only and never represents live-money trading.
 
-`paper_trading:sources.read` is discovery-only. Both single-Strategy Paper and Portfolio Paper use
-`paper_trading:runs.read`, `paper_trading:runs.create`, or `paper_trading:runs.stop`; Portfolio
-definitions and evaluations remain outside the Paper namespace.
-
 Route single-Strategy authoring/backtests to `$strategy-building`. Route multi-Strategy Portfolio
 composition, source selection, evaluation, and aggregate result reads to `$strategy-portfolio`.
 Route deep diagnosis of a completed single-Strategy result to `$strategy-analysis`. If no eligible
 source exists, hand off and stop before any Paper mutation.
 
-OAuth and credentials are host-managed. Never inspect, print, copy, store, or ask the user to paste
-API keys, bearer/access/refresh tokens, authorization codes, PKCE verifiers, service tokens,
-provider credentials, or account credentials.
+Use only the configured `quandora-staging` MCP connection. Never ask the user to paste secrets into
+chat.
 
 ## Tools
 
@@ -44,8 +39,8 @@ Never call Strategy or Portfolio definition/evaluation tools here. In particular
 
 Tool names in this Skill are canonical actions on the configured `quandora-staging` MCP
 dependency. Let the host resolve its required server-qualified form. If an action is unavailable,
-use only the host-native update/reconnect/browser-consent flow. Never invent an alias, bypass MCP
-with raw HTTP, or paste credentials.
+use only the host-native update/reconnect/browser-consent flow. Never invent an alias or bypass the
+configured MCP connection.
 
 For list actions, use a supplied name or keyword as `query` and exact public status, submit state,
 source kind, or Strategy kind as `filters`. Omit search fields only for browse or recent-items
@@ -55,9 +50,9 @@ opaque page tokens byte-for-byte. Never combine legacy `limit`/`offset` fields w
 ## Safety and Data Model
 
 - Treat StrategyRun, PaperTradeRun, PortfolioRun, PortfolioPaperRun, source handles, child Paper
-  handles, and cursors as distinct opaque owner-scoped identifiers.
+  handles, and cursors as distinct opaque identifiers.
 - Money, leverage, and allocated cash are canonical decimal strings. Never send JSON numbers.
-- Never send `symbols`, `universe`, or `universe_policy`, even as null or empty values.
+- Paper inherits its source Strategy universe; it is not caller-configurable.
 - A mutation timeout or ambiguous response is not proof of failure. Do not retry with a fresh or
   changed request. Reconcile only through an exact returned handle.
 - Never automatically stop, restart, resubmit, revise, change capital, mine a factor, or trigger
@@ -162,8 +157,7 @@ stop fans out to children, and obtain explicit confirmation. Call stop once, the
 
 State whether the result concerns one Paper trade or Portfolio Paper, its lifecycle state, and the
 relevant freshness or lineage semantics. If a handoff is needed, state that no Paper mutation was
-performed. Never expose credentials, provider identifiers, internal topology, or raw downstream
-payloads.
+performed.
 
 Use the user's language for the answer while preserving tool names, schema fields, and returned
 identifiers exactly.
